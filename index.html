@@ -229,6 +229,23 @@
   }
   .card-btn:hover{ background: #fbe4b8; }
   .card-btn:disabled{ opacity: 0.5; cursor: not-allowed; }
+
+  /* ---------------- documents ---------------- */
+  .doc-note{ font-size: 12px; color: var(--ink-muted); line-height: 1.5; margin: -4px 0 16px; }
+  .doc-note a{ color: var(--blue); font-weight: 600; text-decoration: none; cursor: pointer; }
+  .doc-note a:hover{ text-decoration: underline; }
+  .doc-grid{ display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .doc-card{ border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: var(--surface-2); display: flex; flex-direction: column; gap: 12px; }
+  .doc-card-head{ display: flex; align-items: flex-start; gap: 10px; }
+  .doc-icon{ flex: none; width: 32px; height: 32px; border-radius: 9px; background: var(--gold-soft); color: var(--gold-ink); display: flex; align-items: center; justify-content: center; }
+  .doc-card h3{ font-size: 13.5px; font-weight: 700; margin: 0 0 3px; color: var(--ink); }
+  .doc-card p{ font-size: 11.5px; color: var(--ink-muted); line-height: 1.45; margin: 0; }
+  .doc-card .doc-actions{ margin-top: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .doc-letter-fields{ border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px 2px; background: var(--surface); }
+  .doc-letter-fields legend{ padding-left: 2px; }
+  .doc-status{ font-size: 11.5px; font-weight: 600; border-radius: 7px; padding: 6px 10px; display: inline-block; }
+  .doc-status[hidden]{ display: none !important; }
+  .doc-status.ok{ background: #e5f6ea; color: #157a3a; }
   .import-status{ font-size: 12px; font-weight: 600; border-radius: 8px; padding: 9px 12px; margin: -2px 0 16px; line-height: 1.4; }
   .import-status[hidden]{ display: none !important; }
   .import-status.ok{ background: #e5f6ea; color: #157a3a; }
@@ -278,6 +295,8 @@
   input[readonly]{ background: var(--surface-2); color: var(--ink-2); cursor: not-allowed; }
   .irp5-row{ padding-top: 11px; margin-top: 7px; border-top: 1px dashed var(--border); }
   .irp5-row:first-child{ padding-top: 0; margin-top: 0; border-top: 0; }
+  .irp5-detail-grid{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 11px; margin-top: 11px; }
+  @media (max-width: 640px){ .irp5-detail-grid{ grid-template-columns: 1fr; } }
   .check-row{ display: flex; align-items: flex-start; gap: 9px; }
   .check-row input{ margin-top: 3px; accent-color: var(--blue); width: 15px; height: 15px; flex: none; }
   .check-row label{ font-size: 13px; font-weight: 400; margin: 0; }
@@ -437,6 +456,15 @@
           </div>
         </div>
         <div class="navgroup">
+          <div class="label">Documents</div>
+          <div class="items">
+            <button type="button" class="navitem" data-role="documents">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="4" width="9" height="10" rx="1"/><path d="M5 4V2.3a1 1 0 0 1 1-1h5l2.5 2.5V12a1 1 0 0 1-1 1h-1.5"/></svg>
+              Documents
+            </button>
+          </div>
+        </div>
+        <div class="navgroup">
           <div class="label">Reference</div>
           <div class="items">
             <button type="button" class="navitem" data-role="rates">
@@ -502,6 +530,7 @@
               <input type="file" id="ind_importFile" accept="application/json,.json" hidden>
             </div>
             <div class="import-status" id="ind_importStatus" hidden></div>
+            <p class="doc-note">Need a signed cover letter or other supporting documents for this client? See the <a href="javascript:void(0)" data-goto-role="documents">Documents</a> tab.</p>
 
             <fieldset>
               <legend>About you</legend>
@@ -602,6 +631,7 @@
                   <div class="input-r"><input type="number" id="ind_medTotalContribInput" min="0" step="100" value="29400" inputmode="decimal"></div>
                   <div class="hint">Total medical scheme contributions paid for the year, as shown on the medical aid tax certificate.</div>
                 </div>
+                <p class="doc-note" style="margin:2px 0 0;">Once captured, generate the <a href="javascript:void(0)" data-goto-role="documents">Medical Aid Calculation</a> document from the Documents tab.</p>
               </div>
               <div class="qrow">
                 <div class="qtext">Did you pay other qualifying disability or medical expenses not covered by a scheme?</div>
@@ -662,6 +692,86 @@
             </div>
             <div class="flag-list" id="ind_flagList"></div>
           </div>
+        </div>
+
+        <div class="card full" data-role="documents">
+          <div class="card-head">
+            <div class="card-head-text">
+              <h2>Documents</h2>
+              <span class="card-sub">Client-ready PDFs generated from this calculation</span>
+            </div>
+          </div>
+
+          <details class="notes" id="docBrandDetails" style="margin-bottom:16px;">
+            <summary>Edit letterhead &amp; footer branding</summary>
+            <div class="body">
+              <p>These details appear on the Cover Page header and footer for every client and tax type, until changed again.</p>
+              <div class="two-col">
+                <div class="field"><label for="docBrandFirm">Firm name</label><input type="text" id="docBrandFirm"></div>
+                <div class="field"><label for="docBrandTagline">Tagline</label><input type="text" id="docBrandTagline"></div>
+              </div>
+              <div class="two-col">
+                <div class="field"><label for="docBrandAccountant">Accountant name</label><input type="text" id="docBrandAccountant"></div>
+                <div class="field"><label for="docBrandTitle">Accountant title</label><input type="text" id="docBrandTitle"></div>
+              </div>
+              <div class="two-col">
+                <div class="field"><label for="docBrandPhone">Phone</label><input type="text" id="docBrandPhone"></div>
+                <div class="field"><label for="docBrandEmail">Email</label><input type="text" id="docBrandEmail"></div>
+              </div>
+              <div class="two-col">
+                <div class="field"><label for="docBrandInstWord">Institute wordmark</label><input type="text" id="docBrandInstWord"></div>
+                <div class="field"><label for="docBrandInstName">Institute full name</label><input type="text" id="docBrandInstName"></div>
+              </div>
+              <span class="doc-status ok" id="docBrandSaved" hidden>Saved</span>
+            </div>
+          </details>
+
+          <div class="doc-grid">
+            <div class="doc-card">
+              <div class="doc-card-head">
+                <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 1.8h5.5l2.5 2.5V13a.9.9 0 0 1-.9.9H4a.9.9 0 0 1-.9-.9V2.7A.9.9 0 0 1 4 1.8Z"/><path d="M9.3 1.8V4.5h2.7"/><path d="M5.3 8h5.2M5.3 10.3h5.2M5.3 12h3"/></svg></div>
+                <div><h3>Cover Page</h3><p>A covering letter on Alcock Consulting letterhead, with the tax calculation heading and sign-off blocks for you and the client.</p></div>
+              </div>
+
+              <fieldset class="doc-letter-fields">
+                <legend>Letter details</legend>
+                <div class="two-col">
+                  <div class="field"><label for="docLetterDate">Date</label><input type="date" id="docLetterDate"></div>
+                  <div class="field"><label for="docLetterSalutation">Salutation</label><input type="text" id="docLetterSalutation" placeholder="Dear Mr Fisa"></div>
+                </div>
+                <div class="field"><label for="docLetterHeading">Heading</label><input type="text" id="docLetterHeading"></div>
+                <div class="field"><label for="docLetterIntro">Opening line</label><textarea id="docLetterIntro" rows="2"></textarea></div>
+                <div class="field"><label for="docLetterBody">Body paragraph</label><textarea id="docLetterBody" rows="3"></textarea></div>
+                <div class="field"><label for="docLetterClosing">Closing line</label><input type="text" id="docLetterClosing"></div>
+              </fieldset>
+
+              <div class="doc-actions">
+                <button type="button" class="card-btn doc-cover-btn">Generate Cover Page PDF</button>
+              </div>
+            </div>
+
+            <div class="doc-card">
+              <div class="doc-card-head">
+                <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.5" y="1.5" width="13" height="13" rx="1.5"/><path d="M4.3 5.2h7.4M4.3 8h7.4M4.3 10.8h4.5"/></svg></div>
+                <div><h3>Calculation</h3><p>The full calculation report &mdash; income breakdown, deductions, tax brackets applied, and the reconciliation against IRP5 PAYE. Same as &ldquo;Download PDF&rdquo; above.</p></div>
+              </div>
+              <div class="doc-actions">
+                <button type="button" class="card-btn doc-calc-btn">Generate Calculation PDF</button>
+              </div>
+            </div>
+
+            <div class="doc-card">
+              <div class="doc-card-head">
+                <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.8 13.5 3.6V7.5C13.5 11 11.2 13.6 8 14.5C4.8 13.6 2.5 11 2.5 7.5V3.6L8 1.8Z"/><path d="M5.5 8.2 7.2 10 10.5 6.4"/></svg></div>
+                <div><h3>Medical Aid Calculation</h3><p>Month-by-month breakdown of the medical scheme fees tax credit, plus the additional medical expenses tax credit workings.</p></div>
+              </div>
+              <div class="doc-actions">
+                <button type="button" class="card-btn doc-medical-btn">Generate Medical Aid Calculation PDF</button>
+              </div>
+            </div>
+          </div>
+
+          <p class="doc-note" style="margin:16px 0 0;">More documents will be added here over time.</p>
         </div>
 
         <div data-role="calculator">
@@ -745,6 +855,7 @@
         <div data-role="questionnaire">
           <div class="card">
             <div class="card-head"><h2>Questionnaire</h2></div>
+            <p class="doc-note">Need a signed cover letter or the calculation report for this client? See the <a href="javascript:void(0)" data-goto-role="documents">Documents</a> tab.</p>
             <fieldset>
               <legend>Company</legend>
               <div class="field">
@@ -763,6 +874,40 @@
               </div>
             </fieldset>
           </div>
+        </div>
+
+        <div class="card full" data-role="documents">
+          <div class="card-head">
+            <div class="card-head-text">
+              <h2>Documents</h2>
+              <span class="card-sub">Client-ready PDFs generated from this calculation</span>
+            </div>
+          </div>
+          <p class="doc-note">Uses the same letterhead and letter details set up on the <a href="javascript:void(0)" data-goto-individual>Individual Tax</a> tab&rsquo;s Documents section.</p>
+
+          <div class="doc-grid">
+            <div class="doc-card">
+              <div class="doc-card-head">
+                <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 1.8h5.5l2.5 2.5V13a.9.9 0 0 1-.9.9H4a.9.9 0 0 1-.9-.9V2.7A.9.9 0 0 1 4 1.8Z"/><path d="M9.3 1.8V4.5h2.7"/><path d="M5.3 8h5.2M5.3 10.3h5.2M5.3 12h3"/></svg></div>
+                <div><h3>Cover Page</h3><p>A covering letter on Alcock Consulting letterhead, with the tax calculation heading and sign-off blocks for you and the client.</p></div>
+              </div>
+              <div class="doc-actions">
+                <button type="button" class="card-btn doc-cover-btn">Generate Cover Page PDF</button>
+              </div>
+            </div>
+
+            <div class="doc-card">
+              <div class="doc-card-head">
+                <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.5" y="1.5" width="13" height="13" rx="1.5"/><path d="M4.3 5.2h7.4M4.3 8h7.4M4.3 10.8h4.5"/></svg></div>
+                <div><h3>Calculation</h3><p>The full calculation report &mdash; taxable income, rate applied and tax payable. Same as &ldquo;Download PDF&rdquo; above.</p></div>
+              </div>
+              <div class="doc-actions">
+                <button type="button" class="card-btn doc-calc-btn">Generate Calculation PDF</button>
+              </div>
+            </div>
+          </div>
+
+          <p class="doc-note" style="margin:16px 0 0;">More documents will be added here over time.</p>
         </div>
 
         <div data-role="calculator">
@@ -831,6 +976,7 @@
         <div data-role="questionnaire">
           <div class="card">
             <div class="card-head"><h2>Questionnaire</h2></div>
+            <p class="doc-note">Need a signed cover letter or the calculation report for this client? See the <a href="javascript:void(0)" data-goto-role="documents">Documents</a> tab.</p>
             <fieldset>
               <legend>Trust</legend>
               <div class="field">
@@ -847,6 +993,40 @@
               </div>
             </fieldset>
           </div>
+        </div>
+
+        <div class="card full" data-role="documents">
+          <div class="card-head">
+            <div class="card-head-text">
+              <h2>Documents</h2>
+              <span class="card-sub">Client-ready PDFs generated from this calculation</span>
+            </div>
+          </div>
+          <p class="doc-note">Uses the same letterhead and letter details set up on the <a href="javascript:void(0)" data-goto-individual>Individual Tax</a> tab&rsquo;s Documents section.</p>
+
+          <div class="doc-grid">
+            <div class="doc-card">
+              <div class="doc-card-head">
+                <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 1.8h5.5l2.5 2.5V13a.9.9 0 0 1-.9.9H4a.9.9 0 0 1-.9-.9V2.7A.9.9 0 0 1 4 1.8Z"/><path d="M9.3 1.8V4.5h2.7"/><path d="M5.3 8h5.2M5.3 10.3h5.2M5.3 12h3"/></svg></div>
+                <div><h3>Cover Page</h3><p>A covering letter on Alcock Consulting letterhead, with the tax calculation heading and sign-off blocks for you and the client.</p></div>
+              </div>
+              <div class="doc-actions">
+                <button type="button" class="card-btn doc-cover-btn">Generate Cover Page PDF</button>
+              </div>
+            </div>
+
+            <div class="doc-card">
+              <div class="doc-card-head">
+                <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.5" y="1.5" width="13" height="13" rx="1.5"/><path d="M4.3 5.2h7.4M4.3 8h7.4M4.3 10.8h4.5"/></svg></div>
+                <div><h3>Calculation</h3><p>The full calculation report &mdash; taxable income, rate applied and tax payable. Same as &ldquo;Download PDF&rdquo; above.</p></div>
+              </div>
+              <div class="doc-actions">
+                <button type="button" class="card-btn doc-calc-btn">Generate Calculation PDF</button>
+              </div>
+            </div>
+          </div>
+
+          <p class="doc-note" style="margin:16px 0 0;">More documents will be added here over time.</p>
         </div>
 
         <div data-role="calculator">
@@ -1214,7 +1394,21 @@
   }
 
   var indDisabilityYN = initYesNo('ind_disabilityYN', false, function(){ calcIndividual(); markDirty(); });
-  var indIrp5YN = initYesNo('ind_irp5YN', true, function(v){ ind.irp5Warn.hidden = v; ind.irp5CountReveal.hidden = !v; markDirty(); });
+  var indIrp5YN = initYesNo('ind_irp5YN', true, function(v){
+    ind.irp5Warn.hidden = v;
+    ind.irp5CountReveal.hidden = !v;
+    if (v){
+      renderIrp5Rows();
+    } else {
+      ind.grossInput.readOnly = false;
+      ind.freqAnnual.disabled = false;
+      ind.freqMonthly.disabled = false;
+      var suffix0 = indFreq === 'annual' ? 'per year' : 'per month';
+      ind.grossLabel.textContent = 'Gross salary, ' + suffix0;
+      calcIndividual();
+    }
+    markDirty();
+  });
   var indRetYN = initYesNo('ind_retYN', true, function(v){ ind.retReveal.hidden = !v; calcIndividual(); markDirty(); });
   var indMedYN = initYesNo('ind_medYN', true, function(v){ ind.medReveal.hidden = !v; calcIndividual(); markDirty(); });
   ind.medSchemeName.addEventListener('input', function(){ markDirty(); });
@@ -1336,7 +1530,7 @@
       irp5: indIrp5YN.get(),
       gross: ind.grossInput.value,
       irp5Count: irp5Rows.length,
-      irp5Rows: irp5Rows.map(function(r){ return { employer: r.employer, gross: r.gross }; }),
+      irp5Rows: irp5Rows.map(function(r){ return { employer: r.employer, gross: r.gross, sourceCode: r.sourceCode, uif: r.uif, paye: r.paye }; }),
       hasRet: indRetYN.get(), ret: ind.retInput.value,
       hasMed: indMedYN.get(),
       medSchemeName: ind.medSchemeName.value, medMembershipNo: ind.medMembershipNo.value,
@@ -1382,10 +1576,15 @@
     ind.irp5Warn.hidden = indIrp5YN.get();
     ind.irp5CountReveal.hidden = !indIrp5YN.get();
     if (s.irp5Rows && s.irp5Rows.length){
-      irp5Rows = s.irp5Rows.map(function(r){ return { employer: r.employer || '', gross: r.gross != null ? r.gross : '0' }; });
+      irp5Rows = s.irp5Rows.map(function(r){
+        return {
+          employer: r.employer || '', gross: r.gross != null ? r.gross : '0',
+          sourceCode: r.sourceCode || '3601', uif: r.uif != null ? r.uif : '0', paye: r.paye != null ? r.paye : '0'
+        };
+      });
       ind.irp5CountInput.value = s.irp5Count || irp5Rows.length;
     } else {
-      irp5Rows = [{ employer: '', gross: s.gross !== undefined ? s.gross : ind.grossInput.value }];
+      irp5Rows = [{ employer: '', gross: s.gross !== undefined ? s.gross : ind.grossInput.value, sourceCode: '3601', uif: '0', paye: '0' }];
       ind.irp5CountInput.value = 1;
     }
     renderIrp5Rows();
@@ -1461,6 +1660,14 @@
     var netMonthly = netAnnual / 12;
     var effectiveRate = grossAnnual > 0 ? (taxPayableAnnual / grossAnnual) * 100 : 0;
 
+    // Reconcile the calculated liability against what the IRP5 certificate(s)
+    // actually show was already deducted, so the preparer can see at a glance
+    // whether the client is due a refund or owes SARS on assessment.
+    var irp5PayeDeducted = indIrp5YN.get() ? irp5PayeTotal() : 0;
+    var irp5UifDeducted = indIrp5YN.get() ? irp5UifTotal() : 0;
+    var taxBalance = taxPayableAnnual - irp5PayeDeducted;
+    var hasIrp5PayeFigures = indIrp5YN.get() && irp5PayeDeducted > 0;
+
     ind.heroMonthly.textContent = fmtR(taxPayableMonthly) + ' / mo';
     ind.heroAnnual.textContent = fmtR(taxPayableAnnual) + ' per year';
     ind.statEffective.textContent = fmtPct(effectiveRate);
@@ -1490,6 +1697,13 @@
       negative: true, note: 'MSFTC ' + fmtR(msftcAnnual, 0) + ' + additional credit ' + fmtR(Math.max(0, amtc), 0)
     }));
     ind.ledger.appendChild(ledgerRow('Tax payable, per year', taxPayableAnnual, { total: true }));
+    if (hasIrp5PayeFigures){
+      ind.ledger.appendChild(ledgerRow('Less: PAYE already deducted (per IRP5)', irp5PayeDeducted, { negative: true }));
+      ind.ledger.appendChild(ledgerRow(
+        taxBalance >= 0 ? 'Balance: amount owing to SARS' : 'Balance: refund due from SARS',
+        Math.abs(taxBalance), { total: true }
+      ));
+    }
 
     ind.checklist.innerHTML = '';
     ind.checklist.appendChild(checklistItem(true, 'Age-based rebates applied <b>(' + AGE_LABEL[ageBand] + ')</b>'));
@@ -1507,6 +1721,13 @@
     ind.checklist.appendChild(checklistItem(monthlyGross <= T.uifCeiling, monthlyGross <= T.uifCeiling
       ? 'UIF calculated at 1% of gross'
       : 'UIF capped at the statutory ceiling <b>(R' + T.uifCeiling.toLocaleString() + '/mo)</b>'));
+    if (hasIrp5PayeFigures){
+      ind.checklist.appendChild(checklistItem(true, taxBalance >= 0
+        ? 'Reconciled against IRP5 PAYE — <b>' + fmtR(Math.abs(taxBalance), 0) + ' owing to SARS</b>'
+        : 'Reconciled against IRP5 PAYE — <b>' + fmtR(Math.abs(taxBalance), 0) + ' refund due</b>'));
+    } else if (indIrp5YN.get()){
+      ind.checklist.appendChild(checklistItem(false, 'Add the PAYE deducted on each IRP5 to see the refund / amount owing'));
+    }
     ind.checklistBadge.innerHTML = retExcess > 0
       ? '<span class="badge warn">! Needs attention</span>'
       : '<span class="badge ok">&#10003; All calculated</span>';
@@ -1523,14 +1744,45 @@
       rebate: rebate, msftcAnnual: msftcAnnual, amtc: amtc, totalMedicalCredit: totalMedicalCredit,
       taxPayableAnnual: taxPayableAnnual, taxPayableMonthly: taxPayableMonthly,
       uifAnnualEmployee: uifAnnualEmployee, netAnnual: netAnnual, netMonthly: netMonthly, effectiveRate: effectiveRate,
+      irp5PayeDeducted: irp5PayeDeducted, irp5UifDeducted: irp5UifDeducted, taxBalance: taxBalance,
+      hasIrp5PayeFigures: hasIrp5PayeFigures,
+      irp5RowsSnapshot: indIrp5YN.get() ? irp5Rows.map(function(r){
+        return { employer: r.employer || '', sourceCode: r.sourceCode || '3601', gross: parseFloat(r.gross) || 0, uif: parseFloat(r.uif) || 0, paye: parseFloat(r.paye) || 0 };
+      }) : [],
+      msftcMonthly: medDependantsArr.map(function(count){ return msftcForMonth(count); }),
+      medDependantsArr: medDependantsArr,
       flags: flaggedItems.map(function(f){ return f.label; })
     };
   }
 
-  var irp5Rows = [{ employer: '', gross: '450000' }];
+  var IRP5_SOURCE_CODES = [
+    { code: '3601', label: '3601 \u2014 Income (taxable)' },
+    { code: '3605', label: '3605 \u2014 Annual payment' },
+    { code: '3615', label: '3615 \u2014 Travel allowance (taxable)' },
+    { code: '3697', label: '3697 \u2014 Other allowance (taxable)' },
+    { code: '3699', label: '3699 \u2014 Gross non-retirement funding income' },
+    { code: '3702', label: '3702 \u2014 Reimbursive travel (taxable)' },
+    { code: '3713', label: '3713 \u2014 Other allowances' },
+    { code: '3714', label: '3714 \u2014 Subsistence allowance (local)' },
+    { code: '3801', label: '3801 \u2014 General fringe benefit' },
+    { code: '3810', label: '3810 \u2014 Medical scheme fringe benefit' }
+  ];
+  function irp5SourceCodeOptions(selected){
+    return IRP5_SOURCE_CODES.map(function(sc){
+      return '<option value="' + sc.code + '"' + (sc.code === selected ? ' selected' : '') + '>' + sc.label + '</option>';
+    }).join('');
+  }
+
+  var irp5Rows = [{ employer: '', gross: '450000', sourceCode: '3601', uif: '0', paye: '0' }];
 
   function irp5Total(){
     return irp5Rows.reduce(function(sum, r){ return sum + (parseFloat(r.gross) || 0); }, 0);
+  }
+  function irp5UifTotal(){
+    return irp5Rows.reduce(function(sum, r){ return sum + (parseFloat(r.uif) || 0); }, 0);
+  }
+  function irp5PayeTotal(){
+    return irp5Rows.reduce(function(sum, r){ return sum + (parseFloat(r.paye) || 0); }, 0);
   }
   function applyIrp5Total(){
     ind.grossInput.value = round2(irp5Total());
@@ -1540,55 +1792,67 @@
     var n = Math.max(1, Math.min(20, parseInt(ind.irp5CountInput.value, 10) || 1));
     ind.irp5CountInput.value = n;
 
-    if (n < 2){
-      irp5Rows = [{ employer: '', gross: ind.grossInput.value }];
-      ind.grossInput.readOnly = false;
-      ind.freqAnnual.disabled = false;
-      ind.freqMonthly.disabled = false;
-      var suffix0 = indFreq === 'annual' ? 'per year' : 'per month';
-      ind.grossLabel.textContent = 'Gross salary, ' + suffix0;
-      ind.irp5RowsContainer.innerHTML = '';
-      return;
-    }
+    // Every certificate \u2014 even just one \u2014 gets its own source code, UIF
+    // and PAYE fields, since those are what let the calculator reconcile
+    // against the actual figures on the certificate(s) rather than just the
+    // gross salary.
+    while (irp5Rows.length < n) irp5Rows.push({ employer: '', gross: '0', sourceCode: '3601', uif: '0', paye: '0' });
+    irp5Rows.length = n;
+    irp5Rows.forEach(function(row){
+      if (row.sourceCode === undefined) row.sourceCode = '3601';
+      if (row.uif === undefined) row.uif = '0';
+      if (row.paye === undefined) row.paye = '0';
+    });
 
     // Certificates report annual totals, so lock the toggle to Annual while
-    // more than one is captured (avoids double-converting the summed total).
+    // IRP5 income is being captured this way (avoids double-converting the
+    // summed total).
     if (indFreq !== 'annual') setIndFrequency('annual', false);
     ind.freqAnnual.disabled = true;
     ind.freqMonthly.disabled = true;
 
-    while (irp5Rows.length < n) irp5Rows.push({ employer: '', gross: '0' });
-    irp5Rows.length = n;
-
     ind.grossInput.readOnly = true;
-    ind.grossLabel.textContent = 'Total gross salary (' + n + ' certificates), per year';
+    ind.grossLabel.textContent = n === 1 ? 'Total gross salary (1 certificate), per year' : 'Total gross salary (' + n + ' certificates), per year';
 
     ind.irp5RowsContainer.innerHTML = '';
     irp5Rows.forEach(function(row, i){
       var wrap = document.createElement('div');
-      wrap.className = 'two-col irp5-row';
+      wrap.className = 'irp5-row';
       wrap.innerHTML =
-        '<div class="field"><label>Certificate ' + (i + 1) + ' \u2014 employer / fund</label>' +
-        '<input type="text" class="irp5-employer" placeholder="Optional"></div>' +
-        '<div class="field"><label>Gross salary, per year</label>' +
-        '<div class="input-r"><input type="number" class="irp5-gross" min="0" step="100" inputmode="decimal"></div></div>';
+        '<div class="two-col">' +
+          '<div class="field"><label>Certificate ' + (i + 1) + ' \u2014 employer / fund</label>' +
+          '<input type="text" class="irp5-employer" placeholder="Optional"></div>' +
+          '<div class="field"><label>Source code</label>' +
+          '<select class="irp5-sourcecode">' + irp5SourceCodeOptions(row.sourceCode) + '</select></div>' +
+        '</div>' +
+        '<div class="irp5-detail-grid">' +
+          '<div class="field"><label>Gross salary, per year</label>' +
+          '<div class="input-r"><input type="number" class="irp5-gross" min="0" step="100" inputmode="decimal"></div></div>' +
+          '<div class="field"><label>UIF (code 4141), per year</label>' +
+          '<div class="input-r"><input type="number" class="irp5-uif" min="0" step="10" inputmode="decimal"></div></div>' +
+          '<div class="field"><label>PAYE deducted (code 4102), per year</label>' +
+          '<div class="input-r"><input type="number" class="irp5-paye" min="0" step="10" inputmode="decimal"></div></div>' +
+        '</div>';
       var empInput = wrap.querySelector('.irp5-employer');
+      var scInput = wrap.querySelector('.irp5-sourcecode');
       var grossInput = wrap.querySelector('.irp5-gross');
+      var uifInput = wrap.querySelector('.irp5-uif');
+      var payeInput = wrap.querySelector('.irp5-paye');
       empInput.value = row.employer || '';
       grossInput.value = row.gross;
+      uifInput.value = row.uif;
+      payeInput.value = row.paye;
       empInput.addEventListener('input', function(){ irp5Rows[i].employer = empInput.value; markDirty(); });
+      scInput.addEventListener('change', function(){ irp5Rows[i].sourceCode = scInput.value; markDirty(); });
       grossInput.addEventListener('input', function(){ irp5Rows[i].gross = grossInput.value; applyIrp5Total(); markDirty(); });
+      uifInput.addEventListener('input', function(){ irp5Rows[i].uif = uifInput.value; calcIndividual(); markDirty(); });
+      payeInput.addEventListener('input', function(){ irp5Rows[i].paye = payeInput.value; calcIndividual(); markDirty(); });
       ind.irp5RowsContainer.appendChild(wrap);
     });
 
     applyIrp5Total();
   }
   ind.irp5CountInput.addEventListener('change', function(){ renderIrp5Rows(); markDirty(); });
-  // Keep the single-certificate row in sync so a figure typed directly into
-  // the gross field isn't lost if the preparer then bumps the count up.
-  ind.grossInput.addEventListener('input', function(){
-    if (irp5Rows.length < 2) irp5Rows[0] = { employer: (irp5Rows[0] && irp5Rows[0].employer) || '', gross: ind.grossInput.value };
-  });
 
   function setIndFrequency(next, silent){
     if (next === indFreq) return;
@@ -1778,6 +2042,13 @@
     if (ev.target && ev.target.closest && ev.target.closest('[data-goto-individual]')){
       switchTab('individual');
     }
+  });
+  document.addEventListener('click', function(ev){
+    var el = ev.target && ev.target.closest && ev.target.closest('[data-goto-role]');
+    if (!el) return;
+    var role = el.getAttribute('data-goto-role');
+    var target = panelFor(currentTaxType).querySelector('[data-role="' + role + '"]');
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
   // ================= TABS, SIDEBAR, RIBBON =================
@@ -1994,6 +2265,7 @@
   }
 
   function loadSavedCalcForCurrentType(){
+    refreshDocLetterDefaults();
     if (!dbApi){ setStatus('no-db'); saveCalcBtn.disabled = true; return; }
     if (!currentClientId){ setStatus('sandbox'); saveCalcBtn.disabled = true; return; }
     saveCalcBtn.disabled = false;
@@ -2478,6 +2750,11 @@
       });
       y = pdfKvRow(doc, y, 'Tax payable, per year', fmtR(r.taxPayableAnnual), { bold: true, rule: false, totalRule: true });
       y = pdfKvRow(doc, y, 'Tax payable, per month', fmtR(r.taxPayableMonthly), { rule: false });
+      if (r.hasIrp5PayeFigures){
+        y = pdfKvRow(doc, y, 'Less: PAYE already deducted (per IRP5)', '-' + fmtR(r.irp5PayeDeducted));
+        y = pdfKvRow(doc, y, r.taxBalance >= 0 ? 'Balance: amount owing to SARS' : 'Balance: refund due from SARS',
+          fmtR(Math.abs(r.taxBalance)), { bold: true, rule: false, totalRule: true });
+      }
       y += 14;
 
       y = pdfEnsureSpace(doc, y, 130, title);
@@ -2658,6 +2935,313 @@
     }, 30);
   }
   document.getElementById('reportBtn').addEventListener('click', exportPdf);
+
+  // ================= DOCUMENTS: COVER PAGE & MEDICAL AID CALCULATION =================
+  var C_ALCNAVY = [16, 27, 51], C_ALCGOLD = [196, 152, 60];
+
+  var DOC_BRAND_DEFAULTS = {
+    firm: 'ALCOCK CONSULTING', tagline: 'VALUE YOUR BUSINESS TODAY',
+    accountant: 'Duane Alcock', title: 'Chartered Business Accountant in Practice - CBAP(SA)',
+    phone: '082 857 2689', email: 'duane@alcockconsulting.co.za',
+    instWord: 'ciba', instName: 'Chartered Institute for Business Accountants NPC'
+  };
+  var docBrandFields = {
+    firm: document.getElementById('docBrandFirm'), tagline: document.getElementById('docBrandTagline'),
+    accountant: document.getElementById('docBrandAccountant'), title: document.getElementById('docBrandTitle'),
+    phone: document.getElementById('docBrandPhone'), email: document.getElementById('docBrandEmail'),
+    instWord: document.getElementById('docBrandInstWord'), instName: document.getElementById('docBrandInstName')
+  };
+  function loadDocBrand(){
+    var saved = {};
+    try { saved = JSON.parse(localStorage.getItem('reconiCoverPageBrand') || '{}') || {}; } catch (e) { saved = {}; }
+    Object.keys(DOC_BRAND_DEFAULTS).forEach(function(key){
+      var val = saved[key] !== undefined && saved[key] !== null ? saved[key] : DOC_BRAND_DEFAULTS[key];
+      if (docBrandFields[key]) docBrandFields[key].value = val;
+    });
+  }
+  function getDocBrand(){
+    var out = {};
+    Object.keys(DOC_BRAND_DEFAULTS).forEach(function(key){
+      var el = docBrandFields[key];
+      out[key] = (el && el.value.trim()) || DOC_BRAND_DEFAULTS[key];
+    });
+    return out;
+  }
+  var docBrandSavedNote = document.getElementById('docBrandSaved');
+  function saveDocBrand(){
+    try { localStorage.setItem('reconiCoverPageBrand', JSON.stringify(getDocBrand())); } catch (e) { return; }
+    if (docBrandSavedNote){
+      docBrandSavedNote.hidden = false;
+      clearTimeout(saveDocBrand._t);
+      saveDocBrand._t = setTimeout(function(){ docBrandSavedNote.hidden = true; }, 1600);
+    }
+  }
+  Object.keys(docBrandFields).forEach(function(key){
+    var el = docBrandFields[key];
+    if (el) el.addEventListener('input', saveDocBrand);
+  });
+  loadDocBrand();
+
+  var docLetter = {
+    date: document.getElementById('docLetterDate'),
+    salutation: document.getElementById('docLetterSalutation'),
+    heading: document.getElementById('docLetterHeading'),
+    intro: document.getElementById('docLetterIntro'),
+    body: document.getElementById('docLetterBody'),
+    closing: document.getElementById('docLetterClosing')
+  };
+  function taxYearEndDate(taxYear){
+    var parts = (taxYear || currentTaxYear).split('-');
+    var endYear = parseInt(parts[1], 10) || new Date().getFullYear();
+    return new Date(endYear, 2, 0); // day 0 of March = last day of February
+  }
+  function refreshDocLetterDefaults(){
+    if (!docLetter.date) return;
+    var who = currentClientId ? clientName(currentClientId) : '';
+    if (!docLetter.date.value) docLetter.date.value = new Date().toISOString().slice(0, 10);
+    if (!docLetter.salutation.dataset.touched) docLetter.salutation.value = who ? ('Dear ' + who) : 'Dear Sir/Madam';
+    if (!docLetter.heading.dataset.touched){
+      var typeWord = currentTaxType === 'company' ? 'COMPANY ' : (currentTaxType === 'trust' ? 'TRUST ' : '');
+      docLetter.heading.value = typeWord + 'TAX CALCULATION - ' + fmtDateLong(taxYearEndDate(currentTaxYear)).toUpperCase();
+    }
+    if (!docLetter.intro.dataset.touched){
+      var TY = TAX_TABLES[currentTaxYear];
+      var yr = TY ? TY.label.split('/')[1] : '';
+      docLetter.intro.value = 'Enclosed herewith please find your tax calculation for the ' + yr + ' year.';
+    }
+    if (!docLetter.body.dataset.touched){
+      docLetter.body.value = 'The income as declared in this return, are the only income for this particular year of assessment. This is the information that was used by us to complete your tax return.';
+    }
+    if (!docLetter.closing.dataset.touched){
+      docLetter.closing.value = 'Thank you for your support during the year.';
+    }
+  }
+  Object.keys(docLetter).forEach(function(key){
+    var el = docLetter[key];
+    if (el && key !== 'date') el.addEventListener('input', function(){ el.dataset.touched = '1'; });
+  });
+
+  function wrapText(doc, text, maxWidth){ return doc.splitTextToSize(text || '', maxWidth); }
+
+  function pdfAlcockLogo(doc, cx, topY, width, color){
+    var halfW = width / 2, height = width * 0.78;
+    doc.setDrawColor.apply(doc, color); doc.setLineWidth(1.3);
+    doc.triangle(cx, topY, cx - halfW, topY + height, cx + halfW, topY + height, 'S');
+    [1 / 3, 2 / 3].forEach(function(f){
+      var y = topY + height * f, hw = halfW * f;
+      doc.line(cx - hw, y, cx + hw, y);
+    });
+  }
+
+  function downloadGeneratedPdf(doc, filename, btn, prevLabel){
+    var restore = function(){ if (btn){ btn.disabled = false; btn.textContent = prevLabel; } };
+    try {
+      var blob = doc.output('blob');
+      var deliver = function(){
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+      };
+      if (window.claude && typeof window.claude.use === 'function'){
+        window.claude.use('downloads').then(function(dl){
+          if (dl){ return dl.save({ filename: filename, data: blob }); }
+          deliver();
+        }).catch(function(){ deliver(); }).finally(restore);
+      } else {
+        deliver();
+        restore();
+      }
+    } catch (e) { restore(); }
+  }
+
+  function buildCoverPagePdf(){
+    var JsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    var doc = new JsPDFCtor({ unit: 'pt', format: 'a4' });
+    var brand = getDocBrand();
+
+    // ---- header band: angular navy shape with a gold accent, top-right ----
+    // Drawn as a single closed polygon path (rather than two abutting
+    // triangles) so there's no hairline seam where two fills would otherwise
+    // meet along their shared edge.
+    var hx0 = 330, hxMid = 442;
+    doc.setFillColor.apply(doc, C_ALCNAVY);
+    doc.lines([[PAGE_W - hx0, 0], [0, 20], [hxMid - PAGE_W, 38]], hx0, 0, [1, 1], 'F', true);
+    doc.setFillColor.apply(doc, C_ALCGOLD);
+    doc.triangle(hx0, 0, hxMid, 58, hx0 + 36, 28, 'F');
+
+    // ---- logo block, top-left ----
+    pdfAlcockLogo(doc, MARGIN + 24, 22, 50, C_ALCGOLD);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(12.5); doc.setTextColor.apply(doc, C_ALCNAVY);
+    doc.text(brand.firm, MARGIN, 96);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor.apply(doc, C_ALCGOLD);
+    doc.text(brand.tagline, MARGIN, 107);
+
+    var y = 158;
+    var letterDate = docLetter.date && docLetter.date.value ? new Date(docLetter.date.value + 'T00:00:00') : new Date();
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor.apply(doc, C_INK);
+    doc.text(fmtDateLong(letterDate), MARGIN, y); y += 30;
+
+    var who = currentClientId ? clientName(currentClientId) : 'Client';
+    doc.text(who, MARGIN, y); y += 42;
+
+    doc.text((docLetter.salutation && docLetter.salutation.value) || ('Dear ' + who), MARGIN, y); y += 26;
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5);
+    doc.text((docLetter.heading && docLetter.heading.value) || 'TAX CALCULATION', MARGIN, y); y += 22;
+
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+    var introLines = wrapText(doc, (docLetter.intro && docLetter.intro.value) || '', CONTENT_W);
+    doc.text(introLines, MARGIN, y); y += introLines.length * 14 + 20;
+
+    var bodyLines = wrapText(doc, (docLetter.body && docLetter.body.value) || '', CONTENT_W);
+    doc.text(bodyLines, MARGIN, y); y += bodyLines.length * 14 + 28;
+
+    doc.text((docLetter.closing && docLetter.closing.value) || '', MARGIN, y); y += 40;
+
+    doc.text('Yours truly', MARGIN, y);
+    doc.text('Approved by:', PAGE_W - MARGIN, y, { align: 'right' }); y += 54;
+
+    doc.setDrawColor.apply(doc, C_HAIR); doc.setLineWidth(0.6);
+    doc.line(MARGIN, y, MARGIN + 160, y);
+    doc.line(PAGE_W - MARGIN - 160, y, PAGE_W - MARGIN, y);
+    y += 14;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor.apply(doc, C_INK);
+    doc.text(brand.accountant, MARGIN, y);
+    doc.text(who, PAGE_W - MARGIN, y, { align: 'right' });
+    y += 12;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor.apply(doc, C_INK2);
+    doc.text(brand.title, MARGIN, y, { maxWidth: 280 });
+
+    // ---- footer band: full-width navy strip with a gold wedge accent ----
+    var fy = PAGE_H - 58;
+    doc.setFillColor.apply(doc, C_ALCNAVY);
+    doc.rect(0, fy, PAGE_W, 58, 'F');
+    doc.setFillColor.apply(doc, C_ALCGOLD);
+    doc.triangle(0, fy, 150, fy, 0, PAGE_H, 'F');
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(255, 255, 255);
+    doc.text(brand.phone, 175, fy + 32);
+    doc.text(brand.email, 175, fy + 46);
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor.apply(doc, C_ALCGOLD);
+    doc.text(brand.instWord, PAGE_W - MARGIN, fy + 27, { align: 'right' });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(6.3); doc.setTextColor(255, 255, 255);
+    doc.text(brand.instName.toUpperCase(), PAGE_W - MARGIN, fy + 39, { align: 'right', maxWidth: 180 });
+
+    return doc;
+  }
+
+  function buildMedicalPdf(){
+    var JsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    var doc = new JsPDFCtor({ unit: 'pt', format: 'a4' });
+    var y = pdfBrandHeader(doc);
+    var r = ind.last || {};
+    var clientLabel = currentClientId ? clientName(currentClientId) : 'Not specified';
+    var TY = TAX_TABLES[currentTaxYear];
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor.apply(doc, C_INK);
+    doc.text('Medical Aid Tax Credit Calculation', MARGIN, y); y += 20;
+
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_INK2);
+    doc.text('Client: ' + clientLabel, MARGIN, y);
+    doc.text('Tax year: ' + TY.label + ' (' + TY.range.replace(/–/g, '-') + ')', PAGE_W - MARGIN, y, { align: 'right' });
+    y += 14;
+    doc.text('Prepared by: Alcock Consulting', MARGIN, y);
+    doc.text('Date prepared: ' + fmtDateLong(new Date()), PAGE_W - MARGIN, y, { align: 'right' });
+    y += 24;
+
+    y = pdfSectionLabel(doc, y, 'Medical scheme details');
+    y = pdfKvRow(doc, y, 'Scheme name', r.medSchemeName || 'Not captured');
+    y = pdfKvRow(doc, y, 'Membership number', r.medMembershipNo || 'Not captured');
+    var qualifiesUncapped = (r.ageBand && r.ageBand !== 'under65') || r.disability;
+    y = pdfKvRow(doc, y, 'Qualifies for the uncapped (65+/disability) formula', qualifiesUncapped ? 'Yes' : 'No', { rule: false });
+    y += 10;
+
+    y = pdfSectionLabel(doc, y, "Medical scheme fees tax credit (MSFTC) — by month");
+    var months = ['March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'January', 'February'];
+    var dep = r.medDependantsArr || [];
+    var monthly = r.msftcMonthly || [];
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor.apply(doc, C_MUTED);
+    doc.text('MONTH', MARGIN, y);
+    doc.text('DEPENDANTS', MARGIN + 220, y);
+    doc.text('CREDIT', PAGE_W - MARGIN, y, { align: 'right' });
+    y += 8;
+    doc.setDrawColor.apply(doc, C_HAIR); doc.setLineWidth(0.5); doc.line(MARGIN, y, PAGE_W - MARGIN, y);
+    y += 12;
+    months.forEach(function(m, i){
+      y = pdfEnsureSpace(doc, y, 16, 'Medical Aid Tax Credit Calculation');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor.apply(doc, C_INK);
+      doc.text(m, MARGIN, y);
+      doc.text(String(dep[i] !== undefined ? dep[i] : 0), MARGIN + 220, y);
+      doc.text(fmtR(monthly[i] || 0, 0), PAGE_W - MARGIN, y, { align: 'right' });
+      y += 14;
+    });
+    y += 6;
+    y = pdfKvRow(doc, y, 'Total MSFTC, per year', fmtR(r.msftcAnnual || 0), { bold: true, totalRule: true });
+    y += 10;
+
+    y = pdfEnsureSpace(doc, y, 140, 'Medical Aid Tax Credit Calculation');
+    y = pdfSectionLabel(doc, y, 'Additional medical expenses tax credit (AMTC)');
+    y = pdfKvRow(doc, y, 'Total medical scheme contributions, per year', fmtR(r.medicalContribAnnual || 0));
+    y = pdfKvRow(doc, y, 'Other qualifying medical expenses, per year', fmtR(r.otherMedicalAnnual || 0));
+    y = pdfKvRow(doc, y, 'Additional medical expenses tax credit (AMTC)', fmtR(Math.max(0, r.amtc || 0)), {
+      note: qualifiesUncapped
+        ? '33.3% of contributions above 3× MSFTC, plus other qualifying expenses'
+        : '25% of contributions above 4× MSFTC and other expenses, less 7.5% of taxable income'
+    });
+    y = pdfKvRow(doc, y, 'Total medical tax credit, per year', fmtR(r.totalMedicalCredit || 0), { bold: true, totalRule: true });
+
+    var pageCount = doc.internal.getNumberOfPages();
+    for (var p = 1; p <= pageCount; p++){
+      doc.setPage(p);
+      doc.setDrawColor.apply(doc, C_HAIR); doc.setLineWidth(0.5);
+      doc.line(MARGIN, PAGE_H - 54, PAGE_W - MARGIN, PAGE_H - 54);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7);
+      doc.setTextColor.apply(doc, C_MUTED);
+      doc.text('Estimate for planning purposes only — not a substitute for a SARS assessment or professional advice.', MARGIN, PAGE_H - 40, { maxWidth: CONTENT_W - 70 });
+      doc.text('Page ' + p + ' of ' + pageCount, PAGE_W - MARGIN, PAGE_H - 40, { align: 'right' });
+    }
+    return doc;
+  }
+
+  function exportCoverPagePdf(btn){
+    var prevLabel = btn ? btn.textContent : '';
+    if (btn){ btn.disabled = true; btn.textContent = 'Preparing…'; }
+    setTimeout(function(){
+      try {
+        var doc = buildCoverPagePdf();
+        var dateStr = new Date().toISOString().slice(0, 10);
+        var clientPart = currentClientId ? slug(clientName(currentClientId)) + ' - ' : '';
+        var filename = clientPart + 'Cover Page - ' + dateStr + '.pdf';
+        downloadGeneratedPdf(doc, filename, btn, prevLabel);
+      } catch (e) { if (btn){ btn.disabled = false; btn.textContent = prevLabel; } }
+    }, 20);
+  }
+  function exportMedicalPdf(btn){
+    var prevLabel = btn ? btn.textContent : '';
+    if (btn){ btn.disabled = true; btn.textContent = 'Preparing…'; }
+    setTimeout(function(){
+      try {
+        var doc = buildMedicalPdf();
+        var dateStr = new Date().toISOString().slice(0, 10);
+        var clientPart = currentClientId ? slug(clientName(currentClientId)) + ' - ' : '';
+        var filename = clientPart + 'Medical Aid Calculation - ' + dateStr + '.pdf';
+        downloadGeneratedPdf(doc, filename, btn, prevLabel);
+      } catch (e) { if (btn){ btn.disabled = false; btn.textContent = prevLabel; } }
+    }, 20);
+  }
+  document.addEventListener('click', function(ev){
+    var coverBtn = ev.target && ev.target.closest && ev.target.closest('.doc-cover-btn');
+    if (coverBtn){ exportCoverPagePdf(coverBtn); return; }
+    var calcBtn = ev.target && ev.target.closest && ev.target.closest('.doc-calc-btn');
+    if (calcBtn){ exportPdf(); return; }
+    var medBtn = ev.target && ev.target.closest && ev.target.closest('.doc-medical-btn');
+    if (medBtn){ exportMedicalPdf(medBtn); return; }
+  });
+
+  refreshDocLetterDefaults();
 
   // ---------- init ----------
   populateTaxYearSelect();
