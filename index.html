@@ -261,11 +261,14 @@
   .field .hint{ font-size: 11.5px; color: var(--ink-muted); margin-top: 5px; line-height: 1.4; }
   .input-r{ position: relative; }
   .input-r::before{ content: "R"; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-muted); font-size: 13px; pointer-events: none; font-weight: 600; }
-  .input-r input{ padding-left: 25px; }
   input[type=number], input[type=text], select{
     width: 100%; font-size: 13.5px; color: var(--ink); background: var(--surface-2);
     border: 1px solid var(--border); border-radius: 8px; padding: 8px 11px; appearance: none; -webkit-appearance: none;
   }
+  /* Must come after the generic input rule above: both have equal CSS specificity,
+     so this needs to win on source order to keep the Rand prefix from overlapping
+     the first digit. */
+  .input-r input{ padding-left: 25px; }
   input:focus, select:focus{ outline: 2px solid var(--blue); outline-offset: 1px; }
   .freq-toggle{ display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
   .freq-toggle button{ font-size: 12.5px; font-weight: 600; padding: 6px 13px; border: 0; background: var(--surface-2); color: var(--ink-2); cursor: pointer; }
@@ -279,6 +282,10 @@
   .check-row input{ margin-top: 3px; accent-color: var(--blue); width: 15px; height: 15px; flex: none; }
   .check-row label{ font-size: 13px; font-weight: 400; margin: 0; }
   .two-col{ display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+  .med-dep-grid{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 11px; }
+  .med-dep-grid .field{ margin-bottom: 0; }
+  .med-dep-grid label{ font-size: 11px; letter-spacing: 0.03em; }
+  @media (max-width: 640px){ .med-dep-grid{ grid-template-columns: repeat(2, 1fr); } }
 
   .ledger-row{ display: flex; align-items: baseline; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--hairline); font-size: 13px; }
   .ledger-row .desc{ color: var(--ink-2); white-space: nowrap; }
@@ -547,6 +554,70 @@
             </fieldset>
 
             <fieldset>
+              <legend>Medical expenditure</legend>
+              <div class="qrow">
+                <div class="qtext">Did you or your employer pay medical scheme contributions where you're the main member?</div>
+                <div class="yn" id="ind_medYN" role="group" aria-label="Medical aid membership">
+                  <button type="button" data-val="yes" aria-pressed="true">Yes</button>
+                  <button type="button" data-val="no" aria-pressed="false">No</button>
+                </div>
+              </div>
+              <div class="qreveal" id="ind_medReveal">
+                <div class="two-col">
+                  <div class="field">
+                    <label for="ind_medSchemeName">Medical scheme name</label>
+                    <input type="text" id="ind_medSchemeName" list="ind_medSchemeList" placeholder="e.g. Discovery Health Medical Scheme">
+                    <datalist id="ind_medSchemeList">
+                      <option value="Discovery Health Medical Scheme">
+                      <option value="Bonitas Medical Fund">
+                      <option value="Bestmed Medical Scheme">
+                      <option value="Momentum Medical Scheme">
+                      <option value="Medshield Medical Scheme">
+                      <option value="Fedhealth Medical Scheme">
+                      <option value="Genesis Medical Scheme">
+                      <option value="Sizwe Hosmed Medical Scheme">
+                      <option value="KeyHealth Medical Scheme">
+                      <option value="Compcare Wellness Medical Scheme">
+                      <option value="Suremed Health">
+                      <option value="Profmed">
+                      <option value="Polmed (Police Medical Scheme)">
+                      <option value="GEMS (Government Employees Medical Scheme)">
+                      <option value="Bankmed">
+                      <option value="Thebemed">
+                    </datalist>
+                  </div>
+                  <div class="field">
+                    <label for="ind_medMembershipNo">Medical scheme membership number</label>
+                    <input type="text" id="ind_medMembershipNo" inputmode="numeric">
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Total number of dependants (including yourself), per month</label>
+                  <div class="med-dep-grid" id="ind_medDepGrid"></div>
+                  <div class="hint">Update a month if dependants joined or left partway through the year &mdash; the medical tax credit is calculated per month, then totalled.</div>
+                </div>
+                <div class="field">
+                  <label for="ind_medTotalContribInput" id="ind_medTotalContribLabel">Total contributions, per year</label>
+                  <div class="input-r"><input type="number" id="ind_medTotalContribInput" min="0" step="100" value="29400" inputmode="decimal"></div>
+                  <div class="hint">Total medical scheme contributions paid for the year, as shown on the medical aid tax certificate.</div>
+                </div>
+              </div>
+              <div class="qrow">
+                <div class="qtext">Did you pay other qualifying disability or medical expenses not covered by a scheme?</div>
+                <div class="yn" id="ind_otherMedYN" role="group" aria-label="Other medical expenses">
+                  <button type="button" data-val="yes" aria-pressed="false">Yes</button>
+                  <button type="button" data-val="no" aria-pressed="true">No</button>
+                </div>
+              </div>
+              <div class="qreveal" id="ind_otherMedReveal" hidden>
+                <div class="field">
+                  <label for="ind_expensesInput">Total amount of medical expenses not covered by medical aid, per year</label>
+                  <div class="input-r"><input type="number" id="ind_expensesInput" min="0" step="100" value="0" inputmode="decimal"></div>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
               <legend>Retirement</legend>
               <div class="qrow">
                 <div class="qtext">Did you, or a deemed employer, make retirement annuity fund contributions for yourself (pension, RA or provident)?</div>
@@ -560,42 +631,6 @@
                   <label for="ind_retInput" id="ind_retLabel">Retirement contribution, per year</label>
                   <div class="input-r"><input type="number" id="ind_retInput" min="0" step="50" value="27000" inputmode="decimal"></div>
                   <div class="hint">Deductible up to 27.5% of income, capped at <span data-fig="retCap">R430,000</span>/year &mdash; excess carries forward.</div>
-                </div>
-              </div>
-            </fieldset>
-
-            <fieldset>
-              <legend>Medical expenditure</legend>
-              <div class="qrow">
-                <div class="qtext">Did you or your employer pay medical scheme contributions where you're the main member?</div>
-                <div class="yn" id="ind_medYN" role="group" aria-label="Medical aid membership">
-                  <button type="button" data-val="yes" aria-pressed="true">Yes</button>
-                  <button type="button" data-val="no" aria-pressed="false">No</button>
-                </div>
-              </div>
-              <div class="qreveal" id="ind_medReveal">
-                <div class="two-col">
-                  <div class="field">
-                    <label for="ind_membersInput">People covered</label>
-                    <input type="number" id="ind_membersInput" min="0" step="1" value="1" inputmode="numeric">
-                  </div>
-                  <div class="field">
-                    <label for="ind_premiumInput">Premium, per month</label>
-                    <div class="input-r"><input type="number" id="ind_premiumInput" min="0" step="50" value="2450" inputmode="decimal"></div>
-                  </div>
-                </div>
-              </div>
-              <div class="qrow">
-                <div class="qtext">Did you pay other qualifying disability or medical expenses not covered by a scheme?</div>
-                <div class="yn" id="ind_otherMedYN" role="group" aria-label="Other medical expenses">
-                  <button type="button" data-val="yes" aria-pressed="false">Yes</button>
-                  <button type="button" data-val="no" aria-pressed="true">No</button>
-                </div>
-              </div>
-              <div class="qreveal" id="ind_otherMedReveal" hidden>
-                <div class="field">
-                  <label for="ind_expensesInput">Other qualifying medical expenses, per year</label>
-                  <div class="input-r"><input type="number" id="ind_expensesInput" min="0" step="100" value="0" inputmode="decimal"></div>
                 </div>
               </div>
             </fieldset>
@@ -1114,8 +1149,11 @@
     retInput: document.getElementById('ind_retInput'),
     retLabel: document.getElementById('ind_retLabel'),
     retReveal: document.getElementById('ind_retReveal'),
-    membersInput: document.getElementById('ind_membersInput'),
-    premiumInput: document.getElementById('ind_premiumInput'),
+    medSchemeName: document.getElementById('ind_medSchemeName'),
+    medMembershipNo: document.getElementById('ind_medMembershipNo'),
+    medDepGrid: document.getElementById('ind_medDepGrid'),
+    medTotalContribInput: document.getElementById('ind_medTotalContribInput'),
+    medTotalContribLabel: document.getElementById('ind_medTotalContribLabel'),
     medReveal: document.getElementById('ind_medReveal'),
     expensesInput: document.getElementById('ind_expensesInput'),
     otherMedReveal: document.getElementById('ind_otherMedReveal'),
@@ -1143,10 +1181,43 @@
     checklistBadge: document.getElementById('ind_checklistBadge')
   };
 
+  // South Africa's tax year always runs March to February, regardless of the
+  // "2025/2026" vs "2026/2027" edition selected elsewhere.
+  var MED_MONTHS = ['mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'jan', 'feb'];
+  var MED_MONTH_LABELS = { mar: 'MAR', apr: 'APR', may: 'MAY', jun: 'JUN', jul: 'JUL', aug: 'AUG', sep: 'SEP', oct: 'OCT', nov: 'NOV', dec: 'DEC', jan: 'JAN', feb: 'FEB' };
+
+  function renderMedDepGrid(){
+    ind.medDepGrid.innerHTML = '';
+    MED_MONTHS.forEach(function(m){
+      var field = document.createElement('div');
+      field.className = 'field';
+      field.innerHTML = '<label for="ind_medDep_' + m + '">' + MED_MONTH_LABELS[m] + '</label>' +
+        '<input type="number" id="ind_medDep_' + m + '" class="med-dep-input" min="0" step="1" value="1" inputmode="numeric">';
+      ind.medDepGrid.appendChild(field);
+    });
+    MED_MONTHS.forEach(function(m){
+      document.getElementById('ind_medDep_' + m).addEventListener('input', function(){ calcIndividual(); markDirty(); });
+    });
+  }
+  function getMedDependants(){
+    return MED_MONTHS.map(function(m){
+      var el = document.getElementById('ind_medDep_' + m);
+      return el ? Math.max(0, Math.round(numVal(el))) : 0;
+    });
+  }
+  function setMedDependants(arr){
+    MED_MONTHS.forEach(function(m, i){
+      var el = document.getElementById('ind_medDep_' + m);
+      if (el) el.value = (arr && arr[i] !== undefined && arr[i] !== null) ? arr[i] : 1;
+    });
+  }
+
   var indDisabilityYN = initYesNo('ind_disabilityYN', false, function(){ calcIndividual(); markDirty(); });
   var indIrp5YN = initYesNo('ind_irp5YN', true, function(v){ ind.irp5Warn.hidden = v; ind.irp5CountReveal.hidden = !v; markDirty(); });
   var indRetYN = initYesNo('ind_retYN', true, function(v){ ind.retReveal.hidden = !v; calcIndividual(); markDirty(); });
   var indMedYN = initYesNo('ind_medYN', true, function(v){ ind.medReveal.hidden = !v; calcIndividual(); markDirty(); });
+  ind.medSchemeName.addEventListener('input', function(){ markDirty(); });
+  ind.medMembershipNo.addEventListener('input', function(){ markDirty(); });
   var indOtherMedYN = initYesNo('ind_otherMedYN', false, function(v){ ind.otherMedReveal.hidden = !v; calcIndividual(); markDirty(); });
   var indDonationYN = initYesNo('ind_donationYN', false, function(v){ ind.donationReveal.hidden = !v; calcIndividual(); markDirty(); });
 
@@ -1266,7 +1337,9 @@
       irp5Count: irp5Rows.length,
       irp5Rows: irp5Rows.map(function(r){ return { employer: r.employer, gross: r.gross }; }),
       hasRet: indRetYN.get(), ret: ind.retInput.value,
-      hasMed: indMedYN.get(), members: ind.membersInput.value, premium: ind.premiumInput.value,
+      hasMed: indMedYN.get(),
+      medSchemeName: ind.medSchemeName.value, medMembershipNo: ind.medMembershipNo.value,
+      medDependants: getMedDependants(), medTotalContrib: ind.medTotalContribInput.value,
       hasOtherMed: indOtherMedYN.get(), expenses: ind.expensesInput.value,
       hasDonation: indDonationYN.get(), donation: ind.donationInput.value,
       flags: getFlagState()
@@ -1284,8 +1357,23 @@
     if (s.ret !== undefined) ind.retInput.value = s.ret;
     indMedYN.set(s.hasMed !== undefined ? !!s.hasMed : true, true);
     ind.medReveal.hidden = !indMedYN.get();
-    if (s.members !== undefined) ind.membersInput.value = s.members;
-    if (s.premium !== undefined) ind.premiumInput.value = s.premium;
+    ind.medSchemeName.value = s.medSchemeName || '';
+    ind.medMembershipNo.value = s.medMembershipNo || '';
+    if (s.medDependants && s.medDependants.length === 12){
+      setMedDependants(s.medDependants);
+    } else if (s.members !== undefined){
+      var flatMembers = Math.max(0, Math.round(parseFloat(s.members)) || 0);
+      setMedDependants(MED_MONTHS.map(function(){ return flatMembers; }));
+    } else {
+      setMedDependants(MED_MONTHS.map(function(){ return 1; }));
+    }
+    if (s.medTotalContrib !== undefined){
+      ind.medTotalContribInput.value = s.medTotalContrib;
+    } else if (s.premium !== undefined){
+      ind.medTotalContribInput.value = round2((parseFloat(s.premium) || 0) * 12);
+    } else {
+      ind.medTotalContribInput.value = 29400;
+    }
     indOtherMedYN.set(s.hasOtherMed !== undefined ? !!s.hasOtherMed : (parseFloat(s.expenses) > 0), true);
     ind.otherMedReveal.hidden = !indOtherMedYN.get();
     if (s.expenses !== undefined) ind.expensesInput.value = s.expenses;
@@ -1315,8 +1403,8 @@
 
     var grossAnnual = numVal(ind.grossInput) * freqMult;
     var retContribAnnual = indRetYN.get() ? numVal(ind.retInput) * freqMult : 0;
-    var members = indMedYN.get() ? Math.max(0, Math.round(numVal(ind.membersInput))) : 0;
-    var premiumMonthly = indMedYN.get() ? numVal(ind.premiumInput) : 0;
+    var medDependantsArr = indMedYN.get() ? getMedDependants() : MED_MONTHS.map(function(){ return 0; });
+    var medicalContribAnnual = indMedYN.get() ? numVal(ind.medTotalContribInput) : 0;
     var otherMedicalAnnual = indOtherMedYN.get() ? numVal(ind.expensesInput) : 0;
     var donationAnnual = indDonationYN.get() ? numVal(ind.donationInput) : 0;
 
@@ -1338,13 +1426,18 @@
     if (ageBand === '75plus') rebate += T.rebateSecondary + T.rebateTertiary;
     var taxAfterRebates = Math.max(0, taxBeforeRebates - rebate);
 
-    var msftcMonthly = 0;
-    if (members >= 1) msftcMonthly += T.msftcFirstTwo;
-    if (members >= 2) msftcMonthly += T.msftcFirstTwo;
-    if (members > 2) msftcMonthly += T.msftcAdditional * (members - 2);
-    var msftcAnnual = msftcMonthly * 12;
+    function msftcForMonth(count){
+      var v = 0;
+      if (count >= 1) v += T.msftcFirstTwo;
+      if (count >= 2) v += T.msftcFirstTwo;
+      if (count > 2) v += T.msftcAdditional * (count - 2);
+      return v;
+    }
+    var msftcAnnual = medDependantsArr.reduce(function(sum, count){ return sum + msftcForMonth(count); }, 0);
+    var maxDependants = medDependantsArr.length ? Math.max.apply(null, medDependantsArr) : 0;
+    var minDependants = medDependantsArr.length ? Math.min.apply(null, medDependantsArr) : 0;
+    var medDependantsDisplay = maxDependants === minDependants ? String(maxDependants) : (minDependants + '\u2013' + maxDependants);
 
-    var medicalContribAnnual = premiumMonthly * 12;
     var qualifies = ageBand !== 'under65' || hasDisability;
     var amtc;
     if (qualifies){
@@ -1407,8 +1500,8 @@
       : (donationExcess === 0
         ? 'Donation deduction within the 10% of income cap'
         : 'Donation deduction capped <b>(' + fmtR(donationExcess, 0) + ' carried forward)</b>')));
-    ind.checklist.appendChild(checklistItem(true, members > 0
-      ? 'Medical tax credits calculated <b>(' + members + ' member' + (members === 1 ? '' : 's') + ')</b>'
+    ind.checklist.appendChild(checklistItem(true, maxDependants > 0
+      ? 'Medical tax credits calculated <b>(' + medDependantsDisplay + ' dependant' + (maxDependants === 1 && minDependants === 1 ? '' : 's') + ' per month)</b>'
       : 'No medical aid captured'));
     ind.checklist.appendChild(checklistItem(monthlyGross <= T.uifCeiling, monthlyGross <= T.uifCeiling
       ? 'UIF calculated at 1% of gross'
@@ -1422,7 +1515,8 @@
     ind.last = {
       ageBand: ageBand, disability: hasDisability, freq: indFreq, irp5: indIrp5YN.get(),
       grossAnnual: grossAnnual, retContribAnnual: retContribAnnual, retDeduction: retDeduction, retExcess: retExcess,
-      members: members, premiumMonthly: premiumMonthly, otherMedicalAnnual: otherMedicalAnnual,
+      medSchemeName: indMedYN.get() ? ind.medSchemeName.value : '', medMembershipNo: indMedYN.get() ? ind.medMembershipNo.value : '',
+      medDependantsDisplay: medDependantsDisplay, medicalContribAnnual: medicalContribAnnual, otherMedicalAnnual: otherMedicalAnnual,
       donationAnnual: donationAnnual, donationDeduction: donationDeduction, donationExcess: donationExcess,
       taxableIncome: taxableIncome, taxBeforeRebates: taxBeforeRebates, bracketIndex: bracketIndex, marginalRate: marginalRate,
       rebate: rebate, msftcAnnual: msftcAnnual, amtc: amtc, totalMedicalCredit: totalMedicalCredit,
@@ -1511,7 +1605,7 @@
   }
   ind.freqAnnual.addEventListener('click', function(){ setIndFrequency('annual'); calcIndividual(); markDirty(); });
   ind.freqMonthly.addEventListener('click', function(){ setIndFrequency('monthly'); calcIndividual(); markDirty(); });
-  [ind.ageBand, ind.grossInput, ind.retInput, ind.membersInput, ind.premiumInput, ind.expensesInput, ind.donationInput]
+  [ind.ageBand, ind.grossInput, ind.retInput, ind.medTotalContribInput, ind.expensesInput, ind.donationInput]
     .forEach(function(input){ input.addEventListener('input', function(){ calcIndividual(); markDirty(); }); input.addEventListener('change', function(){ calcIndividual(); markDirty(); }); });
 
   // ================= COMPANY =================
@@ -2193,12 +2287,25 @@
   function slug(s){ return (s || '').replace(/[\\/:*?"<>|]/g, '').trim(); }
 
   function pdfBrandHeader(doc){
-    doc.setFillColor.apply(doc, C_GOLD);
-    doc.triangle(MARGIN, 34, MARGIN + 13, 58, MARGIN - 11, 58, 'F');
+    // Embed the actual logo image used elsewhere in the app (sidebar/auth screen)
+    // instead of a hand-drawn approximation, so the PDF always matches whichever
+    // logo is currently in use. Falls back to the old triangle mark if that ever fails.
+    var placedLogo = false;
+    try {
+      var logoImg = document.querySelector('.brand-mark');
+      if (logoImg && logoImg.src && logoImg.src.indexOf('data:image') === 0){
+        doc.addImage(logoImg.src, 'PNG', MARGIN - 2, 24, 23.7, 26);
+        placedLogo = true;
+      }
+    } catch (e) { placedLogo = false; }
+    if (!placedLogo){
+      doc.setFillColor.apply(doc, C_GOLD);
+      doc.triangle(MARGIN, 34, MARGIN + 13, 58, MARGIN - 11, 58, 'F');
+    }
     doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor.apply(doc, C_NAVY);
-    doc.text('RECONI', MARGIN + 22, 47);
+    doc.text('RECONI', MARGIN + 26, 47);
     doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor.apply(doc, C_GOLD);
-    doc.text('T A X', MARGIN + 22, 57);
+    doc.text('T A X', MARGIN + 26, 57);
     doc.setDrawColor.apply(doc, C_HAIR); doc.setLineWidth(1);
     doc.line(MARGIN, 72, PAGE_W - MARGIN, 72);
     return 90;
@@ -2343,8 +2450,9 @@
       y = pdfKvRow(doc, y, 'Age', AGE_LABEL[r.ageBand] + (r.disability ? ', qualifying disability' : ''));
       y = pdfKvRow(doc, y, 'Gross salary, per year', fmtR(r.grossAnnual));
       y = pdfKvRow(doc, y, 'Retirement contribution, per year', fmtR(r.retContribAnnual));
-      y = pdfKvRow(doc, y, 'Medical aid members', String(r.members));
-      y = pdfKvRow(doc, y, 'Medical aid premium, per month', fmtR(r.premiumMonthly));
+      if (r.medSchemeName){ y = pdfKvRow(doc, y, 'Medical scheme', r.medSchemeName + (r.medMembershipNo ? (' (No. ' + r.medMembershipNo + ')') : '')); }
+      y = pdfKvRow(doc, y, 'Dependants covered, per month', r.medDependantsDisplay || '0');
+      y = pdfKvRow(doc, y, 'Medical aid total contributions, per year', fmtR(r.medicalContribAnnual));
       y = pdfKvRow(doc, y, 'Other qualifying medical expenses, per year', fmtR(r.otherMedicalAnnual));
       y = pdfKvRow(doc, y, 'Donations made, per year', fmtR(r.donationAnnual), { rule: false });
       y += 14;
@@ -2551,6 +2659,7 @@
   populateTaxYearSelect();
   updateFigureSpans();
   buildIndBracketRows();
+  renderMedDepGrid();
   renderIrp5Rows();
   calcIndividual();
   calcCompany();
