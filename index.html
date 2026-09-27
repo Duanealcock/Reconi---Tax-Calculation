@@ -1,17 +1,22 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tax Questionnaire — RECONI Tax</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RECONI Tax for Individuals</title>
 <style>
-  :root{
+  html, body{ margin: 0; padding: 0; }
+  [hidden]{ display: none !important; }
+  .app{
     --navy-900: #0e1526;
+    --navy-800: #141c33;
+    --navy-700: #1b2540;
     --gold: #e0a83c;
     --gold-ink: #96650f;
     --gold-soft: #fbeed2;
     --blue: #3366ee;
     --blue-dark: #2650c4;
+    --green: #17a34a;
     --page-bg: #eef1f6;
     --surface: #ffffff;
     --surface-2: #f6f8fb;
@@ -19,257 +24,1050 @@
     --ink-2: #545b68;
     --ink-muted: #8a93a6;
     --border: #e3e6ec;
+    --hairline: #eceff3;
     --shadow: 0 1px 3px rgba(16,24,40,0.05), 0 1px 2px rgba(16,24,40,0.03);
+    color-scheme: light;
+    background: var(--page-bg);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    line-height: 1.45;
+    min-height: 100vh;
   }
-  *{ box-sizing: border-box; }
-  body{
-    margin: 0; background: var(--page-bg); color: var(--ink);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    font-size: 14px; line-height: 1.45;
+  .app *{ box-sizing: border-box; }
+  .app, .app input, .app select, .app button{ font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+
+  .shell{ display: grid; grid-template-columns: 252px 1fr; min-height: 100vh; }
+  @media (max-width: 860px){ .shell{ grid-template-columns: 1fr; } }
+
+  /* ---------------- sidebar ---------------- */
+  .sidebar{
+    background: var(--navy-900); color: #fff; padding: 20px 14px 28px;
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
+    display: flex; flex-direction: column;
   }
-  header.top{
-    background: var(--navy-900); color: #fff; padding: 22px 20px;
+  .sidebar-account{
+    margin-top: auto; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
   }
-  .top-inner{ max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
-  .brand-mark{ flex: none; }
-  .brand-text .wordmark{ font-weight: 800; font-size: 16px; letter-spacing: 0.02em; }
-  .brand-text .wordmark .r2{ color: var(--gold); }
-  .brand-text .sub{ font-size: 12px; color: #c7cee3; margin-top: 2px; }
-  main{ max-width: 640px; margin: 0 auto; padding: 22px 16px 60px; }
-  .intro{
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-    padding: 16px 18px; margin-bottom: 18px; box-shadow: var(--shadow);
+  .sidebar-account .acct-email{ font-size: 11.5px; color: #97a0b5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sidebar-account button{
+    flex: none; background: none; border: 1px solid rgba(255,255,255,0.14); color: #dfe6ff;
+    border-radius: 7px; padding: 6px 9px; font-size: 11.5px; font-weight: 600; cursor: pointer;
   }
-  .intro h1{ font-size: 18px; margin: 0 0 8px; }
-  .intro p{ margin: 0 0 8px; color: var(--ink-2); }
-  .intro p:last-child{ margin-bottom: 0; }
-  .card{
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-    padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow);
+  .sidebar-account button:hover{ background: rgba(255,255,255,0.07); }
+
+  .auth-gate{
+    position: fixed; inset: 0; z-index: 1000;
+    background: var(--navy-900); display: flex; align-items: center; justify-content: center; padding: 20px;
   }
-  .card h2{ font-size: 15px; margin: 0 0 4px; }
-  .card .hint-top{ font-size: 12.5px; color: var(--ink-muted); margin: 0 0 14px; }
-  .field{ margin-bottom: 14px; }
-  .field:last-child{ margin-bottom: 0; }
-  .field label{ display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-  .field input[type="text"], .field input[type="email"], .field input[type="number"], .field select{
-    width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
-    font-size: 14px; font-family: inherit; background: var(--surface-2); color: var(--ink);
+  .auth-gate[hidden]{ display: none !important; }
+  .auth-card{
+    width: 100%; max-width: 360px; background: var(--navy-800); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; padding: 30px 26px; color: #fff; box-sizing: border-box;
   }
-  .field input:focus, .field select:focus{ outline: 2px solid var(--blue); outline-offset: 1px; }
-  .field .hint{ font-size: 12px; color: var(--ink-muted); margin-top: 6px; }
-  .two-col{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  @media (max-width: 480px){ .two-col{ grid-template-columns: 1fr; } }
-  .qrow{ display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 12px 0; border-top: 1px solid var(--border); }
-  .qrow:first-of-type{ border-top: 0; padding-top: 0; }
-  .qtext{ font-size: 13.5px; font-weight: 500; flex: 1; }
+  .auth-brand{ display: flex; flex-direction: column; align-items: center; margin-bottom: 24px; }
+  .auth-brand img{ margin-bottom: 8px; }
+  .auth-brand .wordmark{ font-weight: 800; font-size: 16.5px; letter-spacing: 0.02em; }
+  .auth-brand .wordmark .r2{ color: var(--gold); text-transform: uppercase; }
+  .auth-card h1{ font-size: 17px; margin: 0 0 18px; text-align: left; }
+  .auth-card .field{ text-align: left; margin-bottom: 14px; }
+  .auth-card label{ display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 6px; color: #c7cee3; }
+  .auth-card input{
+    width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,0.14); border-radius: 8px;
+    padding: 10px 12px; font-size: 14px; background: rgba(255,255,255,0.05); color: #fff;
+  }
+  .auth-card input:focus{ outline: 2px solid var(--blue); outline-offset: 1px; }
+  .auth-submit{
+    width: 100%; background: var(--blue); color: #fff; border: 0; border-radius: 9px;
+    font-size: 14px; font-weight: 700; padding: 11px; cursor: pointer; margin-top: 4px;
+  }
+  .auth-submit:hover{ background: var(--blue-dark); }
+  .auth-submit:disabled{ opacity: 0.5; cursor: not-allowed; }
+  .auth-status{ font-size: 12.5px; font-weight: 600; border-radius: 8px; padding: 9px 11px; margin-top: 12px; text-align: left; }
+  .auth-status[hidden]{ display: none !important; }
+  .auth-status.ok{ background: rgba(23,163,74,0.18); color: #7be3a0; }
+  .auth-status.err{ background: rgba(224,168,60,0.18); color: var(--gold); }
+  .auth-toggle{ margin-top: 16px; font-size: 12.5px; color: #97a0b5; text-align: left; }
+  .auth-toggle button{ background: none; border: 0; color: var(--gold); font-weight: 700; cursor: pointer; font-size: 12.5px; padding: 0 0 0 4px; }
+  .auth-card p{ font-size: 13px; color: #c7cee3; line-height: 1.5; text-align: left; margin: 0 0 18px; }
+  .auth-signout{
+    background: none; border: 1px solid rgba(255,255,255,0.14); color: #fff; border-radius: 8px;
+    padding: 9px; width: 100%; margin-top: 10px; cursor: pointer; font-size: 13px; font-weight: 600;
+  }
+  .auth-signout:hover{ background: rgba(255,255,255,0.06); }
+  @media (max-width: 860px){ .sidebar{ position: static; height: auto; padding: 16px 14px 18px; } }
+  .brand{ display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; }
+  .brand svg, .brand img{ flex: none; }
+  .brand .wordmark{ line-height: 1.15; }
+  .brand .wordmark .r1{ font-weight: 800; font-size: 16.5px; letter-spacing: 0.01em; color: #fff; }
+  .brand .wordmark .r2{ font-weight: 700; font-size: 10.5px; letter-spacing: 0.16em; color: var(--gold); text-transform: uppercase; }
+  nav.navgroups{ display: flex; flex-direction: column; gap: 18px; }
+  @media (max-width: 860px){ nav.navgroups{ flex-direction: row; flex-wrap: wrap; gap: 14px 20px; padding: 0 8px; } }
+  .navgroup .label{ font-size: 10.5px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: #7c8598; padding: 0 12px 8px; }
+  @media (max-width: 860px){ .navgroup .label{ padding: 0 0 6px; } }
+  .navgroup .items{ display: flex; flex-direction: column; gap: 2px; }
+  @media (max-width: 860px){ .navgroup .items{ flex-direction: row; flex-wrap: wrap; gap: 6px; } }
+  .navitem{
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px;
+    color: #cbd2e1; text-decoration: none; font-size: 13.5px; font-weight: 500;
+    border-left: 3px solid transparent; cursor: pointer; background: none; border-top:0; border-right:0; border-bottom:0; width:100%; text-align:left;
+  }
+  .navitem svg{ flex: none; opacity: 0.85; }
+  .navitem:hover{ background: rgba(255,255,255,0.05); color: #fff; }
+  .navitem.active{ background: var(--navy-700); color: #fff; border-left-color: var(--gold); }
+  @media (max-width: 860px){
+    .navitem{ border-left: none; border-bottom: 2px solid transparent; padding: 7px 10px; width:auto; }
+    .navitem.active{ border-bottom-color: var(--gold); }
+  }
+
+  /* ---------------- content ---------------- */
+  .content{ padding: 28px 32px 60px; min-width: 0; }
+  @media (max-width: 640px){ .content{ padding: 20px 16px 48px; } }
+
+  .page-head{ margin-bottom: 18px; }
+  .page-head h1{ font-size: 26px; font-weight: 800; letter-spacing: -0.01em; margin: 0 0 4px; color: var(--ink); }
+  .page-head .sub{ color: var(--blue); font-size: 14.5px; font-weight: 500; }
+  .page-head .desc{ color: var(--ink-2); font-size: 13.5px; margin-top: 6px; max-width: 68ch; }
+
+  /* ---------------- ribbon ---------------- */
+  .ribbon{
+    background: linear-gradient(180deg, #3d70f4, var(--blue-dark));
+    border-radius: 12px; padding: 10px 12px; margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    box-shadow: var(--shadow);
+  }
+  .ribbon-tabs{ display: flex; gap: 3px; background: rgba(255,255,255,0.15); border-radius: 9px; padding: 3px; }
+  .rtab{ border: 0; background: transparent; color: #dbe4fd; font-size: 13px; font-weight: 600; padding: 7px 14px; border-radius: 7px; cursor: pointer; white-space: nowrap; }
+  .rtab:hover{ background: rgba(255,255,255,0.14); color: #fff; }
+  .rtab.active{ background: #fff; color: var(--blue-dark); }
+  .ribbon-client{ display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .ribbon-client select{
+    background: #fff; border: 0; border-radius: 7px; padding: 7px 10px; font-size: 12.5px; font-weight: 600;
+    color: var(--ink); min-width: 150px; max-width: 220px;
+  }
+  .rbtn{ border: 0; background: rgba(255,255,255,0.16); color: #fff; font-size: 12.5px; font-weight: 600; padding: 7px 12px; border-radius: 7px; cursor: pointer; white-space: nowrap; }
+  .rbtn:hover{ background: rgba(255,255,255,0.27); }
+  .rbtn.primary{ background: #fff; color: var(--blue-dark); }
+  .rbtn.primary:hover{ background: #eef1ff; }
+  .rbtn:disabled{ opacity: 0.45; cursor: not-allowed; }
+  .save-status{ font-size: 11.5px; color: #dfe6ff; font-weight: 500; white-space: nowrap; }
+  .new-client-form{ display: flex; gap: 6px; align-items: center; }
+  .new-client-form input{ border: 0; border-radius: 7px; padding: 7px 10px; font-size: 12.5px; min-width: 140px; }
+
+  /* ---------------- sidebar: client switcher ---------------- */
+  .sidebar-add{
+    display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%;
+    background: var(--gold-soft); color: var(--gold-ink); border: 0; border-radius: 8px;
+    font-size: 12.5px; font-weight: 700; padding: 9px 10px; cursor: pointer; margin: 0 0 8px;
+  }
+  .sidebar-add:hover{ background: #fbe4b8; }
+  .sidebar-add:disabled{ opacity: 0.5; cursor: not-allowed; }
+  .sidebar-clientbtn{
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;
+    background: var(--navy-700); color: #fff; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+    font-size: 12.5px; font-weight: 600; padding: 9px 10px; cursor: pointer; margin: 0 0 16px; text-align: left;
+  }
+  .sidebar-clientbtn:hover{ background: #223056; }
+  .sidebar-clientbtn:disabled{ opacity: 0.5; cursor: not-allowed; }
+  .sidebar-clientbtn .cs-name{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #fff; }
+  .sidebar-clientbtn .cs-name.placeholder{ color: #97a0b5; font-weight: 500; }
+  .sidebar-clientbtn .chev{ flex: none; transition: transform .15s; opacity: .7; }
+  .sidebar-clientbtn.open .chev{ transform: rotate(180deg); }
+
+  .client-panel{
+    background: var(--navy-800); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+    padding: 10px; margin: -8px 0 16px;
+  }
+  .client-panel-search input{
+    width: 100%; background: var(--navy-700); border: 1px solid rgba(255,255,255,0.1); border-radius: 7px;
+    color: #fff; font-size: 12.5px; padding: 7px 9px; margin-bottom: 8px;
+  }
+  .client-panel-search input::placeholder{ color: #7c8598; }
+  .client-panel-list{ display: flex; flex-direction: column; gap: 2px; max-height: 220px; overflow-y: auto; margin-bottom: 8px; }
+  .client-row{
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    background: none; border: 0; border-radius: 7px; padding: 8px 9px; cursor: pointer; text-align: left;
+    color: #dbe0ee; font-size: 12.5px; font-weight: 500;
+  }
+  .client-row:hover{ background: rgba(255,255,255,0.06); color: #fff; }
+  .client-row.active{ background: var(--navy-700); color: #fff; box-shadow: inset 3px 0 0 0 var(--gold); }
+  .client-row .dot{ width: 6px; height: 6px; border-radius: 50%; background: #4a5578; flex: none; }
+  .client-row.active .dot{ background: var(--gold); }
+  .client-row span:last-child{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .client-panel-empty{ color: #7c8598; font-size: 12px; padding: 8px 9px; }
+  .client-panel-add{ display: flex; gap: 6px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px; }
+  .client-panel-add input{
+    flex: 1; background: var(--navy-700); border: 1px solid rgba(255,255,255,0.1); border-radius: 7px;
+    color: #fff; font-size: 12.5px; padding: 7px 9px; min-width: 0;
+  }
+  .client-panel-add input::placeholder{ color: #7c8598; }
+  .client-panel-add button{
+    border: 0; background: var(--gold); color: #3a2707; font-size: 12px; font-weight: 700;
+    padding: 7px 10px; border-radius: 7px; cursor: pointer; white-space: nowrap;
+  }
+  .client-panel-add button:hover{ background: #ecb956; }
+
+  /* ---------------- questionnaire ---------------- */
+  .qrow{ display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 13px; }
+  .qrow .qtext{ font-size: 13px; font-weight: 600; color: var(--ink); flex: 1; padding-top: 6px; }
+  .qrow .qtext .qhint{ display: block; font-size: 11.5px; font-weight: 400; color: var(--ink-muted); margin-top: 4px; line-height: 1.4; }
   .yn{ display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; flex: none; }
-  .yn button{
-    border: 0; background: var(--surface); color: var(--ink-2); font-size: 12.5px; font-weight: 700;
-    padding: 8px 14px; cursor: pointer;
-  }
-  .yn button[aria-pressed="true"]{ background: var(--blue); color: #fff; }
+  .yn button{ font-size: 12.5px; font-weight: 600; padding: 6px 15px; border: 0; background: var(--surface-2); color: var(--ink-2); cursor: pointer; }
   .yn button + button{ border-left: 1px solid var(--border); }
-  .qreveal{ border-left: 2px solid var(--border); padding: 2px 0 2px 14px; margin: 4px 0 14px 2px; }
+  .yn button[aria-pressed="true"]{ background: var(--blue); color: #fff; }
+  .qreveal{ border-left: 2px solid var(--border); padding-left: 13px; margin: -2px 0 16px 2px; }
   .qreveal[hidden]{ display: none !important; }
-  .freq-toggle{ display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
-  .freq-toggle button{ border: 0; background: var(--surface); color: var(--ink-2); font-size: 12.5px; font-weight: 700; padding: 8px 14px; cursor: pointer; }
-  .freq-toggle button[aria-pressed="true"]{ background: var(--blue); color: #fff; }
-  .freq-toggle button + button{ border-left: 1px solid var(--border); }
-  .warn-banner{ background: var(--gold-soft); color: var(--gold-ink); border-radius: 8px; padding: 10px 12px; font-size: 12.5px; font-weight: 500; margin: 10px 0 0; }
+  .card-sub{ font-size: 11.5px; color: var(--ink-muted); font-weight: 500; }
+  .warn-banner{ background: var(--gold-soft); color: var(--gold-ink); border-radius: 8px; padding: 10px 12px; font-size: 12.5px; font-weight: 500; line-height: 1.4; margin: -4px 0 16px; }
   .warn-banner[hidden]{ display: none !important; }
-  .flag-list{ display: flex; flex-direction: column; gap: 10px; }
-  .check-row{ display: flex; align-items: flex-start; gap: 10px; }
-  .check-row input[type="checkbox"]{ margin-top: 2px; flex: none; width: 17px; height: 17px; accent-color: var(--blue); }
-  .check-row label{ font-size: 13px; color: var(--ink-2); }
-  .submit-card{ text-align: center; }
-  .submit-btn{
-    display: inline-flex; align-items: center; gap: 8px; background: var(--blue); color: #fff;
-    border: 0; border-radius: 9px; font-size: 14.5px; font-weight: 700; padding: 13px 22px; cursor: pointer;
+  .card-head-text{ display: flex; flex-direction: column; gap: 2px; }
+  .card-head-text .card-sub{ margin: 0; }
+  .card-btn{
+    display: inline-flex; align-items: center; gap: 6px; flex: none;
+    background: var(--gold-soft); color: var(--gold-ink); border: 0; border-radius: 7px;
+    font-size: 12px; font-weight: 700; padding: 8px 12px; cursor: pointer; white-space: nowrap;
   }
-  .submit-btn:hover{ background: var(--blue-dark); }
-  .submit-note{ font-size: 12.5px; color: var(--ink-muted); margin-top: 10px; }
-  .status-msg{ border-radius: 9px; padding: 12px 14px; font-size: 13px; font-weight: 600; margin-top: 14px; }
-  .status-msg[hidden]{ display: none !important; }
-  .status-msg.ok{ background: #e5f6ea; color: #157a3a; }
-  .status-msg.err{ background: var(--gold-soft); color: var(--gold-ink); }
-  .req{ color: var(--gold-ink); }
-  footer.foot{ max-width: 640px; margin: 0 auto; padding: 0 16px 40px; font-size: 11.5px; color: var(--ink-muted); text-align: center; }
+  .card-btn:hover{ background: #fbe4b8; }
+  .card-btn:disabled{ opacity: 0.5; cursor: not-allowed; }
+  .import-status{ font-size: 12px; font-weight: 600; border-radius: 8px; padding: 9px 12px; margin: -2px 0 16px; line-height: 1.4; }
+  .import-status[hidden]{ display: none !important; }
+  .import-status.ok{ background: #e5f6ea; color: #157a3a; }
+  .import-status.err{ background: var(--gold-soft); color: var(--gold-ink); }
+  .flag-list{ display: flex; flex-direction: column; gap: 9px; }
+  .flag-list .check-row{ padding: 1px 0; }
+  .flag-list .check-row label{ font-size: 12.5px; }
+
+  .card{ background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 20px; }
+  .card-head{ display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .card-head h2{ font-size: 15px; font-weight: 700; margin: 0; color: var(--ink); }
+
+  .stat-row{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+  @media (max-width: 900px){ .stat-row{ grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 480px){ .stat-row{ grid-template-columns: 1fr; } }
+  .stat{ background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 16px 18px; }
+  .stat .k{ font-size: 10.5px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 10px; }
+  .stat .v{ font-size: 25px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1; }
+  .stat .c{ font-size: 12.5px; color: var(--ink-muted); margin-top: 8px; }
+
+  .two-col-row{ display: grid; grid-template-columns: minmax(300px, 380px) 1fr; gap: 16px; margin-bottom: 16px; align-items: start; }
+  @media (max-width: 860px){ .two-col-row{ grid-template-columns: 1fr; } }
+
+  fieldset{ border: 0; padding: 0; margin: 0 0 20px; }
+  fieldset:last-of-type{ margin-bottom: 0; }
+  legend{ font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); padding: 0 0 9px; width: 100%; border-bottom: 1px solid var(--hairline); margin-bottom: 13px; }
+  .field{ margin-bottom: 13px; }
+  .field:last-child{ margin-bottom: 0; }
+  .field label{ display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: var(--ink); }
+  .field .hint{ font-size: 11.5px; color: var(--ink-muted); margin-top: 5px; line-height: 1.4; }
+  .input-r{ position: relative; }
+  .input-r::before{ content: "R"; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-muted); font-size: 13px; pointer-events: none; font-weight: 600; }
+  .input-r input{ padding-left: 25px; }
+  input[type=number], input[type=text], select{
+    width: 100%; font-size: 13.5px; color: var(--ink); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 11px; appearance: none; -webkit-appearance: none;
+  }
+  input:focus, select:focus{ outline: 2px solid var(--blue); outline-offset: 1px; }
+  .freq-toggle{ display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .freq-toggle button{ font-size: 12.5px; font-weight: 600; padding: 6px 13px; border: 0; background: var(--surface-2); color: var(--ink-2); cursor: pointer; }
+  .freq-toggle button + button{ border-left: 1px solid var(--border); }
+  .freq-toggle button[aria-pressed="true"]{ background: var(--blue); color: #fff; }
+  .check-row{ display: flex; align-items: flex-start; gap: 9px; }
+  .check-row input{ margin-top: 3px; accent-color: var(--blue); width: 15px; height: 15px; flex: none; }
+  .check-row label{ font-size: 13px; font-weight: 400; margin: 0; }
+  .two-col{ display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+
+  .ledger-row{ display: flex; align-items: baseline; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--hairline); font-size: 13px; }
+  .ledger-row .desc{ color: var(--ink-2); white-space: nowrap; }
+  .ledger-row .fill{ flex: 1; border-bottom: 1px dotted #cfd4dc; opacity: 0.8; transform: translateY(-3px); }
+  .ledger-row .amt{ font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; color: var(--ink); }
+  .ledger-row.total{ border-bottom: none; border-top: 2px solid var(--ink); padding-top: 11px; margin-top: 3px; }
+  .ledger-row.total .desc{ color: var(--ink); font-weight: 700; }
+  .ledger-row.total .amt{ font-size: 15.5px; }
+  .ledger-row .note{ display: block; font-size: 11px; color: var(--ink-muted); font-weight: 400; }
+
+  .bar{ display: flex; width: 100%; height: 32px; border-radius: 8px; overflow: hidden; background: var(--surface-2); border: 1px solid var(--border); }
+  .bar-seg{ height: 100%; min-width: 3px; box-shadow: inset -2px 0 0 0 var(--surface); }
+  .bar-seg:last-child{ box-shadow: none; }
+  .legend{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin-top: 14px; }
+  @media (max-width: 480px){ .legend{ grid-template-columns: 1fr; } }
+  .legend-item{ display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+  .swatch{ width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .legend-item .name{ color: var(--ink-2); flex: 1; }
+  .legend-item .amt{ font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); }
+  .legend-item .pct{ color: var(--ink-muted); font-size: 11.5px; width: 38px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  .badge{ display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; padding: 7px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .badge.warn{ background: var(--gold-soft); color: var(--gold-ink); }
+  .badge.ok{ background: #e5f6ea; color: #157a3a; }
+  .checklist{ display: flex; flex-direction: column; gap: 10px; margin:0; padding:0; }
+  .checklist li{ display: flex; align-items: flex-start; gap: 9px; font-size: 13px; list-style: none; }
+  .checklist .ico{ flex: none; margin-top: 1px; }
+  .checklist .ico.good{ color: var(--green); }
+  .checklist .ico.warn{ color: var(--gold-ink); }
+  .checklist .txt{ color: var(--ink); }
+  .checklist .txt b{ color: var(--ink-muted); font-weight: 600; }
+  .checklist .txt a{ color: var(--blue); font-weight: 600; text-decoration: none; }
+
+  table.brackets{ width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.brackets th{ text-align: left; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-muted); font-weight: 700; padding: 0 10px 9px; border-bottom: 1px solid var(--hairline); }
+  table.brackets td{ padding: 10px; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+  table.brackets td:first-child, table.brackets th:first-child{ padding-left: 0; }
+  table.brackets .range, table.brackets .formula{ font-variant-numeric: tabular-nums; font-size: 12.5px; }
+  table.brackets tr.current td{ background: #eef3ff; }
+  table.brackets tr.current td:first-child{ box-shadow: inset 3px 0 0 0 var(--blue); }
+  .table-wrap{ overflow-x: auto; }
+  .flat-rate-box{ background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; font-size: 13.5px; }
+  .flat-rate-box b{ font-size: 18px; color: var(--ink); }
+
+  details.notes summary{ cursor: pointer; font-size: 14px; font-weight: 700; color: var(--ink); list-style: none; }
+  details.notes summary::-webkit-details-marker{ display: none; }
+  details.notes .body{ font-size: 13px; color: var(--ink-2); margin-top: 12px; line-height: 1.65; }
+  details.notes .body p{ margin: 0 0 10px; }
+  details.notes .body strong{ color: var(--ink); }
+
+  .disclaimer-block{
+    margin-top: 16px; font-size: 12px; color: var(--ink-muted); line-height: 1.6;
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap;
+  }
+  .disclaimer-block .footer-brand{ font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #b7bdc9; white-space: nowrap; }
+  .full{ margin-bottom: 16px; }
 </style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<header class="top">
-  <div class="top-inner">
-    <img class="brand-mark" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJEAAACgCAMAAAA7IH4ZAAADAFBMVEVHcEwGCiP8+LkRFRkECRb//+gFChMDAANdUWI0NDQIDCQNFy4IEy6dgUMIEisRGC4UGi2Ue0BOTESNeUkTHDIIFTCYg0+AdFMHFDAJEy0IFS8QGTBrZFOGdUsIFDCdgUAIFjMJFDAIEzAHEy8JFjEHFTEHEzB5dGCmlWaOdkAIFTAJEy9xd3FneIIHEzBdWElVVVILFjAHEzCPeUa2l1IIFjFceZKEdlKllGkKFjGLhGlzjJs7PkGTg1xgYFtFRkM4P0pFSlN6io6vnW1/iINrkLEVKD+afj1GTVWtmmd6blD/AABARk6FhncACC2hgjweKTuPdjyGcT5bWFAxQWJ4bVEzO0eJfFhtYUSChXmKfFmohjqTeDwmLTxNaH4IFjEJFzIADS8KGDIJGDQIFjM2YbcqVKx+cVCCcEcACC1kWUFCb8QmT6h8dFw8Z70/ar44ZLuBbD4wWa53Zj+biFh0aU+YfkWQfE1Dbb2CdFAzXbIkS6EdQ5igjVx8bkxvdHmWg1WGeFZ8eW1eY2lgbH5FZaGTekAzVJgwXbhobHB6akZhcYt3b1pIaakYPZCGc0cgR52FcEBgXFI7YatwY0VZcZxgeKCMdUFPY4WUgE7aqUQoS5U+W5VXdq4sWLUdPYRJYpBoZ2NcZnadg0fhtFQ4UoZTXnBwbmbhr0c3W6J1c2yHf2lHc8VpeJJNVmXLmDN4e3wDEzEsUqFPapolRIlFW4ZefbLSnzhxa1paU0KEgXZveIY/Z7RPb6uOf1sUNYIvTIhAYJ1EVHZZXWJVaIpRdrwTMXmEe2HoulXvxWRQX3xnXkoKJWepikT20HQ3SnTL6PzkvmXq690pQXj47MiVi3CQhGKnoYfHkSangzjYwIe1kURJcLq53/nsyXP846DLsnmi1/rMy7TZ6O1DS2AfM0T+6a305byUkoS5sZD22Y65o3G+wKfL2tS7hyPkzpclNmGHh4LQrF3i17J6go4NHznj8vbh4tLLoky2y8T+99Wmz9+7fwAEAAMAAQRHcExI/Ik0AAABAHRSTlMADgIFCwEIAQICEyhTuiAvGeH9/jfSwtGoSF5A/tm80IR7nYz45rLJtd3cZsS/lP79dcbW/vG75v1uz9n9yf7vkbrW+NTa+9d28t8B1NHuxOPN89j87ljeotTYuJ/O0v////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8AsbJyfAAAIABJREFUeNrM2X9MmvkdB3AsCkWfgBaeCyCx/I6DxB1MIiSe9tKka7fGmZq7Jk0a4cEV3MJtVpDRBARx3qHcjJaewl2XYll9qnelZtdif8xcrr0U2uiFLDosifGf/tMmXs6didlf+zwPaAG7rFrb+iGYJ7bN8/L9+Xy/34dKoexKMbLvPVMMCvNQ2V4iMSj8+vl6ZO+QGJTyxvl/zzcyf71XSIwS1rs//OeHdzkle0dEOfXsX89OUfaKiLGPUn1Y9L7ocDVlH2PPgMooRZSyPULKgqjw2hukLGg/hQ7vvUDaBBG1F0gE6NgGaC+QckD0/fQM6djbJGVBxP3p2TfjrZIY++gEiEpCGEcZJI1KkOhvh5QFkQmVMKofV9NL6G+VlAURM0QFkPZDbTVjH2OjcW+BxCgBEJNCo9GoxaWl1VqknHesurS0iEqjUilMIL3pM44BsRzjFJWXVfIQBHlPq0L4iFJbDdcIp6y8mAOBvVkSTHG1lleGKJVKnUpyUlslh+LKnSdrVCqdUokweUAiFh/9DWDocBNGEbP6mE6pEtVw5Wr1SacCVShkMhRVOOvUVXKuRKhSirTvsKhvwkP80LRSFu8dZ41QXIWiqMxgchpaMX2rXq/HWg1Ok0EB360SS8Ta93gcajH9NccEARWXshDlKaeci8pkUj3WngFliiS1Y5hUJlOI5c5TSoRTSnvdA1TO4eskdU6FTCMlCBlQa1bUmiUR1xoZCmOlRFhM6usaJ8ifUcZBVMKqOueUlLgrlp/QRkoOSAm6iEmbnHVioQjhFL+2ASL6JRSrT5CxYHr9VhBJsgIJ4iJ1dShXqOSxil/LTlDM5CEScVXTZp9eBHpO2uihrEos5PPKGPRdTwgC0onlaJPLmlXkg4zkK4eEZS9NTahcrOOV0em73TEeX8hVy9pzQeQllvFsTWmTZJCpuSolq2hX55tWytNJ1Kh0K8iYjSdbJO554zKkdg3KrVFWMim7lROdGCFVjVr2HISRoDYSBF+MEJWRjMuIESxMn59SOwbTpOIzd61lVBYiEqs12BaQESMFG183cnoRCWKSIMyi3QEVcfjCKnQLSL9JIGsq5xr+RG9w55OkCq6QX7Yrw0RjwUwrpABy54GI4cE2VVh9viif5M6kJERYu5ASjcMXyWX6fJDboDfmJ1SfeH9qLe9bW0h6mVwCKb1iSPTiMkQol2lyQMYXgIxttXPHJHDWtRWSjLkksnGvCKICiKvACkGFnqZfJSLxXxw/frq5SpGDApIhLyVyvF9xp+aJuKimsGUFHZs68vNIPBLBXSaTTXD8tFr6nBQsaJxCrEOYOz9RCJCuRk0MdfB/gaam1p4M+9fjkTgemX3U39nvsrVI0FySIbdxGiBxXmHBUVnKGrQAFDTkaNrWnhyweRzBSCSSxvFQR8AWEAj8gkM1mlzSRkpBchMQ88tpOxTRiXVPbowFoNa2KSjj2pH6AwKHx+Nwrcfj0VtRPJQWTIfD4Xte76FKrkIj07QVpESSqoTQt532rBLWPQkijgoAGcxBQ5tC0Xy6ubH+1rDN5HA4BgcHO2bjEbxTYA6FQh5v+N61a/cE0x98IBhuaWzWtALJvpGS3hA0t8NOKULKd3TCQUQ6sVpqcNkN+kxCBGiquWXab7F4oAgNlHkwFIlfFqyGZ0Ox6L0rV8IW0gnheSwNzZpNEvEy2IGEwigV7yiicr5ELisAtR3wW0ywpkxmqKEhs9nh8NfG8dBwbdzpjcVinrGeiYlxv8vVYTbDX/P4m6cI0mC2cQTJIFVL+DtZb/SiShEXnodyQHYAmWw2l8ts7ujv7AxACQThBziOu8bjoZB3OhaNdg8MdHdP+P0mM3BNJof/SZaEbZLaZVxVJXXb641OKdPVoIZCkMvW398PnIDN5Jmx2+0eS7gWx9PD63gstvj9bDR6+e8XCBKYXKTJYatfay0gGVA4TbY7STDWcHo0FYIgGRAFApYFq9V9ucs+M9njxEOhoTQei6ZSXZ5UKjVx4cLAQK8vPD0t6OwgTI/qjxjbDOznJLa5iSvi0bZ9fLB0NQozuwAU6LTZbALBgtPqDnaRIN86ji92wEwPraykRhZTqcWJnp7JmQW31TrjD3TCODkCjfVH9HmkQZSYpG1+di1FRFW5IDaAiO1vGnacBasbAgrOTN6+PmbFQ7FAOhbtCyymYumOlZWVxb7LUF1dXUH3jC3Q39Fh7r/V+CQ/pRNyEW97OzdMkVJ8ogA03SCA/c9LgOCGJKi3OxTCTZZYdLFhwpIOxa2Q1MqI3d7V1Qc10hfsf2Qjlp3td/X5pAoIaXuTRK0U1eWDmqcbvF7f2JiPBJGeO72XavHQ7Nh6NNrv7fY5I4nk+OJKarFn8oHFYoEtwmWy2wR+F4yey3Ugn1QnqtzOnkRnlPJ/lgcySlrC3rGxsVEAWaEpbuf84dVny8tLc3OPHy8lk5HIKmzZITyE4/F4Mrm8vHxYq6212i2WhjAsO1gRhaQKZfk2/jeHUcL65UjTJmjEYFR86B0bheqxWp3p2XQ0GgtFIsnE0tzTp0/nlpYSSThISFIkEk8mEnNzc0vJSCiWWuzz3hsf99uIRQqkkSxJj8nYFZW0lx7u/RTmQTYcsdgmyMg92jt66YveB87a2nQ6FVuPra+vRpLJJSDNbRGBdAlAq+ur6+uxWsuYb3x82tYZIElmktQKBy67ovxlf426n1J8kM1Fic/2GRAmXRMdvf/F6MSM2z4yZAdVLJMRiDIZJTOiGJ7NCJqZSEZw2KXSVrevt9sHpECgE0iDGRImRbns3xRv/v7i/4Iq4AAhfhIAQc5Go7T00H3wBIkl9qBnwue1p2drISSia3D3uUQCHiGhQnDoJhLJRPLZ4+Vnk262+do///b9t6O9vT5fWCB4FCBIQ+SxC89JKvbBlyKRIERVhZGgoQyIe7RuJhi0w54Ia+ynrwbmnV19I4twsrIXery3b1//8fbDb6/0jI8/vHG/+/ptiM/7zTdf/+Xrzz++dL/bR0wgmMJhgtRKkIgJheckfsXLkEgQiydBpRBtFmTktizAIdbXZyc8P311R1s7OzsbjMZil6/0Xrj46d0/njvz+dXzZ86cOffbTz45d2Y+Hl+9cePGpT//47uLn92ZnAl6fA9He8e83obhR/WthiEggQiVIKyXIJGgcpaOCw+zeuLfEp8R5S0LHjaU/QEB+mzAOQvLf9IZi0XHLt787ssvf/+Hux9fPf/Xs2evnj17/u6fPvp0NZn48aObNz/7L6FmG5tUlsZxaBUtrX2xmPTF1KptEzVRq5LsJJPaZj9oMmaMncaYjIlVwq0RChStUiDFFi6XtoCMSMGBAqVC91JqG962zoBAK9Rtq82GjOOuJDsf3MTMB9eaTrIf9zn3Uh3d6JyGQlJ6+eX//J+XezijBn7cohoc0E4s2myPPB5Auv0lddlOdBNQU87+QyQaqIDTXMVFIUNAl3hVbQ/7blmtlQOLg7Pr06OhqScPn/0wOwsVQG8OiCQ6s5lMJgk74cDjcYNU6JTo1sFLcYEgkI6OmS3TqgGrduKZzf3I5vEtLLR8yaMv3Ni0u5ZR/gdINBCDzdnd1PBOocbWbnomHPSrNI9CjqWfoFpPh67B+JEkzevr6/GxeChkMBhyYpFItqbykHzpL0+f/syXCQSCaBy3/AgiaScGHSG3bQmQDu9poC7NrauHAeDzSHmgrcyavTu4eW1Bom8GYKro654c8mhGLGMp1dr0qAUfmZmZUePmV0+fvpKLJCKRRCLhw9ItzszoMbkFkt8ikclkgigemp5drNROTDlwHCGpj3MaeRd7vrvIPVJfzS76LBIFxGYUMsrhngj9DyocPG5z7+WeLv3k+Hj31Ox0OkdOR9MxQ/TYzEyfUBf6/vsXJqdO53y3FMcev/UKha/+fu+YXCQWi9NxfBSJdP2mm8TxlDviaavm8i6hy+8/WFMOn/ZpL+WBoIxC39/R00MD8epa+4b79ZPq7rsPB6fHAmJyLC02RNdnZp4P+P03Xv/DOumHiWhw9gdYa7D+/Pbtn9bWfoI+p9KJIIxx8xgtkoZIpVIO99LJZrSnAkiNew6UQwulkYo+AwTD2oGm9h46ZJd+O3Cub25yXL04UdmtGk0HYkQ8R46mX8DICAtmj9fPn4PH/woN5C/3HkN5RB3kb4/vff/fmSekji+JxckcLVJ3knA4HG4vZwfajgOk9qrmMphIPoUEQCf2UUCMTWW7K3oudtL7eXsYbd3jQ77FCe3A4I+jaUEsaDCH0s/QEPv8Nfy84wEcxPMUVXDUUuAd/aZg0IyTMihKININXziZ9EZaS3j0Piog7ebQX6kCEvNjpK2bC0/vYtNHrQqrK9q/Rj2N17C35Gzb/UnPkv+aVjswC0ETiAgiFM0N6vUw3d65cmd5+WqXHt2/dfXq0fMUxG5qCqLYfwfe4EiRjiQhC0DcBiq1i263O9LBquXx6Pb/dU9F9Sb6W0v2vo+RihDQpvzZL/aJ9iNcJFBd9RenliLzkzbPtevaykWQCIjs3qhAxpdiQqFCmUgksgR6ZVKGV1YymZWVhNGoVJoUQowIKxUYX5wbCxFmQZqOmyoV0qjbqmu4NBK3rn1DBEA68QESUugobfitDOau9r11XABqLm5bUC9FvBqbBoggaCCRWBqJBmRisUjCl2OmrNcRgxdSKaYIex0GA+4Nh+2KoFTO54twAnqKRCROR82iAG3uuxqHzTPZcrK6kUJqaKpvB2m25mX4PRKlECsPtGnXvpr6Om5nQ0n18ZYFHxDZ3JoJrXYRBU1stiAg4NE5MUUKOppOLsUwocKVJKGtOeXmFO4wCTFgkuBEUM6HAgBIeZG0NzURj3qutxXl/wXotc0l+/KZX8TYdPo90uYCxgdApbVA1FBS+2D5MBC5vV63f0JbSfnaPAYho4B0TkUqR+sjFJqMLrtJoRAKMUzqjDmUNJIhFJRLxFAkDUgkVbfVqr055Bvf2dt7soRHdf/dtaUbSPD4tiKP9BUAnS58F7J97ILq+rrGmtrtyw9uIyJH0juFggYSSQx5IJBIaDfw5XLKTyZjJqwE+1BQQYwMKzAKKYdjFBEuClAiWa13F4HozvChsipe5wUgqmZRnqY+e/MGEkzf355mbH4PxGDV1h+pKj++/OAQRZTyrj4EX0PQQKK0gAIC4xjDMSfwKJRKozGRMRqRpamlIFwmIY1kCPJFiEgioES6Za18uABEd/SttTBaICImSrN84AoAic34irG14COgIhanvq649faDK4jI5sYJX74YycxRAe1phT3sysJApFDak2FXBuUZWolMIgwroVTQSIhILEiH+LJAYHTED0g3WnbCxN17uGw/FTWU/VSabSCdKYdX559sHPlk0jWSxdn7Rdn2Q++JBq9bB/IdRCYS8eUKwkEG7S4SBHKY0auV396swnqzkgkHSTybMZooJH4KEcnSIakYRLKo/F3WAUR0tXcnp4p3iduE7tmgsZ3JexoeL87Bc/mZbegwDAI6iv6yhVW2u7j50KErV65QRCn3XS3VQQRme0gGCgVTBjkmNCXCQWMyhoGLEqsO0u69v+qbzyaUQp1jJZNwIZnMdowPRgpYknKxIGcZUelvdS3MDV8d7p07e5DXCUQcJuoiLBoJNNp2FDRCNRyQChnMim0s6vQXq6yGeeo2TaS22Rz+69Y+CFrOTCQdcQDCZTpkILCzyyGFZ1eEVIazb7b/e8U73+EyYeY3GVc47FIG7XYpVCQwkjdMigUwTU4O7GyZgztcIGridTZWNXNYlFsopEIAojt9EWJh0L+os00sTm3pcQgaELWoPRHbXau1WzUSN5M4aTfEMDLHl1OWTqyAlRRKV8SUWJ2f9y4trCSI+x1GhTSVMJqCRDIbFjpRjZQFRr0EEZPFR1TdC+NoA6rrm+L9MERWHaC/LAV5UDECoHz6U0ilFdvyB5m2MIpri7fTUWuBmr2otd4CohQe50sVdhwkoolMxizuFJpc8+HMvGc1a1ISSxml+zAkWiwJRsLwrBJz6pCRBNFUiiTMBsusWj3ZPwzDzdky7qULaNCm90eKNgNN6TsgKsnOHDvPKNiysQFZXZ6PWovaNwQS9flH3IYxVA/tYQIX54kSyEXGRHalw529f6614+XSqsvscymFKZcR8l+eooioikRicTxomPb4hvT9PcNdLWzmEV7DjoMl7PyOzZYCxvljZ5i/OxD3IRGzhH1yg+h+9w0k0SN3VETlvd2VjFFEUBazpEmZ9L08PKRMzHMYZS+T8wliNWEi6PR3GuxCRAT5HyWk/DHc7V7S+IGov8t3qrT0CNrY/gTR/0WNWVsGYQOiZURk/e7ypMY2mqOahxRTZg0SOVUhlQnNz7/859d//frPtVVHfdkepe1lhy2bcGXo7Od7jUJMBz1XlIa6JBGNeiMjKr/+cs/lufnIqf9xam8xaeZZAMDptLbazqqxXdup0nTb7CSdJpWpk9Qm3dpJk33o9mE36Uz2ZR9Bs+INa4tI61SgoBSGgqgbUBTzadSWGC5GFAoi1kRtYLlIhkiwwIAUiGxpJfVpz/dx8dJ2O13erKb8cs75/885fBQWnjp1umR/9gtxO7OWqexzWdKBki/331zaFlWNyAcmqdRUOyMbeWiMBGr20/Arb9C74X7l9f77EWJa1AgDgeE/w23Jp0PS+ll2g4BEgSCt9ikp4OpTDYAI/dh50Ggavnmo5OvLBTtA25W9ffozJCjtk/uuZURTPY2POnpVfdR0yyez0ayR+U/dwHGPB/76jysRIAVMJvvy8+H4MjojoUmjSfkSmQQubqpeSUJztyo2p0RVDMSkUFzDXT6fnwWd23H6cwvLMzdkNkqHT+b/KEyJhud6OkeYA+KsqFVKRdvIutcb3GhHAbLlX91e7wg4jIvx+NyIMJU0EUJXsumt/cRZiRK7A1a7zTNttVWPq6uGQUSoLMxPlVEatH1D4v6+3UVSJPQhVn5Juo6GTc1VHUyWarKmJi3i1RH7R8PBkNdlgQYLfUPw3BkMRhCNKRCvRQP32gLjI0nHhtQhjOlBNYmIXgGoqG2sthoVQYgIhGu4AlSUBWGKF9BFctNdBDty5WlSSUF+VhSo7TDzROJ5dA4hQlObpXJY7mDo1TScKAHdgFDI9AlvaO3KlXg8EvSubYSCFXwldtKUY2tQ9ytYzqjUPnFGpABRUdnNg+j3gLDAZDvt79BO+xdovntJuPzCI1pMNDdsQkwdXB1xVpyajGgSO4+3AaC5OBu7JtUsERlE7vhyfM2xUbq8Egy57WQKiy1ArnsdoZDDjWC35JNuaGwgqq6qVUCIirSV+w7k7QWdS+Vxu4BghARSDvzL4QJMJJxTmHrZiFnPo6lWsbRRJEbEHQptKJ7bpf1wK9H5MrtxPehwx59HHBsEA3/M63AH2GyjQLPm8H73OhRym4gpkPhpqrBBRNBqtUX5sD7CZV1+YBu0ffx3k77I23+wQItdkQSFXCNlG9ksnkqFpY3EHnWhETJIZFIiGiQ637Bc4XCsLY8HvaUGJWka1fEl5EX3lrv01m0HxAi9tsUqfXe6sGsJBEx0DLf/w6APRWk/7hghJYJtZACakoTNNlMhSEQlez2YDI4sy2QGO0tEUSolasPymsNRofA6nhlGWQiqs7eSNGtbawG2CX4TMUL71y9KYY8cS4mEhDJUdCTniywodxfoPVIxNJQfsVZLKCq9CiOSSCQalSyiaSOSVYmkw2WQoMGRWRBELZPxLRs2x+21rYhdiqiXIw7HdRmJjYFmGQlbaEFZX0PlsqQqbrqwa2Gu0GqhsnG44o+AMBIeSLkZUh7uGjQ27T8J2i4hAyXpdLQBOG11ulaXw7ZhgdONbiDLBgGsiwJmyJZ4bXMHjGo+Pe62OcbpyutbboURoVfAH5tokDOWntWL9ZDH1S1TUKJarfAaLm8nCL93qd1LKsAmJK22CW4AeS8LRKo+KKQGVcLmcNIpsBQp36w725Qwvbauw/smQkIDNA96YMMWGqSPOzaERjtfA8FzStD5sWFVr2GmCxv7j4WVBTtBxfj3Fn9Y4YCUkyXhSiohRtqypq6uUobczNKJ4JKkUjnw7gkTCfYi8pvg1lbIpaRQ2GFbMmG7B1VNGpUxQhBCRiLRbDdK+E6gDlOoNX28Omp3r7ztUVVjdcsSdoorS3DF5w5k9qJi/Ac+HEFJxTtIeSeBpCU0d2VIozBpU4lRmy2M6OCm7J/9jzOSDLWROOaEP2lzW8BGlBqcNpsr4Lb9ZFFTlBa331Yh0cHJ163qZxbl6CjSUpoCncTC8r9A75MKLwOpCDaHpq7BQTNc27OT8/U8n982LRvgoaMSnW93b7pGOes2vz85JaBxdFK1Orxpa6nYjAQkJJGyPelPMCirNZNinpg7IZePPKr+GSK0tNRV+W1+Mf7wJ0CYA198aJt07HRlWZHwPpCaBzuYKiB1z3dDPJiCVqke1kgaTRLedCEDYb/fH7FAGKQymcK36Xvh9xHUFI5OE/bbXEZdzfykisttW2DIx2qby8qWugB0+hgKws52ziEU9PEPIneSyr86W0kgPOrcJo2KZhLWJHNUJEFQEkca3XQahhN+f6JIBguSQCkYS1rXfLYqGSwhuomkNdlBok52o1NI7QNGx8hV8MCr6OyX+GzKDn00Qh8inT9xRaGYqu7MkHQ0jc+aZEjYErUGxu7+iWRykL/ut/qdBjKZDOOZ0rUZ821G7DTorSqIXRTRT0KDba9tediimJu7Cht2V3PRifPl6aP1KdBe0t/KL5+6oggwqhsbO5tHOrgqPXU2ak22kUWw+bP6VmfDm2GLKWq1+gKtFA6HQ+P0+qx+q09B0tXXz7fFQIqIzcy29gdHe4auKhiDzV3oM60T5/G7U5b3iQ/9MyS00vHfnrplsgxXAWlqhMkVr1IgIi4K2uFootEKf0z4fDAJbyyD6ZVIbOBM+61W/7hEB+vHAPxlYg4uofaFow8fDi0Mo0+00Od+X//hc0DpE5eXJu07jj978ZbGaMqSRIs+a2y6oQZexOmY/5na6IIQKcjAaairmw1bPdYw0lDzZFKvgdiFFW3T43fv3LkztMKQZ0AXLt0oTIPyfgNoLwl/6cLvb/VqFh+kSSr2Qszqc3JhtHDFYk4jh+nzWJ1qmMnq6urrZmIeT2xK2jc5yeO8iXn8Tsb4M+AM3VuRZ0AXPxuEOg4ez5KOHAfS9/BqaWy8j5IGTLd9Vo8vGgXYAqKrX/d4fFcpdfUwJNboXBAiZ1zK4umoVBfgWmr/NfTLi3sr7XJ5x1RzZ9P9om/OXMLnZ0HHD/6256K7SPnH8WdOfYXDfX8UJXUwzZqpnopoLBaLViyZxH0zUY9n3aKfX30Cr4l3Hk80INHV18zPc+EX0aY7vwz91M41m5lQRJ1N1SjoxpHPBu0m5ebjfzhx8fSFP5b+nCL1yu82NTX2NHYJB9snZio8nnelCEvcB5kSuzwvY+0y6Brz3U/bfR5PuHFofEYDYwgTq+o0KPfzQbtIh3KO4X84883bt78+qE6RNB337vQ8ftyDfgvjbvSlxyXkcrlmlYo38e6lJ3xrdBV98DixAj9EOp+KxVLzLlAJLuf/AKVIf8okruDGpQsX374tu9uYJjGd3/23mXsLaeQK4wA+4+RiLkzCZiQ3K4lpV9jE0IhVo5aquCEsKwiSennY1y1CHmSjwYdosq0pXoqUboxSBSWw0oaUwLLQNWxAEYSI9ElFdguNEIjgPghaEF/6nczkqhZ3jUn+5OH4kPjjm8wZZzznewfZ2Tmoj0Yvfh72rwWDocD4UTT6YfXX90tzgeCa3weipvn3S57XmzRoCIEsSnqu+2hQDknwyKKvOIs9lTBVWl6c3t3ddTQ5Do6j0f1nbp/TGd577riIRo82fkp4nL6Dw+jf8eWlwObrJKgCKkQRzCH7+mNBSRLz9JuSNmrqzmKVLu/QELqeLK//MjGx/uNfcSiRzw3F2jnw+d6dR49XXwdCQX8YTjDfP4CNBIKRyA+TCVAVgETMRsBPATEkAkuecUAyxVq3n3pnR63j49OeV+uLvy3vRy/2/wg11aM4Zir9KxHkQWd8vSN8Hj0Pz6xsoPP+xVBiYiSZyxPxSaBsUhmQ1LIzE6Duvfmy/eX8Ikw6S28n/daXE289pycna6HpzchGJLi3Z4OKOWAK+t55DN64f2XlTwDJNFChMu6tQFkkuNuV9hplppgJUHqsbfqVx+OZm/PMz08HTgOQUOj0NBj8fXLV6rKHt6wzM1bX8JDj6Pxif7tyeOxetQHN1OW3BOUcOJa0V6sxxSDVhCASgjM+hBKErCXih2xtoXVHo6MSu0TinXo2OPhicHt46huNtlHKXFxvBcohcWoGhOruWMz0uQEzj49PohV9zyFIEoY4nc6FhYUROm63ZMHZ/q25ra01ZlJpe/MEQg4iTSJqBpTa7tiDigcU0Q5HxkovHbVDRhgJWr42Ai77gtM22pb4iC++Moh6pXgaRNyuVUIuiVR0azRVMhbR7hod+2521ut1u90Jhs/ns9kcEFsirj4RS14tMxj1CnIgj6BLpGa+QKlQ69U4r23K7kVrNyR2VBCQOMMuS6P0M6nFFbY+MlOEUl+lVynkJL9ZysojiHYkSWwgccpESqHBKMDkPWPw3YGXzbFnlfaZKUqM80gWhvMpAZ9UqGQqo4ISEKxm5ouDQDVEPrpbJEqTSWLzSVKopThcpbnGMuPasvQpSX5ik0vV/br7epVKpTboq7UKoYDkY5zmmlSFmvMDuoIEA5xUCik+weILoDQcyihDeyIhdaCq1muMQjkUCu2ZRKDyPINySDxUJR7GY3HElJwSkwJKqFZpNCoNKo1abTAq5EolKHF4AxtAnLxX6EoS89FcXEDBr6cS23yFQrmcEkEEfB7z7A5AvDsBMSROJqk8Y1UsBxfzxRAcZxHdGWkzAAABZ0lEQVTpdbA0iE2DOHkG5ZJ0XZzknTo3Z3Vs6mdQdOnuDkSTuq4iJR2JZN6KZoK68g9KkHTXky7fG2eBdMRddNnJcKBh//+RQNGfCbqjjew3JxUIlEPi6vqvexBVjrE6ddwCgGhSZ5rUeTUpG9Spu9PeAzchFRR0ExIC1RYOlEPCajtzH7fAH+QdtVgBQTSpI03qyCZlgzp0BelfAUcLOa4kZYFgWKAeH9eTigS6nlQ00HUkALUUCUQ7WhhHcpgByhgWhVQGQxwjMBwUZcUC5ZIagIS3NBQTdJkkKDaIcaRJ8QxQA1asJlFpUqprVTFBWaR0Zy/Ww4biNhtreEg/96C7nxUblEXCSgKUQyovAVCKRHcaxEsAlCKhboylAUqRsJIBMSRtu7ZkQOg/XtiT+H78CcbmlgYIbXbtOfz3sEdUMt1huWzx490Pu4/FJVMjmI6ErSet8lJqfMzFSDOJcbESSh67Vf8H54VETLb2X04AAAAASUVORK5CYII=" width="26" height="29" alt="">
-    <div class="brand-text">
-      <div class="wordmark">RECONI <span class="r2">TAX</span></div>
-      <div class="sub">Client Questionnaire — Individual</div>
-    </div>
-  </div>
-</header>
-
-<main>
-  <div class="intro">
-    <h1>Before we prepare your tax return</h1>
-    <p>Please answer the questions below as accurately as you can — it should only take a few minutes. If you're not sure about something, give your best answer and mention it to your accountant.</p>
-    <p>When you're done, click <b>&ldquo;Save my answers&rdquo;</b> at the bottom of the page. This saves a small file to your computer or phone — please email that file back to your accountant, or send it however they've asked you to. Nothing you enter here is sent anywhere until you send that file yourself.</p>
-  </div>
-
-  <div class="card">
-    <h2>Your details</h2>
-    <p class="hint-top">So your accountant can match this to your file.</p>
-    <div class="field">
-      <label for="clientName">Your full name <span class="req">*</span></label>
-      <input type="text" id="clientName" placeholder="e.g. John Doe" autocomplete="name">
-    </div>
-    <div class="field">
-      <label for="contactInfo">Email or phone number (optional)</label>
-      <input type="text" id="contactInfo" placeholder="In case your accountant has a question">
-    </div>
-    <div class="field">
-      <label for="taxYear">Which tax year is this for?</label>
-      <select id="taxYear">
-        <option value="2026-2027" selected>1 March 2026 to 28 February 2027</option>
-        <option value="2025-2026">1 March 2025 to 28 February 2026</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>About you</h2>
-    <div class="field">
-      <label for="ageBand">What is your age?</label>
-      <select id="ageBand">
-        <option value="under65" selected>Under 65</option>
-        <option value="65to74">65 to 74</option>
-        <option value="75plus">75 and older</option>
-      </select>
-    </div>
-    <div class="qrow">
-      <div class="qtext">Do you, your spouse, or someone who depends on you financially have a disability, as defined by SARS (a long-term physical, sensory, communication, intellectual or mental impairment that affects daily life)?</div>
-      <div class="yn" id="disabilityYN" role="group" aria-label="Disability">
-        <button type="button" data-val="yes" aria-pressed="false">Yes</button>
-        <button type="button" data-val="no" aria-pressed="true">No</button>
+<div class="app">
+  <div class="auth-gate" id="authGate">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJEAAACgCAMAAAA7IH4ZAAADAFBMVEVHcEwGCiP8+LkRFRkECRb//+gFChMDAANdUWI0NDQIDCQNFy4IEy6dgUMIEisRGC4UGi2Ue0BOTESNeUkTHDIIFTCYg0+AdFMHFDAJEy0IFS8QGTBrZFOGdUsIFDCdgUAIFjMJFDAIEzAHEy8JFjEHFTEHEzB5dGCmlWaOdkAIFTAJEy9xd3FneIIHEzBdWElVVVILFjAHEzCPeUa2l1IIFjFceZKEdlKllGkKFjGLhGlzjJs7PkGTg1xgYFtFRkM4P0pFSlN6io6vnW1/iINrkLEVKD+afj1GTVWtmmd6blD/AABARk6FhncACC2hgjweKTuPdjyGcT5bWFAxQWJ4bVEzO0eJfFhtYUSChXmKfFmohjqTeDwmLTxNaH4IFjEJFzIADS8KGDIJGDQIFjM2YbcqVKx+cVCCcEcACC1kWUFCb8QmT6h8dFw8Z70/ar44ZLuBbD4wWa53Zj+biFh0aU+YfkWQfE1Dbb2CdFAzXbIkS6EdQ5igjVx8bkxvdHmWg1WGeFZ8eW1eY2lgbH5FZaGTekAzVJgwXbhobHB6akZhcYt3b1pIaakYPZCGc0cgR52FcEBgXFI7YatwY0VZcZxgeKCMdUFPY4WUgE7aqUQoS5U+W5VXdq4sWLUdPYRJYpBoZ2NcZnadg0fhtFQ4UoZTXnBwbmbhr0c3W6J1c2yHf2lHc8VpeJJNVmXLmDN4e3wDEzEsUqFPapolRIlFW4ZefbLSnzhxa1paU0KEgXZveIY/Z7RPb6uOf1sUNYIvTIhAYJ1EVHZZXWJVaIpRdrwTMXmEe2HoulXvxWRQX3xnXkoKJWepikT20HQ3SnTL6PzkvmXq690pQXj47MiVi3CQhGKnoYfHkSangzjYwIe1kURJcLq53/nsyXP846DLsnmi1/rMy7TZ6O1DS2AfM0T+6a305byUkoS5sZD22Y65o3G+wKfL2tS7hyPkzpclNmGHh4LQrF3i17J6go4NHznj8vbh4tLLoky2y8T+99Wmz9+7fwAEAAMAAQRHcExI/Ik0AAABAHRSTlMADgIFCwEIAQICEyhTuiAvGeH9/jfSwtGoSF5A/tm80IR7nYz45rLJtd3cZsS/lP79dcbW/vG75v1uz9n9yf7vkbrW+NTa+9d28t8B1NHuxOPN89j87ljeotTYuJ/O0v////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8AsbJyfAAAIABJREFUeNrM2X9MmvkdB3AsCkWfgBaeCyCx/I6DxB1MIiSe9tKka7fGmZq7Jk0a4cEV3MJtVpDRBARx3qHcjJaewl2XYll9qnelZtdif8xcrr0U2uiFLDosifGf/tMmXs6didlf+zwPaAG7rFrb+iGYJ7bN8/L9+Xy/34dKoexKMbLvPVMMCvNQ2V4iMSj8+vl6ZO+QGJTyxvl/zzcyf71XSIwS1rs//OeHdzkle0dEOfXsX89OUfaKiLGPUn1Y9L7ocDVlH2PPgMooRZSyPULKgqjw2hukLGg/hQ7vvUDaBBG1F0gE6NgGaC+QckD0/fQM6djbJGVBxP3p2TfjrZIY++gEiEpCGEcZJI1KkOhvh5QFkQmVMKofV9NL6G+VlAURM0QFkPZDbTVjH2OjcW+BxCgBEJNCo9GoxaWl1VqknHesurS0iEqjUilMIL3pM44BsRzjFJWXVfIQBHlPq0L4iFJbDdcIp6y8mAOBvVkSTHG1lleGKJVKnUpyUlslh+LKnSdrVCqdUokweUAiFh/9DWDocBNGEbP6mE6pEtVw5Wr1SacCVShkMhRVOOvUVXKuRKhSirTvsKhvwkP80LRSFu8dZ41QXIWiqMxgchpaMX2rXq/HWg1Ok0EB360SS8Ta93gcajH9NccEARWXshDlKaeci8pkUj3WngFliiS1Y5hUJlOI5c5TSoRTSnvdA1TO4eskdU6FTCMlCBlQa1bUmiUR1xoZCmOlRFhM6usaJ8ifUcZBVMKqOueUlLgrlp/QRkoOSAm6iEmbnHVioQjhFL+2ASL6JRSrT5CxYHr9VhBJsgIJ4iJ1dShXqOSxil/LTlDM5CEScVXTZp9eBHpO2uihrEos5PPKGPRdTwgC0onlaJPLmlXkg4zkK4eEZS9NTahcrOOV0em73TEeX8hVy9pzQeQllvFsTWmTZJCpuSolq2hX55tWytNJ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" width="46" height="51" alt="">
+        <div class="wordmark">RECONI <span class="r2">Tax</span></div>
       </div>
-    </div>
-  </div>
 
-  <div class="card">
-    <h2>Employment income</h2>
-    <div class="qrow">
-      <div class="qtext">Did you receive a salary or wage this year, and get an IRP5 (or IT3[a]) tax certificate from your employer?</div>
-      <div class="yn" id="irp5YN" role="group" aria-label="IRP5 income">
-        <button type="button" data-val="yes" aria-pressed="true">Yes</button>
-        <button type="button" data-val="no" aria-pressed="false">No</button>
-      </div>
-    </div>
-    <div class="warn-banner" id="irp5Warn" hidden>No problem — just leave the salary amount below as is, and let your accountant know how you were paid instead (e.g. self-employed, rental, investments).</div>
-    <div class="field" style="margin-top:14px;">
-      <label>I'll give the figures below as</label>
-      <div class="freq-toggle" role="group" aria-label="Entry frequency">
-        <button type="button" id="freqAnnual" aria-pressed="true">A yearly total</button>
-        <button type="button" id="freqMonthly" aria-pressed="false">A monthly average</button>
-      </div>
-    </div>
-    <div class="field">
-      <label for="grossInput" id="grossLabel">Gross salary, per year (before any deductions)</label>
-      <div class="input-r"><input type="number" id="grossInput" min="0" step="100" value="" inputmode="decimal" placeholder="e.g. 450000"></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>Retirement savings</h2>
-    <div class="qrow">
-      <div class="qtext">Did you pay into a retirement annuity, pension or provident fund yourself this year? (If you're not sure, say yes and give your accountant the total on your payslip or certificate.)</div>
-      <div class="yn" id="retYN" role="group" aria-label="Retirement contribution">
-        <button type="button" data-val="yes" aria-pressed="true">Yes</button>
-        <button type="button" data-val="no" aria-pressed="false">No</button>
-      </div>
-    </div>
-    <div class="qreveal" id="retReveal">
-      <div class="field">
-        <label for="retInput">Total contributions, per year</label>
-        <input type="number" id="retInput" min="0" step="50" value="" inputmode="decimal" placeholder="e.g. 27000">
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>Medical expenses</h2>
-    <div class="qrow">
-      <div class="qtext">Do you belong to a medical aid scheme (as the main member) that you or your employer pays for?</div>
-      <div class="yn" id="medYN" role="group" aria-label="Medical aid membership">
-        <button type="button" data-val="yes" aria-pressed="true">Yes</button>
-        <button type="button" data-val="no" aria-pressed="false">No</button>
-      </div>
-    </div>
-    <div class="qreveal" id="medReveal">
-      <div class="two-col">
+      <div id="authFormView">
+        <h1 id="authTitle">Sign in</h1>
         <div class="field">
-          <label for="membersInput">People covered (including you)</label>
-          <input type="number" id="membersInput" min="0" step="1" value="1" inputmode="numeric">
+          <label for="authEmail">Email</label>
+          <input type="email" id="authEmail" autocomplete="email">
         </div>
         <div class="field">
-          <label for="premiumInput">Premium, per month</label>
-          <input type="number" id="premiumInput" min="0" step="50" value="" inputmode="decimal" placeholder="e.g. 2450">
+          <label for="authPassword">Password</label>
+          <input type="password" id="authPassword" autocomplete="current-password" minlength="6">
+        </div>
+        <button type="button" class="auth-submit" id="authSubmitBtn">Sign in</button>
+        <div class="auth-status" id="authStatus" hidden></div>
+        <div class="auth-toggle">
+          <span id="authToggleText">Need an account?</span>
+          <button type="button" id="authToggleBtn">Sign up</button>
         </div>
       </div>
-    </div>
-    <div class="qrow">
-      <div class="qtext">Did you pay for other medical or disability-related expenses this year that your medical aid didn't cover (e.g. specialist visits, medication, glasses, dentist)?</div>
-      <div class="yn" id="otherMedYN" role="group" aria-label="Other medical expenses">
-        <button type="button" data-val="yes" aria-pressed="false">Yes</button>
-        <button type="button" data-val="no" aria-pressed="true">No</button>
-      </div>
-    </div>
-    <div class="qreveal" id="otherMedReveal" hidden>
-      <div class="field">
-        <label for="expensesInput">Amount you paid yourself, per year</label>
-        <input type="number" id="expensesInput" min="0" step="100" value="" inputmode="decimal" placeholder="e.g. 8000">
+
+      <div id="authPendingView" hidden>
+        <h1>Almost there</h1>
+        <p>Your account (<b id="pendingEmail"></b>) is waiting for approval from your practice admin. You'll get full access once you're approved.</p>
+        <button type="button" class="auth-submit" id="authRecheckBtn">Check again</button>
+        <div class="auth-status" id="pendingStatus" hidden></div>
+        <button type="button" class="auth-signout" id="authPendingSignOutBtn">Sign out</button>
       </div>
     </div>
   </div>
 
-  <div class="card">
-    <h2>Donations</h2>
-    <div class="qrow">
-      <div class="qtext">Did you donate money to a registered charity or Public Benefit Organisation this year, and do you have a section 18A tax certificate for it?</div>
-      <div class="yn" id="donationYN" role="group" aria-label="Donations">
-        <button type="button" data-val="yes" aria-pressed="false">Yes</button>
-        <button type="button" data-val="no" aria-pressed="true">No</button>
+  <div class="shell" id="appShell" hidden>
+
+    <aside class="sidebar">
+      <div class="brand">
+        <img class="brand-mark" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJEAAACgCAMAAAA7IH4ZAAADAFBMVEVHcEwGCiP8+LkRFRkECRb//+gFChMDAANdUWI0NDQIDCQNFy4IEy6dgUMIEisRGC4UGi2Ue0BOTESNeUkTHDIIFTCYg0+AdFMHFDAJEy0IFS8QGTBrZFOGdUsIFDCdgUAIFjMJFDAIEzAHEy8JFjEHFTEHEzB5dGCmlWaOdkAIFTAJEy9xd3FneIIHEzBdWElVVVILFjAHEzCPeUa2l1IIFjFceZKEdlKllGkKFjGLhGlzjJs7PkGTg1xgYFtFRkM4P0pFSlN6io6vnW1/iINrkLEVKD+afj1GTVWtmmd6blD/AABARk6FhncACC2hgjweKTuPdjyGcT5bWFAxQWJ4bVEzO0eJfFhtYUSChXmKfFmohjqTeDwmLTxNaH4IFjEJFzIADS8KGDIJGDQIFjM2YbcqVKx+cVCCcEcACC1kWUFCb8QmT6h8dFw8Z70/ar44ZLuBbD4wWa53Zj+biFh0aU+YfkWQfE1Dbb2CdFAzXbIkS6EdQ5igjVx8bkxvdHmWg1WGeFZ8eW1eY2lgbH5FZaGTekAzVJgwXbhobHB6akZhcYt3b1pIaakYPZCGc0cgR52FcEBgXFI7YatwY0VZcZxgeKCMdUFPY4WUgE7aqUQoS5U+W5VXdq4sWLUdPYRJYpBoZ2NcZnadg0fhtFQ4UoZTXnBwbmbhr0c3W6J1c2yHf2lHc8VpeJJNVmXLmDN4e3wDEzEsUqFPapolRIlFW4ZefbLSnzhxa1paU0KEgXZveIY/Z7RPb6uOf1sUNYIvTIhAYJ1EVHZZXWJVaIpRdrwTMXmEe2HoulXvxWRQX3xnXkoKJWepikT20HQ3SnTL6PzkvmXq690pQXj47MiVi3CQhGKnoYfHkSangzjYwIe1kURJcLq53/nsyXP846DLsnmi1/rMy7TZ6O1DS2AfM0T+6a305byUkoS5sZD22Y65o3G+wKfL2tS7hyPkzpclNmGHh4LQrF3i17J6go4NHznj8vbh4tLLoky2y8T+99Wmz9+7fwAEAAMAAQRHcExI/Ik0AAABAHRSTlMADgIFCwEIAQICEyhTuiAvGeH9/jfSwtGoSF5A/tm80IR7nYz45rLJtd3cZsS/lP79dcbW/vG75v1uz9n9yf7vkbrW+NTa+9d28t8B1NHuxOPN89j87ljeotTYuJ/O0v////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8AsbJyfAAAIABJREFUeNrM2X9MmvkdB3AsCkWfgBaeCyCx/I6DxB1MIiSe9tKka7fGmZq7Jk0a4cEV3MJtVpDRBARx3qHcjJaewl2XYll9qnelZtdif8xcrr0U2uiFLDosifGf/tMmXs6didlf+zwPaAG7rFrb+iGYJ7bN8/L9+Xy/34dKoexKMbLvPVMMCvNQ2V4iMSj8+vl6ZO+QGJTyxvl/zzcyf71XSIwS1rs//OeHdzkle0dEOfXsX89OUfaKiLGPUn1Y9L7ocDVlH2PPgMooRZSyPULKgqjw2hukLGg/hQ7vvUDaBBG1F0gE6NgGaC+QckD0/fQM6djbJGVBxP3p2TfjrZIY++gEiEpCGEcZJI1KkOhvh5QFkQmVMKofV9NL6G+VlAURM0QFkPZDbTVjH2OjcW+BxCgBEJNCo9GoxaWl1VqknHesurS0iEqjUilMIL3pM44BsRzjFJWXVfIQBHlPq0L4iFJbDdcIp6y8mAOBvVkSTHG1lleGKJVKnUpyUlslh+LKnSdrVCqdUokweUAiFh/9DWDocBNGEbP6mE6pEtVw5Wr1SacCVShkMhRVOOvUVXKuRKhSirTvsKhvwkP80LRSFu8dZ41QXIWiqMxgchpaMX2rXq/HWg1Ok0EB360SS8Ta93gcajH9NccEARWXshDlKaeci8pkUj3WngFliiS1Y5hUJlOI5c5TSoRTSnvdA1TO4eskdU6FTCMlCBlQa1bUmiUR1xoZCmOlRFhM6usaJ8ifUcZBVMKqOueUlLgrlp/QRkoOSAm6iEmbnHVioQjhFL+2ASL6JRSrT5CxYHr9VhBJsgIJ4iJ1dShXqOSxil/LTlDM5CEScVXTZp9eBHpO2uihrEos5PPKGPRdTwgC0onlaJPLmlXkg4zkK4eEZS9NTahcrOOV0em73TEeX8hVy9pzQeQllvFsTWmTZJCpuSolq2hX55tWytNJ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" width="31" height="34" alt="">
+        <div class="wordmark">
+          <div class="r1">RECONI</div>
+          <div class="r2">Tax</div>
+        </div>
       </div>
-    </div>
-    <div class="qreveal" id="donationReveal" hidden>
-      <div class="field">
-        <label for="donationInput">Total donated, per year</label>
-        <input type="number" id="donationInput" min="0" step="100" value="" inputmode="decimal" placeholder="e.g. 10000">
+
+      <button type="button" class="sidebar-add" id="sidebarAddClientBtn">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2.5v11M2.5 8h11"/></svg>
+        Add client
+      </button>
+
+      <button type="button" class="sidebar-clientbtn" id="sidebarClientBtn" aria-expanded="false" aria-haspopup="true">
+        <span class="cs-name placeholder" id="sidebarClientName">Loading&hellip;</span>
+        <svg class="chev" width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+      </button>
+
+      <div class="client-panel" id="clientPanel" hidden>
+        <div class="client-panel-search">
+          <input type="text" id="clientFilter" placeholder="Search clients&hellip;">
+        </div>
+        <div class="client-panel-list" id="clientPanelList"></div>
+        <div class="client-panel-add">
+          <input type="text" id="panelNewClientName" placeholder="New client name" maxlength="80">
+          <button type="button" id="panelAddClientBtn">+ Add</button>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <div class="card">
-    <h2>Anything else?</h2>
-    <p class="hint-top">Please tick anything that applied to you this year — your accountant will follow up on these separately.</p>
-    <div class="flag-list" id="flagList"></div>
-  </div>
+      <nav class="navgroups">
+        <div class="navgroup">
+          <div class="label">Overview</div>
+          <div class="items">
+            <button type="button" class="navitem" data-role="calculator">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.5" y="1.5" width="6" height="6" rx="1"/><rect x="8.5" y="1.5" width="6" height="6" rx="1"/><rect x="1.5" y="8.5" width="6" height="6" rx="1"/><rect x="8.5" y="8.5" width="6" height="6" rx="1"/></svg>
+              Calculator
+            </button>
+          </div>
+        </div>
+        <div class="navgroup">
+          <div class="label">Questionnaire</div>
+          <div class="items">
+            <button type="button" class="navitem active" data-role="questionnaire">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 1.8h7l3 3V14a.7.7 0 0 1-.7.7H3.7A.7.7 0 0 1 3 14V1.8Z"/><path d="M5.5 6.2h5M5.5 8.6h5M5.5 11h3"/></svg>
+              Questionnaire
+            </button>
+          </div>
+        </div>
+        <div class="navgroup">
+          <div class="label">Reference</div>
+          <div class="items">
+            <button type="button" class="navitem" data-role="rates">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.5" y="2" width="13" height="12" rx="1.5"/><path d="M1.5 6.5h13M6 6.5V14"/></svg>
+              Rates &amp; Brackets
+            </button>
+            <button type="button" class="navitem" data-role="howcalc">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 1.8h7l3 3V14a.7.7 0 0 1-.7.7H3.7A.7.7 0 0 1 3 14V1.8Z"/><path d="M5.2 7h5.2M5.2 9.6h5.2M5.2 12h3.4"/></svg>
+              How It's Calculated
+            </button>
+          </div>
+        </div>
+        <div class="navgroup">
+          <div class="label">Compliance</div>
+          <div class="items">
+            <button type="button" class="navitem" data-role="disclaimer">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.5 13.5 3.4V7.4C13.5 10.9 11.2 13.6 8 14.5C4.8 13.6 2.5 10.9 2.5 7.4V3.4L8 1.5Z"/></svg>
+              Disclaimer
+            </button>
+          </div>
+        </div>
+      </nav>
 
-  <div class="card submit-card">
-    <button type="button" class="submit-btn" id="submitBtn">&#8595; Save my answers</button>
-    <div class="submit-note">This downloads a small file (not a PDF) — please email it back to your accountant.</div>
-    <div class="status-msg" id="statusMsg" hidden></div>
-  </div>
-</main>
+      <div class="sidebar-account" id="sidebarAccount">
+        <span class="acct-email" id="acctEmail"></span>
+        <button type="button" id="signOutBtn">Sign out</button>
+      </div>
+    </aside>
 
-<footer class="foot">Prepared for Alcock Consulting &middot; your answers stay on this device until you send the saved file yourself.</footer>
+    <main class="content">
+
+      <div class="page-head">
+        <h1>Tax Calculator</h1>
+        <div class="sub">Individuals, companies &amp; trusts &middot; South Africa</div>
+        <p class="desc">Estimates using SARS's <span id="yearRangeDesc">2026/2027 year of assessment (1 March 2026 &ndash; 28 February 2027)</span> tax tables, rebates and credits.</p>
+      </div>
+
+      <div class="ribbon">
+        <div class="ribbon-tabs" role="tablist">
+          <button type="button" class="rtab active" data-type="individual">Individual Tax</button>
+          <button type="button" class="rtab" data-type="company">Company Tax</button>
+          <button type="button" class="rtab" data-type="trust">Trust Taxation</button>
+        </div>
+        <div class="ribbon-client">
+          <select id="taxYearSelect" aria-label="Tax year"></select>
+          <button type="button" id="saveCalcBtn" class="rbtn primary" disabled>Save</button>
+          <button type="button" id="reportBtn" class="rbtn">Download PDF</button>
+          <span class="save-status" id="saveStatus">Loading&hellip;</span>
+        </div>
+      </div>
+
+      <!-- ============================= INDIVIDUAL ============================= -->
+      <section class="tab-panel" data-panel="individual">
+
+        <div data-role="questionnaire">
+          <div class="card">
+            <div class="card-head">
+              <div class="card-head-text">
+                <h2>Questionnaire</h2>
+                <span class="card-sub">Based on the SARS standard income tax return questions</span>
+              </div>
+              <button type="button" class="card-btn" id="ind_importBtn">&#8593; Import client answers</button>
+              <input type="file" id="ind_importFile" accept="application/json,.json" hidden>
+            </div>
+            <div class="import-status" id="ind_importStatus" hidden></div>
+
+            <fieldset>
+              <legend>About you</legend>
+              <div class="field">
+                <label for="ind_ageBand">What is your age?</label>
+                <select id="ind_ageBand">
+                  <option value="under65" selected>Under 65</option>
+                  <option value="65to74">65 to 74</option>
+                  <option value="75plus">75 and older</option>
+                </select>
+              </div>
+              <div class="qrow">
+                <div class="qtext">Do you, your spouse, or a dependant have a disability as defined by SARS?</div>
+                <div class="yn" id="ind_disabilityYN" role="group" aria-label="Disability">
+                  <button type="button" data-val="yes" aria-pressed="false">Yes</button>
+                  <button type="button" data-val="no" aria-pressed="true">No</button>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Employment income</legend>
+              <div class="qrow">
+                <div class="qtext">Did you receive income reflected on an Employee Income Tax Certificate (IRP5 or IT3[a])?</div>
+                <div class="yn" id="ind_irp5YN" role="group" aria-label="IRP5 income">
+                  <button type="button" data-val="yes" aria-pressed="true">Yes</button>
+                  <button type="button" data-val="no" aria-pressed="false">No</button>
+                </div>
+              </div>
+              <div class="warn-banner" id="ind_irp5Warn" hidden>This calculator estimates PAYE on salaried (IRP5) income only. Without IRP5/IT3(a) income the figures below may not apply &mdash; capture the correct income type on the actual return.</div>
+              <div class="field">
+                <label>Enter figures as</label>
+                <div class="freq-toggle" role="group" aria-label="Entry frequency">
+                  <button type="button" id="ind_freqAnnual" aria-pressed="true">Annual</button>
+                  <button type="button" id="ind_freqMonthly" aria-pressed="false">Monthly</button>
+                </div>
+              </div>
+              <div class="field">
+                <label for="ind_grossInput" id="ind_grossLabel">Gross salary, per year</label>
+                <div class="input-r"><input type="number" id="ind_grossInput" min="0" step="100" value="450000" inputmode="decimal"></div>
+                <div class="hint">Total remuneration before any deductions.</div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Retirement</legend>
+              <div class="qrow">
+                <div class="qtext">Did you, or a deemed employer, make retirement annuity fund contributions for yourself (pension, RA or provident)?</div>
+                <div class="yn" id="ind_retYN" role="group" aria-label="Retirement contribution">
+                  <button type="button" data-val="yes" aria-pressed="true">Yes</button>
+                  <button type="button" data-val="no" aria-pressed="false">No</button>
+                </div>
+              </div>
+              <div class="qreveal" id="ind_retReveal">
+                <div class="field">
+                  <label for="ind_retInput" id="ind_retLabel">Retirement contribution, per year</label>
+                  <div class="input-r"><input type="number" id="ind_retInput" min="0" step="50" value="27000" inputmode="decimal"></div>
+                  <div class="hint">Deductible up to 27.5% of income, capped at <span data-fig="retCap">R430,000</span>/year &mdash; excess carries forward.</div>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Medical expenditure</legend>
+              <div class="qrow">
+                <div class="qtext">Did you or your employer pay medical scheme contributions where you're the main member?</div>
+                <div class="yn" id="ind_medYN" role="group" aria-label="Medical aid membership">
+                  <button type="button" data-val="yes" aria-pressed="true">Yes</button>
+                  <button type="button" data-val="no" aria-pressed="false">No</button>
+                </div>
+              </div>
+              <div class="qreveal" id="ind_medReveal">
+                <div class="two-col">
+                  <div class="field">
+                    <label for="ind_membersInput">People covered</label>
+                    <input type="number" id="ind_membersInput" min="0" step="1" value="1" inputmode="numeric">
+                  </div>
+                  <div class="field">
+                    <label for="ind_premiumInput">Premium, per month</label>
+                    <div class="input-r"><input type="number" id="ind_premiumInput" min="0" step="50" value="2450" inputmode="decimal"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="qrow">
+                <div class="qtext">Did you pay other qualifying disability or medical expenses not covered by a scheme?</div>
+                <div class="yn" id="ind_otherMedYN" role="group" aria-label="Other medical expenses">
+                  <button type="button" data-val="yes" aria-pressed="false">Yes</button>
+                  <button type="button" data-val="no" aria-pressed="true">No</button>
+                </div>
+              </div>
+              <div class="qreveal" id="ind_otherMedReveal" hidden>
+                <div class="field">
+                  <label for="ind_expensesInput">Other qualifying medical expenses, per year</label>
+                  <div class="input-r"><input type="number" id="ind_expensesInput" min="0" step="100" value="0" inputmode="decimal"></div>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Donations</legend>
+              <div class="qrow">
+                <div class="qtext">Do you want to claim donations made to approved organisation(s) in terms of s18A?</div>
+                <div class="yn" id="ind_donationYN" role="group" aria-label="Donations">
+                  <button type="button" data-val="yes" aria-pressed="false">Yes</button>
+                  <button type="button" data-val="no" aria-pressed="true">No</button>
+                </div>
+              </div>
+              <div class="qreveal" id="ind_donationReveal" hidden>
+                <div class="field">
+                  <label for="ind_donationInput">Donations made, per year</label>
+                  <div class="input-r"><input type="number" id="ind_donationInput" min="0" step="100" value="0" inputmode="decimal"></div>
+                  <div class="hint">Deductible up to 10% of taxable income (before this deduction) &mdash; excess carries forward.</div>
+                </div>
+              </div>
+            </fieldset>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h2>Other items on the standard return</h2>
+              <span class="card-sub">Not calculated by this tool &mdash; tick anything that applies</span>
+            </div>
+            <div class="flag-list" id="ind_flagList"></div>
+          </div>
+        </div>
+
+        <div data-role="calculator">
+          <div class="stat-row">
+            <div class="stat">
+              <div class="k">Tax payable</div>
+              <div class="v" id="ind_heroMonthly">R0.00</div>
+              <div class="c" id="ind_heroAnnual">R0.00 per year</div>
+            </div>
+            <div class="stat">
+              <div class="k">Effective rate</div>
+              <div class="v" id="ind_statEffective">0.0%</div>
+              <div class="c">Of gross income</div>
+            </div>
+            <div class="stat">
+              <div class="k">Marginal rate</div>
+              <div class="v" id="ind_statMarginal">0%</div>
+              <div class="c">On the next rand earned</div>
+            </div>
+            <div class="stat">
+              <div class="k">Take-home pay</div>
+              <div class="v" id="ind_statTakeHome">R0.00</div>
+              <div class="c">Per month, after tax, UIF &amp; retirement</div>
+            </div>
+          </div>
+
+          <div class="two-col-row">
+            <div class="card">
+              <div class="card-head"><h2>Flags on this return</h2></div>
+              <ul class="checklist" id="ind_flagsSummary"></ul>
+            </div>
+            <div class="card">
+              <div class="card-head"><h2>Assessment</h2></div>
+              <div id="ind_ledger"></div>
+            </div>
+          </div>
+
+          <div class="two-col-row">
+            <div class="card">
+              <div class="card-head"><h2>Where gross income goes</h2></div>
+              <div class="bar" id="ind_barChart"></div>
+              <div class="legend" id="ind_barLegend"></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h2>Calculation checklist</h2></div>
+              <div id="ind_checklistBadge"></div>
+              <ul class="checklist" id="ind_checklist"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="card full" data-role="rates">
+          <div class="card-head"><h2>Tax brackets applied</h2></div>
+          <div class="table-wrap">
+            <table class="brackets">
+              <thead><tr><th>Taxable income</th><th>Tax</th></tr></thead>
+              <tbody id="ind_bracketBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card full" data-role="howcalc">
+          <details class="notes" open>
+            <summary>How this is calculated</summary>
+            <div class="body">
+              <p><strong>Retirement deduction.</strong> Contributions are deductible up to 27.5% of gross income, capped at <span data-fig="retCap">R430,000</span> a year. Amounts above the cap carry forward to future years.</p>
+              <p><strong>Rebates.</strong> A primary rebate of <span data-fig="rebatePrimary">R17,820</span> applies to everyone; a secondary rebate of <span data-fig="rebateSecondary">R9,765</span> is added from age 65; a tertiary rebate of <span data-fig="rebateTertiary">R3,249</span> is added from age 75.</p>
+              <p><strong>Medical scheme fees tax credit (MSFTC).</strong> A fixed monthly credit: <span data-fig="msftcFirst">R376</span> for each of the first two members covered, and <span data-fig="msftcAdditional">R254</span> for each dependant after that.</p>
+              <p><strong>Additional medical expenses credit (AMTC).</strong> For taxpayers 65+, or with a qualifying disability: 33.3% of (medical aid contributions over 3&times; the annual MSFTC, plus other qualifying expenses). Under 65 without a disability: 25% of that same total, less 7.5% of taxable income.</p>
+              <p><strong>UIF.</strong> 1% of monthly remuneration is contributed by both employee and employer, capped at a monthly remuneration ceiling of <span data-fig="uifCeiling">R17,712</span> (max <span data-fig="uifCeilingHalf">R177.12</span> each, per month).</p>
+              <p><strong>Donations (s18A).</strong> Donations to approved public benefit organisations are deductible up to 10% of taxable income, calculated before the donations deduction itself. Amounts above the cap carry forward to future years.</p>
+              <p>Covers salaried income only. Excludes travel and other allowances, fringe benefits, capital gains, other tax credits, and provisional tax for non-salaried income. Anything ticked under &ldquo;Other items on the standard return&rdquo; needs its own schedule and isn&rsquo;t reflected in the figures above.</p>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <!-- ============================= COMPANY ============================= -->
+      <section class="tab-panel" data-panel="company" hidden>
+
+        <div data-role="questionnaire">
+          <div class="card">
+            <div class="card-head"><h2>Questionnaire</h2></div>
+            <fieldset>
+              <legend>Company</legend>
+              <div class="field">
+                <label for="co_taxableInput">What is the company's taxable income for the year?</label>
+                <div class="input-r"><input type="number" id="co_taxableInput" min="0" step="100" value="1200000" inputmode="decimal"></div>
+                <div class="hint">Net profit after allowable deductions, as per the ITR14 computation.</div>
+              </div>
+              <div class="qrow">
+                <div class="qtext">Does the company qualify as a Small Business Corporation (SBC)?
+                  <span class="qhint">SBC uses a graduated scale instead of the flat 27% rate. Eligibility depends on shareholding, gross income and investment-income limits &mdash; not verified by this tool.</span>
+                </div>
+                <div class="yn" id="co_sbcYN" role="group" aria-label="Small Business Corporation">
+                  <button type="button" data-val="yes" aria-pressed="false">Yes</button>
+                  <button type="button" data-val="no" aria-pressed="true">No</button>
+                </div>
+              </div>
+            </fieldset>
+          </div>
+        </div>
+
+        <div data-role="calculator">
+          <div class="stat-row">
+            <div class="stat">
+              <div class="k">Tax payable</div>
+              <div class="v" id="co_hero">R0.00</div>
+              <div class="c" id="co_heroSub">per year</div>
+            </div>
+            <div class="stat">
+              <div class="k">Effective rate</div>
+              <div class="v" id="co_statEffective">0.0%</div>
+              <div class="c">Of taxable income</div>
+            </div>
+            <div class="stat">
+              <div class="k">Rate applied</div>
+              <div class="v" id="co_statRate">27%</div>
+              <div class="c" id="co_statRateSub">Standard company rate</div>
+            </div>
+            <div class="stat">
+              <div class="k">Net profit after tax</div>
+              <div class="v" id="co_statNet">R0.00</div>
+              <div class="c">Per year</div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:16px;">
+            <div class="card-head"><h2>Assessment</h2></div>
+            <div id="co_ledger"></div>
+          </div>
+
+          <div class="two-col-row">
+            <div class="card">
+              <div class="card-head"><h2>Where profit goes</h2></div>
+              <div class="bar" id="co_barChart"></div>
+              <div class="legend" id="co_barLegend"></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h2>Calculation checklist</h2></div>
+              <div id="co_checklistBadge"></div>
+              <ul class="checklist" id="co_checklist"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="card full" data-role="rates">
+          <div class="card-head"><h2>Rate applied</h2></div>
+          <div id="co_rateArea"></div>
+        </div>
+
+        <div class="card full" data-role="howcalc">
+          <details class="notes" open>
+            <summary>How this is calculated</summary>
+            <div class="body">
+              <p><strong>Standard rate.</strong> Companies pay a flat 27% on taxable income for years of assessment ending in the <span data-fig="yearLabel">2026/2027</span> tax year.</p>
+              <p><strong>Small Business Corporation (SBC).</strong> A qualifying SBC is taxed on a graduated scale: 0% up to <span data-fig="sbcT1">R99,000</span>, 7% up to <span data-fig="sbcT2">R365,000</span>, 21% up to <span data-fig="sbcT3">R550,000</span> plus <span data-fig="sbcBase3">R18,620</span>, and 27% above that plus <span data-fig="sbcBase4">R57,470</span>. Qualifying broadly requires all shareholders to be natural persons with no other company interests, gross income under R20 million, and investment/personal-service income under 20% of total receipts &mdash; confirm eligibility before relying on this.</p>
+              <p><strong>Not included.</strong> Dividends tax (20% withheld when after-tax profit is distributed to shareholders), capital gains, provisional tax payment dates, and any deferred tax adjustments.</p>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <!-- ============================= TRUST ============================= -->
+      <section class="tab-panel" data-panel="trust" hidden>
+
+        <div data-role="questionnaire">
+          <div class="card">
+            <div class="card-head"><h2>Questionnaire</h2></div>
+            <fieldset>
+              <legend>Trust</legend>
+              <div class="field">
+                <label for="tr_taxableInput">What is the trust's taxable income, retained for the year?</label>
+                <div class="input-r"><input type="number" id="tr_taxableInput" min="0" step="100" value="600000" inputmode="decimal"></div>
+                <div class="hint">Income retained in the trust for the year &mdash; not vested in beneficiaries.</div>
+              </div>
+              <div class="qrow">
+                <div class="qtext">Is this a special trust (for a disabled or minor beneficiary)?</div>
+                <div class="yn" id="tr_specialYN" role="group" aria-label="Special trust">
+                  <button type="button" data-val="yes" aria-pressed="false">Yes</button>
+                  <button type="button" data-val="no" aria-pressed="true">No</button>
+                </div>
+              </div>
+            </fieldset>
+          </div>
+        </div>
+
+        <div data-role="calculator">
+          <div class="stat-row">
+            <div class="stat">
+              <div class="k">Tax payable</div>
+              <div class="v" id="tr_hero">R0.00</div>
+              <div class="c" id="tr_heroSub">per year</div>
+            </div>
+            <div class="stat">
+              <div class="k">Effective rate</div>
+              <div class="v" id="tr_statEffective">45.0%</div>
+              <div class="c">Flat rate, no rebates</div>
+            </div>
+            <div class="stat">
+              <div class="k">Net income after tax</div>
+              <div class="v" id="tr_statNet">R0.00</div>
+              <div class="c">Retained in the trust</div>
+            </div>
+            <div class="stat">
+              <div class="k">Trust type</div>
+              <div class="v" id="tr_statType" style="font-size:17px;">Ordinary</div>
+              <div class="c">As selected below</div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:16px;">
+            <div class="card-head"><h2>Assessment</h2></div>
+            <div id="tr_ledger"></div>
+          </div>
+
+          <div class="two-col-row">
+            <div class="card">
+              <div class="card-head"><h2>Where trust income goes</h2></div>
+              <div class="bar" id="tr_barChart"></div>
+              <div class="legend" id="tr_barLegend"></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h2>Calculation checklist</h2></div>
+              <div id="tr_checklistBadge"></div>
+              <ul class="checklist" id="tr_checklist"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="card full" data-role="rates">
+          <div class="card-head"><h2>Rate applied</h2></div>
+          <div class="flat-rate-box">Flat trust rate: <b>45%</b> on income retained in the trust. Trusts get no rebates and no tax-free threshold.</div>
+        </div>
+
+        <div class="card full" data-role="howcalc">
+          <details class="notes" open>
+            <summary>How this is calculated</summary>
+            <div class="body">
+              <p><strong>Conduit principle.</strong> This estimates tax on income retained in the trust. Income vested in (distributed to) beneficiaries during the year is taxed in their hands, at their own rates, not at the trust's flat rate.</p>
+              <p><strong>Special trusts.</strong> A trust set up solely for a beneficiary with a disability, or for minor beneficiaries of a deceased estate, is instead taxed on the same sliding scale as an individual &mdash; use the Individual Tax tab for that calculation.</p>
+              <p><strong>Not included.</strong> Capital gains (trusts include 80% of gains in taxable income, versus 40% for individuals), donations tax, and distributions to non-resident beneficiaries.</p>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <footer class="disclaimer-block" data-role="disclaimer">
+        <span>Figures reflect SARS's <span id="yearRangeFooter">2026/2027 year of assessment (1 March 2026 &ndash; 28 February 2027)</span> tax tables, rebates, thresholds and credits. Estimates for planning purposes only &mdash; not a substitute for a SARS assessment or professional advice.</span>
+        <span class="footer-brand">RECONI Tax</span>
+      </footer>
+
+    </main>
+  </div>
+</div>
 
 <script>
 (function(){
   "use strict";
 
+  // ---------- shared helpers ----------
+  function fmtR(n, decimals){
+    if (decimals === undefined) decimals = 2;
+    if (!isFinite(n)) n = 0;
+    var sign = n < 0 ? '-' : '';
+    n = Math.abs(n);
+    var parts = n.toFixed(decimals).split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return sign + 'R' + parts[0] + (decimals ? '.' + parts[1] : '');
+  }
+  function fmtPct(n, decimals){
+    if (decimals === undefined) decimals = 1;
+    if (!isFinite(n)) n = 0;
+    return n.toFixed(decimals) + '%';
+  }
+  function numVal(inputEl){
+    var v = parseFloat(inputEl.value);
+    return isFinite(v) && v > 0 ? v : 0;
+  }
+  function round2(n){ return Math.round(n * 100) / 100; }
+  function taxByBrackets(brackets, income){
+    for (var i = 0; i < brackets.length; i++){
+      var b = brackets[i];
+      if (income <= b.max){ return { tax: b.base + b.rate * (income - b.min), index: i }; }
+    }
+    var last = brackets[brackets.length - 1];
+    return { tax: last.base + last.rate * (income - last.min), index: brackets.length - 1 };
+  }
+  function ledgerRow(desc, amount, opts){
+    opts = opts || {};
+    var row = document.createElement('div');
+    row.className = 'ledger-row' + (opts.total ? ' total' : '');
+    var noteHtml = opts.note ? '<span class="note">' + opts.note + '</span>' : '';
+    row.innerHTML =
+      '<span class="desc">' + desc + noteHtml + '</span>' +
+      '<span class="fill"></span>' +
+      '<span class="amt">' + (opts.negative ? '&minus;' : '') + fmtR(Math.abs(amount)) + '</span>';
+    return row;
+  }
+  var CHECK_ICO = '<svg class="ico good" width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5 6.2 12 13 4"/></svg>';
+  var WARN_ICO = '<svg class="ico warn" width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 1.5 14.5 13.5H1.5Z"/><path d="M8 6.3v3M8 11.3h.01"/></svg>';
+  function checklistItem(good, html){
+    var li = document.createElement('li');
+    li.innerHTML = (good ? CHECK_ICO : WARN_ICO) + '<span class="txt">' + html + '</span>';
+    return li;
+  }
+  function renderBar(chartEl, legendEl, segments){
+    var total = segments.reduce(function(s, x){ return s + Math.max(0, x.value); }, 0) || 1;
+    chartEl.innerHTML = '';
+    legendEl.innerHTML = '';
+    segments.forEach(function(seg){
+      var val = Math.max(0, seg.value);
+      var pct = (val / total) * 100;
+      var segEl = document.createElement('div');
+      segEl.className = 'bar-seg';
+      segEl.style.background = seg.color;
+      segEl.style.flexBasis = Math.max(pct, val > 0 ? 0.6 : 0) + '%';
+      segEl.title = seg.label + ': ' + fmtR(seg.value);
+      chartEl.appendChild(segEl);
+      var item = document.createElement('div');
+      item.className = 'legend-item';
+      item.innerHTML =
+        '<span class="swatch" style="background:' + seg.color + '"></span>' +
+        '<span class="name">' + seg.label + '</span>' +
+        '<span class="amt">' + fmtR(seg.value, 0) + '</span>' +
+        '<span class="pct">' + fmtPct(pct, 0) + '</span>';
+      legendEl.appendChild(item);
+    });
+  }
+
+  // ================= TAX YEAR TABLES =================
+  var TAX_TABLES = {
+    '2025-2026': {
+      label: '2025/2026', range: '1 Mar 2025 \u2013 28 Feb 2026',
+      ind: {
+        brackets: [
+          { min: 0,       max: 237100,   rate: 0.18, base: 0 },
+          { min: 237100,  max: 370500,   rate: 0.26, base: 42678 },
+          { min: 370500,  max: 512800,   rate: 0.31, base: 77362 },
+          { min: 512800,  max: 673000,   rate: 0.36, base: 121475 },
+          { min: 673000,  max: 857900,   rate: 0.39, base: 179147 },
+          { min: 857900,  max: 1817000,  rate: 0.41, base: 251258 },
+          { min: 1817000, max: Infinity, rate: 0.45, base: 644489 }
+        ],
+        rebatePrimary: 17235, rebateSecondary: 9444, rebateTertiary: 3145,
+        retirementCap: 350000, uifCeiling: 17712,
+        msftcFirstTwo: 364, msftcAdditional: 246
+      },
+      co: {
+        sbc: [
+          { min: 0,      max: 95750,    rate: 0,    base: 0 },
+          { min: 95750,  max: 365000,   rate: 0.07, base: 0 },
+          { min: 365000, max: 550000,   rate: 0.21, base: 18848 },
+          { min: 550000, max: Infinity, rate: 0.27, base: 57698 }
+        ]
+      },
+      trust: { rate: 0.45 }
+    },
+    '2026-2027': {
+      label: '2026/2027', range: '1 Mar 2026 \u2013 28 Feb 2027',
+      ind: {
+        brackets: [
+          { min: 0,        max: 245100,      rate: 0.18, base: 0 },
+          { min: 245100,   max: 383100,      rate: 0.26, base: 44118 },
+          { min: 383100,   max: 530200,      rate: 0.31, base: 79998 },
+          { min: 530200,   max: 695800,      rate: 0.36, base: 125599 },
+          { min: 695800,   max: 887000,      rate: 0.39, base: 185215 },
+          { min: 887000,   max: 1878600,     rate: 0.41, base: 259783 },
+          { min: 1878600,  max: Infinity,    rate: 0.45, base: 666339 }
+        ],
+        rebatePrimary: 17820, rebateSecondary: 9765, rebateTertiary: 3249,
+        retirementCap: 430000, uifCeiling: 17712,
+        msftcFirstTwo: 376, msftcAdditional: 254
+      },
+      co: {
+        sbc: [
+          { min: 0,      max: 99000,    rate: 0,    base: 0 },
+          { min: 99000,  max: 365000,   rate: 0.07, base: 0 },
+          { min: 365000, max: 550000,   rate: 0.21, base: 18620 },
+          { min: 550000, max: Infinity, rate: 0.27, base: 57470 }
+        ]
+      },
+      trust: { rate: 0.45 }
+    }
+  };
+  var TAX_YEAR_ORDER = ['2025-2026', '2026-2027'];
+  var DEFAULT_TAX_YEAR = '2026-2027';
+  var currentTaxYear = DEFAULT_TAX_YEAR;
+  var CO_RATE = 0.27;
+  var UIF_RATE = 0.01;
+
+  function fmtFig(n){ return fmtR(n, 0); }
+  function updateFigureSpans(){
+    var T = TAX_TABLES[currentTaxYear];
+    var figs = {
+      retCap: fmtFig(T.ind.retirementCap),
+      rebatePrimary: fmtFig(T.ind.rebatePrimary),
+      rebateSecondary: fmtFig(T.ind.rebateSecondary),
+      rebateTertiary: fmtFig(T.ind.rebateTertiary),
+      msftcFirst: fmtFig(T.ind.msftcFirstTwo),
+      msftcAdditional: fmtFig(T.ind.msftcAdditional),
+      uifCeiling: fmtFig(T.ind.uifCeiling),
+      uifCeilingHalf: fmtR(T.ind.uifCeiling * UIF_RATE, 2),
+      yearLabel: T.label,
+      sbcT1: fmtFig(T.co.sbc[1].min),
+      sbcT2: fmtFig(T.co.sbc[2].min),
+      sbcT3: fmtFig(T.co.sbc[3].min),
+      sbcBase3: fmtFig(T.co.sbc[2].base),
+      sbcBase4: fmtFig(T.co.sbc[3].base)
+    };
+    Object.keys(figs).forEach(function(key){
+      var els = document.querySelectorAll('[data-fig="' + key + '"]');
+      for (var i = 0; i < els.length; i++){ els[i].textContent = figs[key]; }
+    });
+    var rangeText = T.label + ' year of assessment (1 ' + T.range.replace(/^1 /, '');
+    var descEl = document.getElementById('yearRangeDesc');
+    var footEl = document.getElementById('yearRangeFooter');
+    var fullText = T.label + ' year of assessment (' + T.range + ')';
+    if (descEl) descEl.textContent = fullText;
+    if (footEl) footEl.textContent = fullText;
+  }
+
+  function populateTaxYearSelect(){
+    if (!taxYearSelect) return;
+    taxYearSelect.innerHTML = '';
+    TAX_YEAR_ORDER.forEach(function(key){
+      var opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = TAX_TABLES[key].label + ' (' + TAX_TABLES[key].range + ')';
+      taxYearSelect.appendChild(opt);
+    });
+    taxYearSelect.value = currentTaxYear;
+  }
+
+  function setTaxYear(year, silent){
+    if (!TAX_TABLES[year]) return;
+    currentTaxYear = year;
+    if (taxYearSelect) taxYearSelect.value = year;
+    updateFigureSpans();
+    buildIndBracketRows();
+    calcIndividual();
+    calcCompany();
+    calcTrust();
+    if (!silent) markDirty();
+  }
+
+  // ================= INDIVIDUAL =================
+  var AGE_LABEL = { under65: 'under 65', '65to74': '65 to 74', '75plus': '75 and older' };
+  var indFreq = 'annual';
+
   function initYesNo(containerId, defaultYes, onChange){
-    var container = document.getElementById(containerId);
-    var btns = Array.prototype.slice.call(container.querySelectorAll('button'));
+    var el = document.getElementById(containerId);
     var state = !!defaultYes;
+    var btns = Array.prototype.slice.call(el.querySelectorAll('button'));
     function render(){
       btns.forEach(function(b){ b.setAttribute('aria-pressed', String((b.dataset.val === 'yes') === state)); });
     }
@@ -289,129 +1087,1316 @@
     };
   }
 
-  var retReveal = document.getElementById('retReveal');
-  var medReveal = document.getElementById('medReveal');
-  var otherMedReveal = document.getElementById('otherMedReveal');
-  var donationReveal = document.getElementById('donationReveal');
-  var irp5Warn = document.getElementById('irp5Warn');
+  var ind = {
+    ageBand: document.getElementById('ind_ageBand'),
+    freqAnnual: document.getElementById('ind_freqAnnual'),
+    freqMonthly: document.getElementById('ind_freqMonthly'),
+    grossInput: document.getElementById('ind_grossInput'),
+    grossLabel: document.getElementById('ind_grossLabel'),
+    retInput: document.getElementById('ind_retInput'),
+    retLabel: document.getElementById('ind_retLabel'),
+    retReveal: document.getElementById('ind_retReveal'),
+    membersInput: document.getElementById('ind_membersInput'),
+    premiumInput: document.getElementById('ind_premiumInput'),
+    medReveal: document.getElementById('ind_medReveal'),
+    expensesInput: document.getElementById('ind_expensesInput'),
+    otherMedReveal: document.getElementById('ind_otherMedReveal'),
+    donationInput: document.getElementById('ind_donationInput'),
+    donationReveal: document.getElementById('ind_donationReveal'),
+    irp5Warn: document.getElementById('ind_irp5Warn'),
+    flagList: document.getElementById('ind_flagList'),
+    flagsSummary: document.getElementById('ind_flagsSummary'),
+    importBtn: document.getElementById('ind_importBtn'),
+    importFile: document.getElementById('ind_importFile'),
+    importStatus: document.getElementById('ind_importStatus'),
+    heroMonthly: document.getElementById('ind_heroMonthly'),
+    heroAnnual: document.getElementById('ind_heroAnnual'),
+    statEffective: document.getElementById('ind_statEffective'),
+    statMarginal: document.getElementById('ind_statMarginal'),
+    statTakeHome: document.getElementById('ind_statTakeHome'),
+    barChart: document.getElementById('ind_barChart'),
+    barLegend: document.getElementById('ind_barLegend'),
+    ledger: document.getElementById('ind_ledger'),
+    bracketBody: document.getElementById('ind_bracketBody'),
+    checklist: document.getElementById('ind_checklist'),
+    checklistBadge: document.getElementById('ind_checklistBadge')
+  };
 
-  var disabilityYN = initYesNo('disabilityYN', false);
-  var irp5YN = initYesNo('irp5YN', true, function(v){ irp5Warn.hidden = v; });
-  var retYN = initYesNo('retYN', true, function(v){ retReveal.hidden = !v; });
-  var medYN = initYesNo('medYN', true, function(v){ medReveal.hidden = !v; });
-  var otherMedYN = initYesNo('otherMedYN', false, function(v){ otherMedReveal.hidden = !v; });
-  var donationYN = initYesNo('donationYN', false, function(v){ donationReveal.hidden = !v; });
+  var indDisabilityYN = initYesNo('ind_disabilityYN', false, function(){ calcIndividual(); markDirty(); });
+  var indIrp5YN = initYesNo('ind_irp5YN', true, function(v){ ind.irp5Warn.hidden = v; markDirty(); });
+  var indRetYN = initYesNo('ind_retYN', true, function(v){ ind.retReveal.hidden = !v; calcIndividual(); markDirty(); });
+  var indMedYN = initYesNo('ind_medYN', true, function(v){ ind.medReveal.hidden = !v; calcIndividual(); markDirty(); });
+  var indOtherMedYN = initYesNo('ind_otherMedYN', false, function(v){ ind.otherMedReveal.hidden = !v; calcIndividual(); markDirty(); });
+  var indDonationYN = initYesNo('ind_donationYN', false, function(v){ ind.donationReveal.hidden = !v; calcIndividual(); markDirty(); });
 
-  var freqAnnual = document.getElementById('freqAnnual');
-  var freqMonthly = document.getElementById('freqMonthly');
-  var grossLabel = document.getElementById('grossLabel');
-  var freq = 'annual';
-  function setFreq(next){
-    if (next === freq) return;
-    freq = next;
-    freqAnnual.setAttribute('aria-pressed', String(freq === 'annual'));
-    freqMonthly.setAttribute('aria-pressed', String(freq === 'monthly'));
-    grossLabel.textContent = freq === 'annual' ? 'Gross salary, per year (before any deductions)' : 'Gross salary, per month (before any deductions)';
-  }
-  freqAnnual.addEventListener('click', function(){ setFreq('annual'); });
-  freqMonthly.addEventListener('click', function(){ setFreq('monthly'); });
-
+  // ---- "other items on the standard return" flags ----
   var FLAG_DEFS = [
-    { id: 'unemployedPart', label: 'I was unemployed, or didn\'t work, for part of the year' },
-    { id: 'foreignEmployment', label: 'I worked and earned income outside South Africa' },
-    { id: 'investmentIncome', label: 'I earned interest, dividends, or income from property funds (REITs)' },
-    { id: 'trustBeneficiary', label: 'I received money from a trust, or income was allocated to me by a trust' },
-    { id: 'taxFreeActivity', label: 'I have a Tax-Free Savings Account that had money paid in, taken out, or growth this year' },
-    { id: 'rentalIncome', label: 'I earned rental income from a property I let out' },
-    { id: 'businessPartner', label: 'I run my own business, freelance, or I\'m a partner in a business' },
-    { id: 'capitalGains', label: 'I sold property, shares, crypto or other assets for a profit or loss this year' },
-    { id: 'foreignIncome', label: 'I received other income from outside South Africa (not interest or dividends)' },
-    { id: 'farming', label: 'I farm, or I\'m involved in farming operations' },
-    { id: 'otherReceipts', label: 'I received other taxable income not covered above' },
-    { id: 'nonTaxable', label: 'I received an amount I believe is not taxable' },
-    { id: 'vcc', label: 'I sold shares in a SARS-approved Venture Capital Company' },
-    { id: 'otherDeductions', label: 'I have other tax-deductible expenses not covered above (e.g. a home office)' },
-    { id: 'director', label: 'I\'m a director of a company, or a member of a close corporation' },
-    { id: 'largeAssets', label: 'I own assets (property, investments, etc.) worth more than R50 million' },
-    { id: 'vdp', label: 'This relates to a SARS Voluntary Disclosure Programme application' }
+    { id: 'unemployedPart', label: 'Was unemployed for part of the year of assessment' },
+    { id: 'foreignEmployment', label: 'Employed and received income from outside South Africa' },
+    { id: 'investmentIncome', label: 'Received local/foreign interest, REIT distributions or taxable dividends deemed to be income (s8E/s8EA)' },
+    { id: 'trustBeneficiary', label: 'Received or became entitled to income as a beneficiary of a trust, or income deemed under s7' },
+    { id: 'taxFreeActivity', label: 'Had contributions, transfers, withdrawals or income on a Tax Free Investment' },
+    { id: 'rentalIncome', label: 'Derived income from letting fixed property' },
+    { id: 'businessPartner', label: 'Is a partner in a business, or has local business, trade or professional income' },
+    { id: 'capitalGains', label: 'Disposed of local or foreign capital assets attracting a capital gain or loss' },
+    { id: 'foreignIncome', label: 'Received other foreign income (apart from foreign interest/dividends)' },
+    { id: 'farming', label: 'Participated in local farming operations' },
+    { id: 'otherReceipts', label: 'Has other taxable receipts or accruals not addressed above' },
+    { id: 'nonTaxable', label: 'Received an amount considered non-taxable' },
+    { id: 'vcc', label: 'Sold SARS-approved Venture Capital Company shares for which a deduction was previously allowed' },
+    { id: 'otherDeductions', label: 'Has other deductible expenditure not addressed above (e.g. home office)' },
+    { id: 'director', label: 'Is a director of a company or member of a close corporation' },
+    { id: 'largeAssets', label: 'Holds assets with a market value over R50 million' },
+    { id: 'vdp', label: 'This return relates to a SARS Voluntary Disclosure Programme application' }
   ];
-  var flagList = document.getElementById('flagList');
-  FLAG_DEFS.forEach(function(def){
-    var row = document.createElement('div');
-    row.className = 'check-row';
-    row.innerHTML = '<input type="checkbox" id="flag_' + def.id + '"><label for="flag_' + def.id + '">' + def.label + '</label>';
-    flagList.appendChild(row);
-  });
+  (function renderFlagList(){
+    ind.flagList.innerHTML = '';
+    FLAG_DEFS.forEach(function(def){
+      var row = document.createElement('div');
+      row.className = 'check-row';
+      row.innerHTML = '<input type="checkbox" id="ind_flag_' + def.id + '"><label for="ind_flag_' + def.id + '">' + def.label + '</label>';
+      ind.flagList.appendChild(row);
+      row.querySelector('input').addEventListener('change', function(){ calcIndividual(); markDirty(); });
+    });
+  })();
   function getFlagState(){
     var state = {};
-    FLAG_DEFS.forEach(function(def){ state[def.id] = document.getElementById('flag_' + def.id).checked; });
+    FLAG_DEFS.forEach(function(def){
+      var el = document.getElementById('ind_flag_' + def.id);
+      state[def.id] = !!(el && el.checked);
+    });
     return state;
   }
-
-  function numVal(el){ var n = parseFloat(String(el.value).replace(/[^0-9.\\-]/g, '')); return isNaN(n) ? 0 : n; }
-
-  function slugify(s){
-    return String(s || 'client').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'client';
+  function setFlagState(state){
+    state = state || {};
+    FLAG_DEFS.forEach(function(def){
+      var el = document.getElementById('ind_flag_' + def.id);
+      if (el) el.checked = !!state[def.id];
+    });
+  }
+  function renderFlagsSummary(){
+    var state = getFlagState();
+    var ticked = FLAG_DEFS.filter(function(def){ return state[def.id]; });
+    ind.flagsSummary.innerHTML = '';
+    if (ticked.length === 0){
+      ind.flagsSummary.appendChild(checklistItem(true, 'Nothing flagged on the standard return'));
+    } else {
+      ind.flagsSummary.appendChild(checklistItem(false, ticked.length + ' item' + (ticked.length === 1 ? '' : 's') + ' flagged &mdash; needs a separate schedule'));
+      ticked.forEach(function(def){ ind.flagsSummary.appendChild(checklistItem(false, def.label)); });
+    }
+    return ticked;
   }
 
-  var statusMsg = document.getElementById('statusMsg');
-  function showStatus(ok, message){
-    statusMsg.hidden = false;
-    statusMsg.className = 'status-msg ' + (ok ? 'ok' : 'err');
-    statusMsg.textContent = message;
+  // ---- import client-submitted questionnaire ----
+  function showImportStatus(ok, message){
+    ind.importStatus.hidden = false;
+    ind.importStatus.className = 'import-status ' + (ok ? 'ok' : 'err');
+    ind.importStatus.textContent = message;
+  }
+  function applyImportedIndividual(parsed){
+    if (!parsed || parsed.formType !== 'individual-questionnaire' || !parsed.data){
+      showImportStatus(false, 'This file doesn\'t look like a RECONI Tax client questionnaire. Please check the file and try again.');
+      return;
+    }
+    applyIndividual(parsed.data);
+    markDirty();
+    var who = parsed.clientName ? parsed.clientName : 'the client';
+    var when = parsed.generatedAt ? fmtDateLong(new Date(parsed.generatedAt)) : '';
+    showImportStatus(true, '\u2713 Imported ' + who + '\'s answers' + (when ? (', submitted ' + when) : '') + '. Review the fields below, then click Save.');
+  }
+  ind.importBtn.addEventListener('click', function(){ ind.importFile.value = ''; ind.importFile.click(); });
+  ind.importFile.addEventListener('change', function(){
+    var file = ind.importFile.files && ind.importFile.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      var parsed;
+      try { parsed = JSON.parse(String(reader.result)); }
+      catch (e) { showImportStatus(false, 'Couldn\'t read that file \u2014 it doesn\'t look like a valid questionnaire file.'); return; }
+      applyImportedIndividual(parsed);
+    };
+    reader.onerror = function(){ showImportStatus(false, 'Couldn\'t read that file. Please try again.'); };
+    reader.readAsText(file);
+  });
+
+  function buildIndBracketRows(){
+    ind.bracketBody.innerHTML = '';
+    TAX_TABLES[currentTaxYear].ind.brackets.forEach(function(b, i){
+      var tr = document.createElement('tr');
+      tr.dataset.index = i;
+      var rangeText = i === 0 ? 'R0 &ndash; ' + fmtR(b.max, 0)
+        : (b.max === Infinity ? fmtR(b.min + 1, 0) + ' and above' : fmtR(b.min + 1, 0) + ' &ndash; ' + fmtR(b.max, 0));
+      var formulaText = i === 0 ? '18% of taxable income'
+        : fmtR(b.base, 0) + ' + ' + Math.round(b.rate * 100) + '% above ' + fmtR(b.min, 0);
+      tr.innerHTML = '<td class="range">' + rangeText + '</td><td class="formula">' + formulaText + '</td>';
+      ind.bracketBody.appendChild(tr);
+    });
+  }
+  function highlightRow(tbody, index){
+    tbody.querySelectorAll('tr').forEach(function(r){ r.classList.toggle('current', parseInt(r.dataset.index, 10) === index); });
   }
 
-  document.getElementById('submitBtn').addEventListener('click', function(){
-    var nameEl = document.getElementById('clientName');
-    var name = nameEl.value.trim();
-    if (!name){
-      showStatus(false, 'Please enter your full name before saving.');
-      nameEl.focus();
+  function gatherIndividual(){
+    return {
+      taxYear: currentTaxYear,
+      ageBand: ind.ageBand.value, disability: indDisabilityYN.get(), freq: indFreq,
+      irp5: indIrp5YN.get(),
+      gross: ind.grossInput.value,
+      hasRet: indRetYN.get(), ret: ind.retInput.value,
+      hasMed: indMedYN.get(), members: ind.membersInput.value, premium: ind.premiumInput.value,
+      hasOtherMed: indOtherMedYN.get(), expenses: ind.expensesInput.value,
+      hasDonation: indDonationYN.get(), donation: ind.donationInput.value,
+      flags: getFlagState()
+    };
+  }
+  function applyIndividual(s){
+    if (!s) return;
+    if (s.taxYear && TAX_TABLES[s.taxYear] && s.taxYear !== currentTaxYear) setTaxYear(s.taxYear, true);
+    ind.ageBand.value = s.ageBand || 'under65';
+    indDisabilityYN.set(!!s.disability, true);
+    if (s.freq && s.freq !== indFreq) setIndFrequency(s.freq, true);
+    if (s.gross !== undefined) ind.grossInput.value = s.gross;
+    indRetYN.set(s.hasRet !== undefined ? !!s.hasRet : (parseFloat(s.ret) > 0), true);
+    ind.retReveal.hidden = !indRetYN.get();
+    if (s.ret !== undefined) ind.retInput.value = s.ret;
+    indMedYN.set(s.hasMed !== undefined ? !!s.hasMed : true, true);
+    ind.medReveal.hidden = !indMedYN.get();
+    if (s.members !== undefined) ind.membersInput.value = s.members;
+    if (s.premium !== undefined) ind.premiumInput.value = s.premium;
+    indOtherMedYN.set(s.hasOtherMed !== undefined ? !!s.hasOtherMed : (parseFloat(s.expenses) > 0), true);
+    ind.otherMedReveal.hidden = !indOtherMedYN.get();
+    if (s.expenses !== undefined) ind.expensesInput.value = s.expenses;
+    indIrp5YN.set(s.irp5 !== undefined ? !!s.irp5 : true, true);
+    ind.irp5Warn.hidden = indIrp5YN.get();
+    indDonationYN.set(s.hasDonation !== undefined ? !!s.hasDonation : (parseFloat(s.donation) > 0), true);
+    ind.donationReveal.hidden = !indDonationYN.get();
+    if (s.donation !== undefined) ind.donationInput.value = s.donation;
+    setFlagState(s.flags);
+    calcIndividual();
+  }
+
+  function calcIndividual(){
+    var T = TAX_TABLES[currentTaxYear].ind;
+    var ageBand = ind.ageBand.value;
+    var hasDisability = indDisabilityYN.get();
+    var freqMult = indFreq === 'annual' ? 1 : 12;
+
+    var grossAnnual = numVal(ind.grossInput) * freqMult;
+    var retContribAnnual = indRetYN.get() ? numVal(ind.retInput) * freqMult : 0;
+    var members = indMedYN.get() ? Math.max(0, Math.round(numVal(ind.membersInput))) : 0;
+    var premiumMonthly = indMedYN.get() ? numVal(ind.premiumInput) : 0;
+    var otherMedicalAnnual = indOtherMedYN.get() ? numVal(ind.expensesInput) : 0;
+    var donationAnnual = indDonationYN.get() ? numVal(ind.donationInput) : 0;
+
+    var retCap = Math.min(0.275 * grossAnnual, T.retirementCap);
+    var retDeduction = Math.min(retContribAnnual, retCap);
+    var retExcess = Math.max(0, retContribAnnual - retDeduction);
+    var incomeAfterRet = Math.max(0, grossAnnual - retDeduction);
+    var donationCap = 0.10 * incomeAfterRet;
+    var donationDeduction = Math.min(donationAnnual, donationCap);
+    var donationExcess = Math.max(0, donationAnnual - donationDeduction);
+    var taxableIncome = Math.max(0, incomeAfterRet - donationDeduction);
+
+    var taxResult = taxByBrackets(T.brackets, taxableIncome);
+    var taxBeforeRebates = taxResult.tax, bracketIndex = taxResult.index;
+    var marginalRate = T.brackets[bracketIndex].rate * 100;
+
+    var rebate = T.rebatePrimary;
+    if (ageBand === '65to74') rebate += T.rebateSecondary;
+    if (ageBand === '75plus') rebate += T.rebateSecondary + T.rebateTertiary;
+    var taxAfterRebates = Math.max(0, taxBeforeRebates - rebate);
+
+    var msftcMonthly = 0;
+    if (members >= 1) msftcMonthly += T.msftcFirstTwo;
+    if (members >= 2) msftcMonthly += T.msftcFirstTwo;
+    if (members > 2) msftcMonthly += T.msftcAdditional * (members - 2);
+    var msftcAnnual = msftcMonthly * 12;
+
+    var medicalContribAnnual = premiumMonthly * 12;
+    var qualifies = ageBand !== 'under65' || hasDisability;
+    var amtc;
+    if (qualifies){
+      var excess1 = Math.max(0, medicalContribAnnual - 3 * msftcAnnual);
+      amtc = 0.333 * (excess1 + otherMedicalAnnual);
+    } else {
+      var excess2 = Math.max(0, medicalContribAnnual - 4 * msftcAnnual);
+      var base = excess2 + otherMedicalAnnual - 0.075 * taxableIncome;
+      amtc = 0.25 * Math.max(0, base);
+    }
+    var totalMedicalCredit = msftcAnnual + amtc;
+
+    var taxPayableAnnual = Math.max(0, taxAfterRebates - totalMedicalCredit);
+    var taxPayableMonthly = taxPayableAnnual / 12;
+
+    var monthlyGross = grossAnnual / 12;
+    var uifAnnualEmployee = UIF_RATE * Math.min(monthlyGross, T.uifCeiling) * 12;
+
+    var netAnnual = grossAnnual - retContribAnnual - uifAnnualEmployee - taxPayableAnnual;
+    var netMonthly = netAnnual / 12;
+    var effectiveRate = grossAnnual > 0 ? (taxPayableAnnual / grossAnnual) * 100 : 0;
+
+    ind.heroMonthly.textContent = fmtR(taxPayableMonthly) + ' / mo';
+    ind.heroAnnual.textContent = fmtR(taxPayableAnnual) + ' per year';
+    ind.statEffective.textContent = fmtPct(effectiveRate);
+    ind.statMarginal.textContent = Math.round(marginalRate) + '%';
+    ind.statTakeHome.textContent = fmtR(netMonthly);
+    highlightRow(ind.bracketBody, bracketIndex);
+
+    renderBar(ind.barChart, ind.barLegend, [
+      { label: 'Take-home pay', value: Math.max(0, netAnnual), color: '#3366ee' },
+      { label: 'Income tax (PAYE)', value: taxPayableAnnual, color: '#eb6834' },
+      { label: 'Retirement contribution', value: retContribAnnual, color: '#17a34a' },
+      { label: 'UIF', value: uifAnnualEmployee, color: '#e0a83c' }
+    ]);
+
+    ind.ledger.innerHTML = '';
+    ind.ledger.appendChild(ledgerRow('Gross income', grossAnnual));
+    ind.ledger.appendChild(ledgerRow('Less: retirement contribution', retDeduction, {
+      negative: true, note: retExcess > 0 ? (fmtR(retExcess, 0) + ' above the deduction cap carries forward') : null
+    }));
+    ind.ledger.appendChild(ledgerRow('Less: donations (s18A)', donationDeduction, {
+      negative: true, note: donationExcess > 0 ? (fmtR(donationExcess, 0) + ' above the 10% of income cap carries forward') : null
+    }));
+    ind.ledger.appendChild(ledgerRow('Taxable income', taxableIncome));
+    ind.ledger.appendChild(ledgerRow('Tax per brackets (' + Math.round(marginalRate) + '% marginal)', taxBeforeRebates));
+    ind.ledger.appendChild(ledgerRow('Less: rebates', rebate, { negative: true }));
+    ind.ledger.appendChild(ledgerRow('Less: medical tax credits', totalMedicalCredit, {
+      negative: true, note: 'MSFTC ' + fmtR(msftcAnnual, 0) + ' + additional credit ' + fmtR(Math.max(0, amtc), 0)
+    }));
+    ind.ledger.appendChild(ledgerRow('Tax payable, per year', taxPayableAnnual, { total: true }));
+
+    ind.checklist.innerHTML = '';
+    ind.checklist.appendChild(checklistItem(true, 'Age-based rebates applied <b>(' + AGE_LABEL[ageBand] + ')</b>'));
+    ind.checklist.appendChild(checklistItem(retExcess === 0, retExcess === 0
+      ? 'Retirement deduction within the annual cap'
+      : 'Retirement deduction capped <b>(' + fmtR(retExcess, 0) + ' carried forward)</b>'));
+    ind.checklist.appendChild(checklistItem(donationExcess === 0, donationAnnual === 0
+      ? 'No donations captured'
+      : (donationExcess === 0
+        ? 'Donation deduction within the 10% of income cap'
+        : 'Donation deduction capped <b>(' + fmtR(donationExcess, 0) + ' carried forward)</b>')));
+    ind.checklist.appendChild(checklistItem(true, members > 0
+      ? 'Medical tax credits calculated <b>(' + members + ' member' + (members === 1 ? '' : 's') + ')</b>'
+      : 'No medical aid captured'));
+    ind.checklist.appendChild(checklistItem(monthlyGross <= T.uifCeiling, monthlyGross <= T.uifCeiling
+      ? 'UIF calculated at 1% of gross'
+      : 'UIF capped at the statutory ceiling <b>(R' + T.uifCeiling.toLocaleString() + '/mo)</b>'));
+    ind.checklistBadge.innerHTML = retExcess > 0
+      ? '<span class="badge warn">! Needs attention</span>'
+      : '<span class="badge ok">&#10003; All calculated</span>';
+
+    var flaggedItems = renderFlagsSummary();
+
+    ind.last = {
+      ageBand: ageBand, disability: hasDisability, freq: indFreq, irp5: indIrp5YN.get(),
+      grossAnnual: grossAnnual, retContribAnnual: retContribAnnual, retDeduction: retDeduction, retExcess: retExcess,
+      members: members, premiumMonthly: premiumMonthly, otherMedicalAnnual: otherMedicalAnnual,
+      donationAnnual: donationAnnual, donationDeduction: donationDeduction, donationExcess: donationExcess,
+      taxableIncome: taxableIncome, taxBeforeRebates: taxBeforeRebates, bracketIndex: bracketIndex, marginalRate: marginalRate,
+      rebate: rebate, msftcAnnual: msftcAnnual, amtc: amtc, totalMedicalCredit: totalMedicalCredit,
+      taxPayableAnnual: taxPayableAnnual, taxPayableMonthly: taxPayableMonthly,
+      uifAnnualEmployee: uifAnnualEmployee, netAnnual: netAnnual, netMonthly: netMonthly, effectiveRate: effectiveRate,
+      flags: flaggedItems.map(function(f){ return f.label; })
+    };
+  }
+
+  function setIndFrequency(next, silent){
+    if (next === indFreq) return;
+    var mult = next === 'monthly' ? (1 / 12) : 12;
+    if (!silent){
+      ind.grossInput.value = round2(numVal(ind.grossInput) * mult);
+      ind.retInput.value = round2(numVal(ind.retInput) * mult);
+    }
+    indFreq = next;
+    ind.freqAnnual.setAttribute('aria-pressed', String(indFreq === 'annual'));
+    ind.freqMonthly.setAttribute('aria-pressed', String(indFreq === 'monthly'));
+    var suffix = indFreq === 'annual' ? 'per year' : 'per month';
+    ind.grossLabel.textContent = 'Gross salary, ' + suffix;
+    ind.retLabel.textContent = 'Retirement contribution (pension / RA / provident), ' + suffix;
+  }
+  ind.freqAnnual.addEventListener('click', function(){ setIndFrequency('annual'); calcIndividual(); markDirty(); });
+  ind.freqMonthly.addEventListener('click', function(){ setIndFrequency('monthly'); calcIndividual(); markDirty(); });
+  [ind.ageBand, ind.grossInput, ind.retInput, ind.membersInput, ind.premiumInput, ind.expensesInput, ind.donationInput]
+    .forEach(function(input){ input.addEventListener('input', function(){ calcIndividual(); markDirty(); }); input.addEventListener('change', function(){ calcIndividual(); markDirty(); }); });
+
+  // ================= COMPANY =================
+  var co = {
+    taxableInput: document.getElementById('co_taxableInput'),
+    hero: document.getElementById('co_hero'),
+    heroSub: document.getElementById('co_heroSub'),
+    statEffective: document.getElementById('co_statEffective'),
+    statRate: document.getElementById('co_statRate'),
+    statRateSub: document.getElementById('co_statRateSub'),
+    statNet: document.getElementById('co_statNet'),
+    barChart: document.getElementById('co_barChart'),
+    barLegend: document.getElementById('co_barLegend'),
+    ledger: document.getElementById('co_ledger'),
+    checklist: document.getElementById('co_checklist'),
+    checklistBadge: document.getElementById('co_checklistBadge'),
+    rateArea: document.getElementById('co_rateArea')
+  };
+
+  var coSbcYN = initYesNo('co_sbcYN', false, function(){ calcCompany(); markDirty(); });
+
+  function gatherCompany(){ return { taxYear: currentTaxYear, taxable: co.taxableInput.value, sbc: coSbcYN.get() }; }
+  function applyCompany(s){
+    if (!s) return;
+    if (s.taxYear && TAX_TABLES[s.taxYear] && s.taxYear !== currentTaxYear) setTaxYear(s.taxYear, true);
+    if (s.taxable !== undefined) co.taxableInput.value = s.taxable;
+    coSbcYN.set(!!s.sbc, true);
+    calcCompany();
+  }
+
+  function buildSbcRows(tbody, brackets){
+    tbody.innerHTML = '';
+    brackets.forEach(function(b, i){
+      var tr = document.createElement('tr');
+      tr.dataset.index = i;
+      var rangeText = i === 0 ? 'R0 &ndash; ' + fmtR(b.max, 0)
+        : (b.max === Infinity ? fmtR(b.min + 1, 0) + ' and above' : fmtR(b.min + 1, 0) + ' &ndash; ' + fmtR(b.max, 0));
+      var formulaText = b.rate === 0 ? '0%'
+        : (b.base > 0 ? fmtR(b.base, 0) + ' + ' + Math.round(b.rate * 100) + '% above ' + fmtR(b.min, 0) : Math.round(b.rate * 100) + '% of taxable income');
+      tr.innerHTML = '<td class="range">' + rangeText + '</td><td class="formula">' + formulaText + '</td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  function calcCompany(){
+    var T = TAX_TABLES[currentTaxYear].co;
+    var taxable = numVal(co.taxableInput);
+    var isSbc = coSbcYN.get();
+    var result, tax, bracketIndex = -1;
+    if (isSbc){
+      result = taxByBrackets(T.sbc, taxable);
+      tax = result.tax; bracketIndex = result.index;
+    } else {
+      tax = taxable * CO_RATE;
+    }
+    var net = taxable - tax;
+    var effRate = taxable > 0 ? (tax / taxable) * 100 : 0;
+
+    co.hero.textContent = fmtR(tax);
+    co.heroSub.textContent = fmtR(tax / 12, 0) + ' / mo equivalent';
+    co.statEffective.textContent = fmtPct(effRate);
+    co.statRate.textContent = isSbc ? 'SBC scale' : '27%';
+    co.statRateSub.textContent = isSbc ? 'Graduated SBC table' : 'Standard company rate';
+    co.statNet.textContent = fmtR(net);
+
+    renderBar(co.barChart, co.barLegend, [
+      { label: 'Net profit after tax', value: Math.max(0, net), color: '#3366ee' },
+      { label: 'Company tax', value: tax, color: '#eb6834' }
+    ]);
+
+    co.ledger.innerHTML = '';
+    co.ledger.appendChild(ledgerRow('Taxable income', taxable));
+    co.ledger.appendChild(ledgerRow(isSbc ? 'Tax per SBC scale' : 'Tax @ 27%', tax));
+    co.ledger.appendChild(ledgerRow('Net profit after tax', net, { total: true }));
+
+    co.checklist.innerHTML = '';
+    co.checklist.appendChild(checklistItem(true, isSbc ? 'SBC graduated scale applied' : 'Standard flat rate applied <b>(27%)</b>'));
+    co.checklist.appendChild(checklistItem(true, 'Dividends tax (20% on distributions) not included'));
+    co.checklistBadge.innerHTML = '<span class="badge ok">&#10003; All calculated</span>';
+
+    if (isSbc){
+      co.rateArea.innerHTML = '<div class="table-wrap"><table class="brackets"><thead><tr><th>Taxable income</th><th>Tax</th></tr></thead><tbody id="co_bracketBody"></tbody></table></div>';
+      var tbody = document.getElementById('co_bracketBody');
+      buildSbcRows(tbody, T.sbc);
+      highlightRow(tbody, bracketIndex);
+    } else {
+      co.rateArea.innerHTML = '<div class="flat-rate-box">Flat company tax rate: <b>27%</b> of taxable income.</div>';
+    }
+
+    co.last = { taxable: taxable, isSbc: isSbc, tax: tax, net: net, effRate: effRate, bracketIndex: bracketIndex };
+  }
+  co.taxableInput.addEventListener('input', function(){ calcCompany(); markDirty(); });
+  co.taxableInput.addEventListener('change', function(){ calcCompany(); markDirty(); });
+
+  // ================= TRUST =================
+  var tr = {
+    taxableInput: document.getElementById('tr_taxableInput'),
+    hero: document.getElementById('tr_hero'),
+    heroSub: document.getElementById('tr_heroSub'),
+    statEffective: document.getElementById('tr_statEffective'),
+    statNet: document.getElementById('tr_statNet'),
+    statType: document.getElementById('tr_statType'),
+    barChart: document.getElementById('tr_barChart'),
+    barLegend: document.getElementById('tr_barLegend'),
+    ledger: document.getElementById('tr_ledger'),
+    checklist: document.getElementById('tr_checklist'),
+    checklistBadge: document.getElementById('tr_checklistBadge')
+  };
+
+  var trSpecialYN = initYesNo('tr_specialYN', false, function(){ calcTrust(); markDirty(); });
+
+  function gatherTrust(){ return { taxYear: currentTaxYear, taxable: tr.taxableInput.value, special: trSpecialYN.get() }; }
+  function applyTrust(s){
+    if (!s) return;
+    if (s.taxYear && TAX_TABLES[s.taxYear] && s.taxYear !== currentTaxYear) setTaxYear(s.taxYear, true);
+    if (s.taxable !== undefined) tr.taxableInput.value = s.taxable;
+    trSpecialYN.set(!!s.special, true);
+    calcTrust();
+  }
+
+  function calcTrust(){
+    var T = TAX_TABLES[currentTaxYear].trust;
+    var taxable = numVal(tr.taxableInput);
+    var isSpecial = trSpecialYN.get();
+    var tax = isSpecial ? null : taxable * T.rate;
+
+    tr.statType.textContent = isSpecial ? 'Special' : 'Ordinary';
+
+    if (isSpecial){
+      tr.hero.textContent = 'See Individual tab';
+      tr.heroSub.textContent = 'Taxed on the individual scale';
+      tr.statEffective.textContent = '—';
+      tr.statNet.textContent = '—';
+      renderBar(tr.barChart, tr.barLegend, [{ label: 'Taxable income', value: taxable, color: '#3366ee' }]);
+      tr.ledger.innerHTML = '';
+      tr.ledger.appendChild(ledgerRow('Taxable income', taxable));
+      tr.checklist.innerHTML = '';
+      tr.checklist.appendChild(checklistItem(false, 'Special trust selected &mdash; use the <a href="javascript:void(0)" data-goto-individual>Individual Tax</a> tab for this calculation'));
+      tr.checklistBadge.innerHTML = '<span class="badge warn">! Needs attention</span>';
+      tr.last = { taxable: taxable, special: true };
       return;
     }
 
-    var freqMult = freq === 'annual' ? 1 : 12;
-    var grossAnnual = numVal(document.getElementById('grossInput')) * freqMult;
-    var retAnnual = numVal(document.getElementById('retInput'));
+    var net = taxable - tax;
+    tr.hero.textContent = fmtR(tax);
+    tr.heroSub.textContent = fmtR(tax / 12, 0) + ' / mo equivalent';
+    tr.statEffective.textContent = '45.0%';
+    tr.statNet.textContent = fmtR(net);
 
-    var data = {
-      taxYear: document.getElementById('taxYear').value,
-      ageBand: document.getElementById('ageBand').value,
-      disability: disabilityYN.get(),
-      freq: 'annual',
-      irp5: irp5YN.get(),
-      gross: String(grossAnnual),
-      hasRet: retYN.get(),
-      ret: String(retAnnual),
-      hasMed: medYN.get(),
-      members: document.getElementById('membersInput').value || '0',
-      premium: document.getElementById('premiumInput').value || '0',
-      hasOtherMed: otherMedYN.get(),
-      expenses: document.getElementById('expensesInput').value || '0',
-      hasDonation: donationYN.get(),
-      donation: document.getElementById('donationInput').value || '0',
-      flags: getFlagState()
-    };
+    renderBar(tr.barChart, tr.barLegend, [
+      { label: 'Net income after tax', value: Math.max(0, net), color: '#3366ee' },
+      { label: 'Trust tax', value: tax, color: '#eb6834' }
+    ]);
 
-    var payload = {
-      formVersion: 1,
-      formType: 'individual-questionnaire',
-      clientName: name,
-      contact: document.getElementById('contactInfo').value.trim(),
-      generatedAt: new Date().toISOString(),
-      data: data
-    };
+    tr.ledger.innerHTML = '';
+    tr.ledger.appendChild(ledgerRow('Taxable income (retained in trust)', taxable));
+    tr.ledger.appendChild(ledgerRow('Tax @ 45%', tax));
+    tr.ledger.appendChild(ledgerRow('Net income after tax', net, { total: true }));
 
-    var filename = 'tax-questionnaire-' + slugify(name) + '-' + data.taxYear + '.json';
-    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
-
-    showStatus(true, '\\u2713 Saved as ' + filename + '. Please email this file back to your accountant.');
+    tr.checklist.innerHTML = '';
+    tr.checklist.appendChild(checklistItem(true, 'Flat trust rate applied <b>(45%)</b>'));
+    tr.checklist.appendChild(checklistItem(true, 'No rebates or threshold applied (none apply to trusts)'));
+    tr.checklistBadge.innerHTML = '<span class="badge ok">&#10003; All calculated</span>';
+    tr.last = { taxable: taxable, special: false, tax: tax, net: net };
+  }
+  tr.taxableInput.addEventListener('input', function(){ calcTrust(); markDirty(); });
+  tr.taxableInput.addEventListener('change', function(){ calcTrust(); markDirty(); });
+  document.addEventListener('click', function(ev){
+    if (ev.target && ev.target.closest && ev.target.closest('[data-goto-individual]')){
+      switchTab('individual');
+    }
   });
+
+  // ================= TABS, SIDEBAR, RIBBON =================
+  var currentTaxType = 'individual';
+  var rtabs = Array.prototype.slice.call(document.querySelectorAll('.rtab'));
+  var panels = Array.prototype.slice.call(document.querySelectorAll('.tab-panel'));
+  var navItems = Array.prototype.slice.call(document.querySelectorAll('.navitem'));
+  var scrollspyIO = null;
+
+  function panelFor(type){ return document.querySelector('.tab-panel[data-panel="' + type + '"]'); }
+
+  function setupScrollspy(){
+    if (scrollspyIO) scrollspyIO.disconnect();
+    if (!('IntersectionObserver' in window)) return;
+    var activePanel = panelFor(currentTaxType);
+    var targets = Array.prototype.slice.call(activePanel.querySelectorAll('[data-role]'));
+    var disclaimerEl = document.querySelector('footer[data-role="disclaimer"]');
+    if (disclaimerEl) targets.push(disclaimerEl);
+    scrollspyIO = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (entry.isIntersecting){
+          var role = entry.target.getAttribute('data-role');
+          navItems.forEach(function(a){ a.classList.toggle('active', a.dataset.role === role); });
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+    targets.forEach(function(t){ scrollspyIO.observe(t); });
+  }
+
+  navItems.forEach(function(a){
+    a.addEventListener('click', function(){
+      var role = a.dataset.role;
+      var target = role === 'disclaimer'
+        ? document.querySelector('footer[data-role="disclaimer"]')
+        : panelFor(currentTaxType).querySelector('[data-role="' + role + '"]');
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  function switchTab(type){
+    if (type === currentTaxType) return;
+    currentTaxType = type;
+    rtabs.forEach(function(t){ t.classList.toggle('active', t.dataset.type === type); });
+    panels.forEach(function(p){ p.hidden = p.dataset.panel !== type; });
+    setupScrollspy();
+    loadSavedCalcForCurrentType();
+  }
+  rtabs.forEach(function(t){ t.addEventListener('click', function(){ switchTab(t.dataset.type); }); });
+
+  // ================= CLIENTS / DB PERSISTENCE =================
+  var dbApi = null;
+  var clients = [];
+  var currentClientId = '';
+  var taxYearSelect = document.getElementById('taxYearSelect');
+  var saveCalcBtn = document.getElementById('saveCalcBtn');
+  var saveStatus = document.getElementById('saveStatus');
+  var sidebarAddClientBtn = document.getElementById('sidebarAddClientBtn');
+  var sidebarClientBtn = document.getElementById('sidebarClientBtn');
+  var sidebarClientName = document.getElementById('sidebarClientName');
+  var clientPanel = document.getElementById('clientPanel');
+  var clientFilter = document.getElementById('clientFilter');
+  var clientPanelList = document.getElementById('clientPanelList');
+  var panelNewClientName = document.getElementById('panelNewClientName');
+  var panelAddClientBtn = document.getElementById('panelAddClientBtn');
+  var dirty = false;
+
+  taxYearSelect.addEventListener('change', function(){ setTaxYear(taxYearSelect.value); });
+
+  function markDirty(){
+    if (!currentClientId) return;
+    dirty = true;
+    saveStatus.textContent = 'Unsaved changes';
+  }
+
+  function clientName(id){
+    var c = clients.find(function(c){ return c.id === id; });
+    return c ? c.name : '';
+  }
+
+  function relTime(iso){
+    if (!iso) return '';
+    var diffMs = Date.now() - new Date(iso).getTime();
+    var mins = Math.round(diffMs / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + ' min' + (mins === 1 ? '' : 's') + ' ago';
+    var hrs = Math.round(mins / 60);
+    if (hrs < 24) return hrs + ' hour' + (hrs === 1 ? '' : 's') + ' ago';
+    var days = Math.round(hrs / 24);
+    return days + ' day' + (days === 1 ? '' : 's') + ' ago';
+  }
+
+  function setStatus(kind, extra){
+    if (kind === 'no-db'){ saveStatus.textContent = "Client save isn't available in this view"; }
+    else if (kind === 'sandbox'){ saveStatus.textContent = 'No client selected — showing example figures'; }
+    else if (kind === 'new-for-client'){ saveStatus.textContent = 'New calculation for ' + clientName(currentClientId) + ' — not yet saved'; }
+    else if (kind === 'loaded'){ saveStatus.textContent = clientName(currentClientId) + ' — saved ' + relTime(extra); }
+    dirty = false;
+  }
+
+  function updateSidebarClientLabel(){
+    if (!currentClientId){
+      sidebarClientName.textContent = 'No client (sandbox)';
+      sidebarClientName.classList.add('placeholder');
+    } else {
+      sidebarClientName.textContent = clientName(currentClientId) || '(unnamed)';
+      sidebarClientName.classList.remove('placeholder');
+    }
+  }
+
+  function openClientPanel(focusAdd){
+    clientPanel.hidden = false;
+    sidebarClientBtn.classList.add('open');
+    sidebarClientBtn.setAttribute('aria-expanded', 'true');
+    renderClientPanelList();
+    if (focusAdd){ panelNewClientName.focus(); } else { clientFilter.value = ''; clientFilter.focus(); }
+  }
+  function closeClientPanel(){
+    clientPanel.hidden = true;
+    sidebarClientBtn.classList.remove('open');
+    sidebarClientBtn.setAttribute('aria-expanded', 'false');
+  }
+  function toggleClientPanel(focusAdd){
+    if (clientPanel.hidden) openClientPanel(focusAdd); else closeClientPanel();
+  }
+  sidebarAddClientBtn.addEventListener('click', function(){ openClientPanel(true); });
+  sidebarClientBtn.addEventListener('click', function(){ toggleClientPanel(false); });
+  document.addEventListener('click', function(ev){
+    if (!clientPanel.hidden && !clientPanel.contains(ev.target) && !sidebarClientBtn.contains(ev.target) && !sidebarAddClientBtn.contains(ev.target)){
+      closeClientPanel();
+    }
+  });
+  document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape' && !clientPanel.hidden) closeClientPanel(); });
+
+  function renderClientPanelList(){
+    var q = (clientFilter.value || '').trim().toLowerCase();
+    clientPanelList.innerHTML = '';
+    if (!q || 'no client sandbox'.indexOf(q) !== -1){
+      var sandboxRow = document.createElement('button');
+      sandboxRow.type = 'button';
+      sandboxRow.className = 'client-row' + (currentClientId === '' ? ' active' : '');
+      sandboxRow.innerHTML = '<span class="dot"></span><span>No client (sandbox)</span>';
+      sandboxRow.addEventListener('click', function(){ selectClient(''); });
+      clientPanelList.appendChild(sandboxRow);
+    }
+    var filtered = clients.filter(function(cl){ return !q || cl.name.toLowerCase().indexOf(q) !== -1; });
+    if (filtered.length === 0 && q){
+      var empty = document.createElement('div');
+      empty.className = 'client-panel-empty';
+      empty.textContent = 'No clients match \u201c' + clientFilter.value + '\u201d';
+      clientPanelList.appendChild(empty);
+    }
+    filtered.forEach(function(cl){
+      var row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'client-row' + (cl.id === currentClientId ? ' active' : '');
+      var nameEsc = cl.name.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+      row.innerHTML = '<span class="dot"></span><span>' + nameEsc + '</span>';
+      row.addEventListener('click', function(){ selectClient(cl.id); });
+      clientPanelList.appendChild(row);
+    });
+  }
+  clientFilter.addEventListener('input', renderClientPanelList);
+
+  function selectClient(id){
+    currentClientId = id;
+    updateSidebarClientLabel();
+    closeClientPanel();
+    loadSavedCalcForCurrentType();
+  }
+
+  function gatherCurrent(){
+    if (currentTaxType === 'individual') return gatherIndividual();
+    if (currentTaxType === 'company') return gatherCompany();
+    return gatherTrust();
+  }
+  function applyCurrent(inputs){
+    if (currentTaxType === 'individual') return applyIndividual(inputs);
+    if (currentTaxType === 'company') return applyCompany(inputs);
+    return applyTrust(inputs);
+  }
+
+  function loadSavedCalcForCurrentType(){
+    if (!dbApi){ setStatus('no-db'); saveCalcBtn.disabled = true; return; }
+    if (!currentClientId){ setStatus('sandbox'); saveCalcBtn.disabled = true; return; }
+    saveCalcBtn.disabled = false;
+    dbApi.doc('clients/' + currentClientId + '/calcs/' + currentTaxType).get().then(function(snap){
+      if (snap.exists){
+        var data = snap.data();
+        applyCurrent(data.inputs);
+        setStatus('loaded', data.savedAt);
+      } else {
+        setStatus('new-for-client');
+      }
+    }).catch(function(){ setStatus('new-for-client'); });
+  }
+
+  function saveCurrentCalc(){
+    if (!dbApi || !currentClientId) return;
+    var inputs = gatherCurrent();
+    var savedAt = new Date().toISOString();
+    saveCalcBtn.disabled = true;
+    dbApi.doc('clients/' + currentClientId + '/calcs/' + currentTaxType).set({ inputs: inputs, savedAt: savedAt })
+      .then(function(){ setStatus('loaded', savedAt); })
+      .catch(function(){ saveStatus.textContent = 'Save failed — try again'; })
+      .finally(function(){ saveCalcBtn.disabled = false; });
+  }
+  saveCalcBtn.addEventListener('click', saveCurrentCalc);
+
+  panelNewClientName.addEventListener('keydown', function(ev){ if (ev.key === 'Enter') panelAddClientBtn.click(); });
+  panelAddClientBtn.addEventListener('click', function(){
+    var name = panelNewClientName.value.trim();
+    if (!name || !dbApi) return;
+    panelAddClientBtn.disabled = true;
+    dbApi.collection('clients').add({ name: name, createdAt: new Date().toISOString() }).then(function(ref){
+      clients.push({ id: ref.id, name: name });
+      clients.sort(function(a, b){ return a.name.localeCompare(b.name); });
+      panelNewClientName.value = '';
+      selectClient(ref.id);
+    }).catch(function(){
+      saveStatus.textContent = 'Could not add client — try again';
+    }).finally(function(){ panelAddClientBtn.disabled = false; });
+  });
+
+  function onDbUnavailable(){
+    dbApi = null;
+    sidebarAddClientBtn.disabled = true;
+    sidebarClientBtn.disabled = true;
+    saveCalcBtn.disabled = true;
+    updateSidebarClientLabel();
+    setStatus('no-db');
+  }
+
+  // ================= SUPABASE (auth + data) =================
+  var SUPABASE_URL = 'https://feikmaohdmvgwgaaatuy.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_7t7WPjE7ImtFb43j_d_Mlg_PkXcrQx8';
+
+  var authGate = document.getElementById('authGate');
+  var appShell = document.getElementById('appShell');
+  var authFormView = document.getElementById('authFormView');
+  var authPendingView = document.getElementById('authPendingView');
+  var authTitle = document.getElementById('authTitle');
+  var authEmail = document.getElementById('authEmail');
+  var authPassword = document.getElementById('authPassword');
+  var authSubmitBtn = document.getElementById('authSubmitBtn');
+  var authStatus = document.getElementById('authStatus');
+  var authToggleText = document.getElementById('authToggleText');
+  var authToggleBtn = document.getElementById('authToggleBtn');
+  var pendingEmail = document.getElementById('pendingEmail');
+  var authRecheckBtn = document.getElementById('authRecheckBtn');
+  var authPendingSignOutBtn = document.getElementById('authPendingSignOutBtn');
+  var pendingStatus = document.getElementById('pendingStatus');
+  var sidebarAccount = document.getElementById('sidebarAccount');
+  var acctEmail = document.getElementById('acctEmail');
+  var signOutBtn = document.getElementById('signOutBtn');
+
+  var sb = null;
+  var currentUser = null;
+  var authMode = 'signin';
+
+  function toPromise(x){ return Promise.resolve(x); }
+
+  // Wraps the Artifact-style { collection(...).get()/.add() , doc(...).get()/.set() }
+  // API the rest of this file already speaks, backed by real Supabase tables.
+  function makeDbApi(client){
+    function docRef(path){
+      var parts = path.split('/');
+      var clientId = parts[1], taxType = parts[3];
+      return {
+        get: function(){
+          return toPromise(client.from('calcs').select('inputs,saved_at').eq('client_id', clientId).eq('tax_type', taxType).maybeSingle())
+            .then(function(res){
+              if (res.error) throw res.error;
+              if (!res.data) return { exists: false };
+              return { exists: true, data: function(){ return { inputs: res.data.inputs, savedAt: res.data.saved_at }; } };
+            });
+        },
+        set: function(obj){
+          return toPromise(client.from('calcs').upsert(
+            { client_id: clientId, tax_type: taxType, inputs: obj.inputs, saved_at: obj.savedAt },
+            { onConflict: 'client_id,tax_type' }
+          )).then(function(res){ if (res.error) throw res.error; });
+        }
+      };
+    }
+    function collectionRef(name){
+      return {
+        get: function(){
+          return toPromise(client.from('clients').select('id,name,created_at').order('name')).then(function(res){
+            if (res.error) throw res.error;
+            return { docs: res.data.map(function(row){
+              return { id: row.id, data: function(){ return { name: row.name, createdAt: row.created_at }; } };
+            }) };
+          });
+        },
+        add: function(obj){
+          return toPromise(client.from('clients').insert({ name: obj.name }).select().single()).then(function(res){
+            if (res.error) throw res.error;
+            return { id: res.data.id };
+          });
+        }
+      };
+    }
+    return { collection: collectionRef, doc: docRef };
+  }
+
+  function showAuthStatus(el, ok, msg){
+    el.hidden = false;
+    el.className = 'auth-status ' + (ok ? 'ok' : 'err');
+    el.textContent = msg;
+  }
+  function hideAuthStatus(el){ el.hidden = true; }
+
+  function renderAuthMode(){
+    authTitle.textContent = authMode === 'signin' ? 'Sign in' : 'Create an account';
+    authSubmitBtn.textContent = authMode === 'signin' ? 'Sign in' : 'Sign up';
+    authToggleText.textContent = authMode === 'signin' ? 'Need an account?' : 'Already have an account?';
+    authToggleBtn.textContent = authMode === 'signin' ? 'Sign up' : 'Sign in';
+    hideAuthStatus(authStatus);
+  }
+  authToggleBtn.addEventListener('click', function(){
+    authMode = authMode === 'signin' ? 'signup' : 'signin';
+    renderAuthMode();
+  });
+
+  function showGateForm(){
+    authGate.hidden = false;
+    appShell.hidden = true;
+    authFormView.hidden = false;
+    authPendingView.hidden = true;
+  }
+  function showGatePending(){
+    authGate.hidden = false;
+    appShell.hidden = true;
+    authFormView.hidden = true;
+    authPendingView.hidden = false;
+    pendingEmail.textContent = currentUser ? currentUser.email : '';
+    hideAuthStatus(pendingStatus);
+  }
+
+  function checkApproval(){
+    return toPromise(sb.from('profiles').select('approved').eq('id', currentUser.id).maybeSingle()).then(function(res){
+      if (res.error) throw res.error;
+      return !!(res.data && res.data.approved);
+    });
+  }
+
+  function onApproved(){
+    dbApi = makeDbApi(sb);
+    authGate.hidden = true;
+    appShell.hidden = false;
+    acctEmail.textContent = currentUser.email;
+    acctEmail.title = currentUser.email;
+    sidebarAddClientBtn.disabled = false;
+    sidebarClientBtn.disabled = false;
+    dbApi.collection('clients').get().then(function(snap){
+      clients = snap.docs.map(function(d){ return { id: d.id, name: (d.data() || {}).name || '(unnamed)' }; });
+      clients.sort(function(a, b){ return a.name.localeCompare(b.name); });
+      updateSidebarClientLabel();
+      setStatus('sandbox');
+    }).catch(function(){ onDbUnavailable(); });
+  }
+
+  function handleSession(session){
+    currentUser = session.user;
+    checkApproval().then(function(approved){
+      if (approved){ onApproved(); } else { showGatePending(); }
+    }).catch(function(){ showGatePending(); });
+  }
+
+  authSubmitBtn.addEventListener('click', function(){
+    var email = authEmail.value.trim();
+    var password = authPassword.value;
+    if (!email || !password){ showAuthStatus(authStatus, false, 'Enter your email and password.'); return; }
+    authSubmitBtn.disabled = true;
+    var action = authMode === 'signin'
+      ? sb.auth.signInWithPassword({ email: email, password: password })
+      : sb.auth.signUp({ email: email, password: password });
+    action.then(function(res){
+      if (res.error){ showAuthStatus(authStatus, false, res.error.message); return; }
+      if (authMode === 'signup'){
+        if (!(res.data && res.data.session)){
+          authMode = 'signin';
+          renderAuthMode();
+          showAuthStatus(authStatus, true, 'Account created \u2014 check your email to confirm it, then sign in.');
+        }
+      }
+    }).catch(function(err){
+      showAuthStatus(authStatus, false, (err && err.message) || 'Something went wrong \u2014 please try again.');
+    }).finally(function(){ authSubmitBtn.disabled = false; });
+  });
+  authPassword.addEventListener('keydown', function(ev){ if (ev.key === 'Enter') authSubmitBtn.click(); });
+
+  authRecheckBtn.addEventListener('click', function(){
+    authRecheckBtn.disabled = true;
+    checkApproval().then(function(approved){
+      if (approved){ onApproved(); }
+      else { showAuthStatus(pendingStatus, false, 'Still waiting on approval \u2014 check back soon.'); }
+    }).catch(function(){
+      showAuthStatus(pendingStatus, false, 'Could not check right now \u2014 try again.');
+    }).finally(function(){ authRecheckBtn.disabled = false; });
+  });
+
+  function doSignOut(){
+    sb.auth.signOut();
+    dbApi = null;
+    currentUser = null;
+    clients = [];
+    currentClientId = '';
+    authEmail.value = '';
+    authPassword.value = '';
+    authMode = 'signin';
+    renderAuthMode();
+    showGateForm();
+  }
+  authPendingSignOutBtn.addEventListener('click', doSignOut);
+  signOutBtn.addEventListener('click', doSignOut);
+
+  function initDb(){
+    if (!window.supabase || typeof window.supabase.createClient !== 'function'){ onDbUnavailable(); return; }
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    renderAuthMode();
+    sb.auth.onAuthStateChange(function(event, session){
+      if (event === 'SIGNED_OUT'){ showGateForm(); return; }
+      if (session) handleSession(session);
+    });
+    sb.auth.getSession().then(function(res){
+      var session = res.data && res.data.session;
+      if (session) handleSession(session); else showGateForm();
+    }).catch(function(){ showGateForm(); });
+  }
+
+  // ================= PDF REPORT =================
+  var PAGE_W = 595.28, PAGE_H = 841.89, MARGIN = 48, CONTENT_W = PAGE_W - MARGIN * 2;
+  var C_NAVY = [14, 21, 38], C_GOLD = [200, 140, 30], C_BLUE = [51, 102, 238], C_INK = [18, 23, 42],
+      C_INK2 = [84, 91, 104], C_MUTED = [138, 147, 166], C_HAIR = [222, 225, 231], C_GREEN = [21, 122, 58],
+      C_ORANGE = [200, 90, 40], C_SOFT = [246, 248, 251], C_GOLDSOFT = [251, 238, 210];
+  var TAX_LABEL = { individual: 'Individual Income Tax Calculation', company: 'Company Income Tax Calculation', trust: 'Trust Taxation Calculation' };
+
+  function fmtDateLong(d){
+    var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+  }
+  function stripTags(html){ return html.replace(/<[^>]+>/g, ''); }
+  function slug(s){ return (s || '').replace(/[\\/:*?"<>|]/g, '').trim(); }
+
+  function pdfBrandHeader(doc){
+    doc.setFillColor.apply(doc, C_GOLD);
+    doc.triangle(MARGIN, 34, MARGIN + 13, 58, MARGIN - 11, 58, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor.apply(doc, C_NAVY);
+    doc.text('RECONI', MARGIN + 22, 47);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor.apply(doc, C_GOLD);
+    doc.text('T A X', MARGIN + 22, 57);
+    doc.setDrawColor.apply(doc, C_HAIR); doc.setLineWidth(1);
+    doc.line(MARGIN, 72, PAGE_W - MARGIN, 72);
+    return 90;
+  }
+  function pdfRunningHeader(doc, title){
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_MUTED);
+    doc.text('RECONI TAX', MARGIN, 36);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_MUTED);
+    doc.text(title, PAGE_W - MARGIN, 36, { align: 'right' });
+    doc.setDrawColor.apply(doc, C_HAIR); doc.setLineWidth(0.75);
+    doc.line(MARGIN, 44, PAGE_W - MARGIN, 44);
+    return 64;
+  }
+  function pdfEnsureSpace(doc, y, needed, title){
+    if (y + needed > PAGE_H - 66){ doc.addPage(); return pdfRunningHeader(doc, title); }
+    return y;
+  }
+  function pdfSectionLabel(doc, y, label){
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor.apply(doc, C_NAVY);
+    doc.text(label.toUpperCase(), MARGIN, y);
+    doc.setDrawColor.apply(doc, C_HAIR); doc.setLineWidth(0.6);
+    doc.line(MARGIN, y + 5, PAGE_W - MARGIN, y + 5);
+    return y + 20;
+  }
+  function pdfKvRow(doc, y, label, value, opts){
+    opts = opts || {};
+    doc.setFont('helvetica', opts.bold ? 'bold' : 'normal');
+    doc.setFontSize(opts.bold ? 10.5 : 9.5);
+    doc.setTextColor.apply(doc, opts.bold ? C_INK : C_INK2);
+    doc.text(label, MARGIN, y);
+    doc.setTextColor.apply(doc, C_INK);
+    doc.text(value, PAGE_W - MARGIN, y, { align: 'right' });
+    var ny = y + 15;
+    if (opts.note){
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.8); doc.setTextColor.apply(doc, C_MUTED);
+      doc.text(opts.note, MARGIN, ny - 3, { maxWidth: CONTENT_W });
+      ny += 11;
+    }
+    if (opts.rule !== false){
+      doc.setDrawColor.apply(doc, C_HAIR); doc.setLineWidth(0.5);
+      doc.line(MARGIN, y + 5, PAGE_W - MARGIN, y + 5);
+    }
+    if (opts.totalRule){
+      doc.setDrawColor.apply(doc, C_INK); doc.setLineWidth(1);
+      doc.line(MARGIN, y - 12, PAGE_W - MARGIN, y - 12);
+    }
+    return ny;
+  }
+  function pdfStatTiles(doc, y, tiles){
+    var gap = 10, w = (CONTENT_W - gap * (tiles.length - 1)) / tiles.length, h = 46;
+    tiles.forEach(function(t, i){
+      var x = MARGIN + i * (w + gap);
+      doc.setFillColor.apply(doc, C_SOFT); doc.setDrawColor.apply(doc, C_HAIR); doc.setLineWidth(0.75);
+      doc.roundedRect(x, y, w, h, 4, 4, 'FD');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(6.8); doc.setTextColor.apply(doc, C_MUTED);
+      doc.text(t.label.toUpperCase(), x + 8, y + 14, { maxWidth: w - 16 });
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor.apply(doc, C_INK);
+      doc.text(t.value, x + 8, y + 32, { maxWidth: w - 16 });
+    });
+    return y + h + 22;
+  }
+  function pdfBar(doc, y, segments){
+    var total = segments.reduce(function(s, x){ return s + Math.max(0, x.value); }, 0) || 1;
+    var h = 16, x = MARGIN;
+    segments.forEach(function(seg){
+      var w = Math.max(0, seg.value) / total * CONTENT_W;
+      doc.setFillColor.apply(doc, seg.color);
+      doc.rect(x, y, Math.max(w, 0), h, 'F');
+      x += w;
+    });
+    doc.setDrawColor.apply(doc, C_HAIR); doc.setLineWidth(0.75);
+    doc.roundedRect(MARGIN, y, CONTENT_W, h, 3, 3, 'S');
+    y += h + 14;
+    segments.forEach(function(seg){
+      doc.setFillColor.apply(doc, seg.color);
+      doc.rect(MARGIN, y - 6, 7, 7, 'F');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor.apply(doc, C_INK2);
+      doc.text(seg.label, MARGIN + 12, y);
+      var pct = Math.max(0, seg.value) / total * 100;
+      doc.setFont('helvetica', 'bold'); doc.setTextColor.apply(doc, C_INK);
+      doc.text(fmtR(seg.value, 0) + '  (' + fmtPct(pct, 0) + ')', PAGE_W - MARGIN, y, { align: 'right' });
+      y += 14;
+    });
+    return y + 8;
+  }
+  function pdfBracketTable(doc, y, brackets, currentIndex, title){
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor.apply(doc, C_MUTED);
+    doc.text('TAXABLE INCOME', MARGIN, y);
+    doc.text('TAX', MARGIN + 190, y);
+    y += 8;
+    doc.setDrawColor.apply(doc, C_HAIR); doc.setLineWidth(0.5); doc.line(MARGIN, y, PAGE_W - MARGIN, y);
+    y += 12;
+    brackets.forEach(function(b, i){
+      var rangeText = i === 0 ? 'R0 - ' + fmtR(b.max, 0)
+        : (b.max === Infinity ? fmtR(b.min + 1, 0) + ' and above' : fmtR(b.min + 1, 0) + ' - ' + fmtR(b.max, 0));
+      var formulaText = (b.rate === 0) ? '0%'
+        : (i === 0 ? '18% of taxable income' : (b.base > 0 ? fmtR(b.base, 0) + ' + ' + Math.round(b.rate * 100) + '% above ' + fmtR(b.min, 0) : Math.round(b.rate * 100) + '% of taxable income'));
+      if (i === currentIndex){
+        doc.setFillColor.apply(doc, C_GOLDSOFT);
+        doc.rect(MARGIN - 4, y - 9, CONTENT_W + 8, 14, 'F');
+      }
+      doc.setFont('helvetica', i === currentIndex ? 'bold' : 'normal'); doc.setFontSize(8.5); doc.setTextColor.apply(doc, C_INK);
+      doc.text(rangeText, MARGIN, y);
+      doc.text(formulaText, MARGIN + 190, y, { maxWidth: CONTENT_W - 190 });
+      y += 14;
+    });
+    return y + 8;
+  }
+
+  function buildPdfDoc(type){
+    var JsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    var doc = new JsPDFCtor({ unit: 'pt', format: 'a4' });
+    var title = TAX_LABEL[type];
+    var y = pdfBrandHeader(doc);
+
+    var clientLabel = currentClientId ? clientName(currentClientId) : 'Not specified';
+    var today = new Date();
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor.apply(doc, C_INK);
+    doc.text(title, MARGIN, y); y += 20;
+
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_INK2);
+    var TY = TAX_TABLES[currentTaxYear];
+    doc.text('Client: ' + clientLabel, MARGIN, y);
+    doc.text('Tax year: ' + TY.label + ' (' + TY.range.replace(/\u2013/g, '-') + ')', PAGE_W - MARGIN, y, { align: 'right' });
+    y += 14;
+    doc.text('Prepared by: Alcock Consulting', MARGIN, y);
+    doc.text('Date prepared: ' + fmtDateLong(today), PAGE_W - MARGIN, y, { align: 'right' });
+    y += 24;
+
+    if (type === 'individual'){
+      var r = ind.last; if (!r) return doc;
+      y = pdfStatTiles(doc, y, [
+        { label: 'Tax payable / mo', value: fmtR(r.taxPayableMonthly) },
+        { label: 'Tax payable / yr', value: fmtR(r.taxPayableAnnual, 0) },
+        { label: 'Effective rate', value: fmtPct(r.effectiveRate) },
+        { label: 'Take-home / mo', value: fmtR(r.netMonthly) }
+      ]);
+
+      y = pdfEnsureSpace(doc, y, 140, title);
+      y = pdfSectionLabel(doc, y, 'Inputs used');
+      y = pdfKvRow(doc, y, 'Age', AGE_LABEL[r.ageBand] + (r.disability ? ', qualifying disability' : ''));
+      y = pdfKvRow(doc, y, 'Gross salary, per year', fmtR(r.grossAnnual));
+      y = pdfKvRow(doc, y, 'Retirement contribution, per year', fmtR(r.retContribAnnual));
+      y = pdfKvRow(doc, y, 'Medical aid members', String(r.members));
+      y = pdfKvRow(doc, y, 'Medical aid premium, per month', fmtR(r.premiumMonthly));
+      y = pdfKvRow(doc, y, 'Other qualifying medical expenses, per year', fmtR(r.otherMedicalAnnual));
+      y = pdfKvRow(doc, y, 'Donations made, per year', fmtR(r.donationAnnual), { rule: false });
+      y += 14;
+
+      y = pdfEnsureSpace(doc, y, 160, title);
+      y = pdfSectionLabel(doc, y, 'Assessment');
+      y = pdfKvRow(doc, y, 'Gross income', fmtR(r.grossAnnual));
+      y = pdfKvRow(doc, y, 'Less: retirement contribution', '-' + fmtR(r.retDeduction), {
+        note: r.retExcess > 0 ? (fmtR(r.retExcess, 0) + ' above the deduction cap carries forward') : null
+      });
+      y = pdfKvRow(doc, y, 'Less: donations (s18A)', '-' + fmtR(r.donationDeduction), {
+        note: r.donationExcess > 0 ? (fmtR(r.donationExcess, 0) + ' above the 10% of income cap carries forward') : null
+      });
+      y = pdfKvRow(doc, y, 'Taxable income', fmtR(r.taxableIncome));
+      y = pdfKvRow(doc, y, 'Tax per brackets (' + Math.round(r.marginalRate) + '% marginal)', fmtR(r.taxBeforeRebates));
+      y = pdfKvRow(doc, y, 'Less: rebates', '-' + fmtR(r.rebate));
+      y = pdfKvRow(doc, y, 'Less: medical tax credits', '-' + fmtR(r.totalMedicalCredit), {
+        note: 'MSFTC ' + fmtR(r.msftcAnnual, 0) + ' + additional credit ' + fmtR(Math.max(0, r.amtc), 0)
+      });
+      y = pdfKvRow(doc, y, 'Tax payable, per year', fmtR(r.taxPayableAnnual), { bold: true, rule: false, totalRule: true });
+      y = pdfKvRow(doc, y, 'Tax payable, per month', fmtR(r.taxPayableMonthly), { rule: false });
+      y += 14;
+
+      y = pdfEnsureSpace(doc, y, 130, title);
+      y = pdfSectionLabel(doc, y, 'Where gross income goes');
+      y = pdfBar(doc, y, [
+        { label: 'Take-home pay', value: Math.max(0, r.netAnnual), color: [51, 102, 238] },
+        { label: 'Income tax (PAYE)', value: r.taxPayableAnnual, color: [235, 104, 52] },
+        { label: 'Retirement contribution', value: r.retContribAnnual, color: [23, 163, 74] },
+        { label: 'UIF', value: r.uifAnnualEmployee, color: [224, 168, 60] }
+      ]);
+
+      y = pdfEnsureSpace(doc, y, 160, title);
+      y = pdfSectionLabel(doc, y, 'Tax brackets applied');
+      y = pdfBracketTable(doc, y, TY.ind.brackets, r.bracketIndex, title);
+
+      if (r.flags && r.flags.length){
+        y = pdfEnsureSpace(doc, y, 60 + r.flags.length * 12, title);
+        y = pdfSectionLabel(doc, y, 'Other items on the standard return');
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor.apply(doc, C_INK2);
+        doc.text('The following were flagged and are outside this calculator\'s scope \u2014 they need a separate schedule on the actual return:', MARGIN, y, { maxWidth: CONTENT_W, lineHeightFactor: 1.4 });
+        y += 14;
+        r.flags.forEach(function(label){
+          y = pdfEnsureSpace(doc, y, 16, title);
+          doc.text('\u2022 ' + label, MARGIN, y, { maxWidth: CONTENT_W, lineHeightFactor: 1.3 });
+          y += 12;
+        });
+        y += 6;
+      }
+
+      y = pdfEnsureSpace(doc, y, 90, title);
+      y = pdfSectionLabel(doc, y, 'Notes');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor.apply(doc, C_INK2);
+      var notes = 'Retirement contributions are deductible up to 27.5% of gross income, capped at ' + fmtR(TY.ind.retirementCap, 0) + '/year. Medical tax credits combine the fixed monthly scheme fees credit with the additional expenses credit. Donations to approved (s18A) organisations are deductible up to 10% of income after the retirement deduction. UIF is capped at a monthly remuneration ceiling of ' + fmtR(TY.ind.uifCeiling, 0) + '. Covers salaried (IRP5) income only; excludes allowances, fringe benefits, capital gains and provisional tax.';
+      doc.text(notes, MARGIN, y, { maxWidth: CONTENT_W, lineHeightFactor: 1.4 });
+
+    } else if (type === 'company'){
+      var rc = co.last; if (!rc) return doc;
+      y = pdfStatTiles(doc, y, [
+        { label: 'Tax payable / yr', value: fmtR(rc.tax, 0) },
+        { label: 'Effective rate', value: fmtPct(rc.effRate) },
+        { label: 'Rate applied', value: rc.isSbc ? 'SBC scale' : '27%' },
+        { label: 'Net profit / yr', value: fmtR(rc.net, 0) }
+      ]);
+
+      y = pdfEnsureSpace(doc, y, 80, title);
+      y = pdfSectionLabel(doc, y, 'Inputs used');
+      y = pdfKvRow(doc, y, 'Taxable income, per year', fmtR(rc.taxable));
+      y = pdfKvRow(doc, y, 'Small Business Corporation (SBC)', rc.isSbc ? 'Yes' : 'No', { rule: false });
+      y += 14;
+
+      y = pdfEnsureSpace(doc, y, 90, title);
+      y = pdfSectionLabel(doc, y, 'Assessment');
+      y = pdfKvRow(doc, y, 'Taxable income', fmtR(rc.taxable));
+      y = pdfKvRow(doc, y, rc.isSbc ? 'Tax per SBC scale' : 'Tax @ 27%', fmtR(rc.tax));
+      y = pdfKvRow(doc, y, 'Net profit after tax', fmtR(rc.net), { bold: true, rule: false, totalRule: true });
+      y += 14;
+
+      y = pdfEnsureSpace(doc, y, 100, title);
+      y = pdfSectionLabel(doc, y, 'Where profit goes');
+      y = pdfBar(doc, y, [
+        { label: 'Net profit after tax', value: Math.max(0, rc.net), color: [51, 102, 238] },
+        { label: 'Company tax', value: rc.tax, color: [235, 104, 52] }
+      ]);
+
+      if (rc.isSbc){
+        y = pdfEnsureSpace(doc, y, 120, title);
+        y = pdfSectionLabel(doc, y, 'Rate applied — SBC scale');
+        y = pdfBracketTable(doc, y, TY.co.sbc, rc.bracketIndex, title);
+      } else {
+        y = pdfEnsureSpace(doc, y, 50, title);
+        y = pdfSectionLabel(doc, y, 'Rate applied');
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_INK2);
+        doc.text('Flat company tax rate: 27% of taxable income.', MARGIN, y);
+        y += 24;
+      }
+
+      y = pdfEnsureSpace(doc, y, 70, title);
+      y = pdfSectionLabel(doc, y, 'Notes');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor.apply(doc, C_INK2);
+      doc.text('Dividends tax (20%) on distributions to shareholders is not included above. SBC eligibility depends on shareholding, gross income and investment-income limits and has not been verified. Capital gains and provisional tax are excluded.', MARGIN, y, { maxWidth: CONTENT_W, lineHeightFactor: 1.4 });
+
+    } else {
+      var rt = tr.last; if (!rt) return doc;
+      if (rt.special){
+        y = pdfEnsureSpace(doc, y, 60, title);
+        doc.setFillColor.apply(doc, C_GOLDSOFT);
+        doc.roundedRect(MARGIN, y, CONTENT_W, 44, 4, 4, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor.apply(doc, C_INK);
+        doc.text('Special trust selected', MARGIN + 12, y + 18);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor.apply(doc, C_INK2);
+        doc.text('This trust is taxed on the individual sliding scale, not the flat trust rate. Recalculate using the Individual Tax calculation.', MARGIN + 12, y + 32, { maxWidth: CONTENT_W - 24 });
+        y += 60;
+        y = pdfKvRow(doc, y, 'Taxable income', fmtR(rt.taxable), { rule: false });
+      } else {
+        y = pdfStatTiles(doc, y, [
+          { label: 'Tax payable / yr', value: fmtR(rt.tax, 0) },
+          { label: 'Effective rate', value: '45.0%' },
+          { label: 'Net income / yr', value: fmtR(rt.net, 0) },
+          { label: 'Trust type', value: 'Ordinary' }
+        ]);
+
+        y = pdfEnsureSpace(doc, y, 60, title);
+        y = pdfSectionLabel(doc, y, 'Inputs used');
+        y = pdfKvRow(doc, y, 'Trust taxable income, per year', fmtR(rt.taxable), { rule: false });
+        y += 14;
+
+        y = pdfEnsureSpace(doc, y, 90, title);
+        y = pdfSectionLabel(doc, y, 'Assessment');
+        y = pdfKvRow(doc, y, 'Taxable income (retained in trust)', fmtR(rt.taxable));
+        y = pdfKvRow(doc, y, 'Tax @ 45%', fmtR(rt.tax));
+        y = pdfKvRow(doc, y, 'Net income after tax', fmtR(rt.net), { bold: true, rule: false, totalRule: true });
+        y += 14;
+
+        y = pdfEnsureSpace(doc, y, 100, title);
+        y = pdfSectionLabel(doc, y, 'Where trust income goes');
+        y = pdfBar(doc, y, [
+          { label: 'Net income after tax', value: Math.max(0, rt.net), color: [51, 102, 238] },
+          { label: 'Trust tax', value: rt.tax, color: [235, 104, 52] }
+        ]);
+      }
+
+      y = pdfEnsureSpace(doc, y, 90, title);
+      y = pdfSectionLabel(doc, y, 'Notes');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor.apply(doc, C_INK2);
+      doc.text('Under the conduit principle, this estimates tax on income retained in the trust; income vested in beneficiaries during the year is taxed in their hands instead, at their own rates. Trusts get no rebates or tax-free threshold. Capital gains (trusts include 80% versus 40% for individuals) and donations tax are excluded.', MARGIN, y, { maxWidth: CONTENT_W, lineHeightFactor: 1.4 });
+    }
+
+    // footer on every page
+    var pageCount = doc.internal.getNumberOfPages();
+    for (var p = 1; p <= pageCount; p++){
+      doc.setPage(p);
+      doc.setDrawColor.apply(doc, C_HAIR); doc.setLineWidth(0.5);
+      doc.line(MARGIN, PAGE_H - 54, PAGE_W - MARGIN, PAGE_H - 54);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7);
+      doc.setTextColor.apply(doc, C_MUTED);
+      doc.text('Estimate for planning purposes only — not a substitute for a SARS assessment or professional advice.', MARGIN, PAGE_H - 40, { maxWidth: CONTENT_W - 70 });
+      doc.text('Page ' + p + ' of ' + pageCount, PAGE_W - MARGIN, PAGE_H - 40, { align: 'right' });
+    }
+    return doc;
+  }
+
+  function exportPdf(){
+    var reportBtn = document.getElementById('reportBtn');
+    reportBtn.disabled = true;
+    var prevLabel = reportBtn.textContent;
+    reportBtn.textContent = 'Preparing…';
+    setTimeout(function(){
+      try{
+        var doc = buildPdfDoc(currentTaxType);
+        var blob = doc.output('blob');
+        var dateStr = new Date().toISOString().slice(0, 10);
+        var clientPart = currentClientId ? slug(clientName(currentClientId)) + ' - ' : '';
+        var typePart = currentTaxType === 'individual' ? 'Individual Tax' : (currentTaxType === 'company' ? 'Company Tax' : 'Trust Tax');
+        var filename = clientPart + typePart + ' Calculation - ' + dateStr + '.pdf';
+
+        var deliver = function(){
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url; a.download = filename;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+        };
+
+        if (window.claude && typeof window.claude.use === 'function'){
+          window.claude.use('downloads').then(function(dl){
+            if (dl){ return dl.save({ filename: filename, data: blob }); }
+            deliver();
+          }).catch(function(){ deliver(); }).finally(function(){
+            reportBtn.disabled = false; reportBtn.textContent = prevLabel;
+          });
+        } else {
+          deliver();
+          reportBtn.disabled = false; reportBtn.textContent = prevLabel;
+        }
+      } catch(e){
+        reportBtn.disabled = false; reportBtn.textContent = prevLabel;
+      }
+    }, 30);
+  }
+  document.getElementById('reportBtn').addEventListener('click', exportPdf);
+
+  // ---------- init ----------
+  populateTaxYearSelect();
+  updateFigureSpans();
+  buildIndBracketRows();
+  calcIndividual();
+  calcCompany();
+  calcTrust();
+  setupScrollspy();
+  initDb();
 })();
 </script>
 </body>
