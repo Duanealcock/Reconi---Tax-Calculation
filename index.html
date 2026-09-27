@@ -271,6 +271,10 @@
   .freq-toggle button{ font-size: 12.5px; font-weight: 600; padding: 6px 13px; border: 0; background: var(--surface-2); color: var(--ink-2); cursor: pointer; }
   .freq-toggle button + button{ border-left: 1px solid var(--border); }
   .freq-toggle button[aria-pressed="true"]{ background: var(--blue); color: #fff; }
+  .freq-toggle button:disabled{ opacity: 0.45; cursor: not-allowed; }
+  input[readonly]{ background: var(--surface-2); color: var(--ink-2); cursor: not-allowed; }
+  .irp5-row{ padding-top: 11px; margin-top: 7px; border-top: 1px dashed var(--border); }
+  .irp5-row:first-child{ padding-top: 0; margin-top: 0; border-top: 0; }
   .check-row{ display: flex; align-items: flex-start; gap: 9px; }
   .check-row input{ margin-top: 3px; accent-color: var(--blue); width: 15px; height: 15px; flex: none; }
   .check-row label{ font-size: 13px; font-weight: 400; margin: 0; }
@@ -520,6 +524,14 @@
                 </div>
               </div>
               <div class="warn-banner" id="ind_irp5Warn" hidden>This calculator estimates PAYE on salaried (IRP5) income only. Without IRP5/IT3(a) income the figures below may not apply &mdash; capture the correct income type on the actual return.</div>
+              <div class="qreveal" id="ind_irp5CountReveal">
+                <div class="field">
+                  <label for="ind_irp5CountInput">Number of IRP5/IT3(a) certificates</label>
+                  <input type="number" id="ind_irp5CountInput" min="1" max="20" step="1" value="1" inputmode="numeric" style="max-width:110px">
+                  <div class="hint">More than one employer or fund this year? Add a certificate for each and we\u2019ll total the gross salary automatically.</div>
+                </div>
+                <div id="ind_irp5Rows"></div>
+              </div>
               <div class="field">
                 <label>Enter figures as</label>
                 <div class="freq-toggle" role="group" aria-label="Entry frequency">
@@ -1110,6 +1122,9 @@
     donationInput: document.getElementById('ind_donationInput'),
     donationReveal: document.getElementById('ind_donationReveal'),
     irp5Warn: document.getElementById('ind_irp5Warn'),
+    irp5CountReveal: document.getElementById('ind_irp5CountReveal'),
+    irp5CountInput: document.getElementById('ind_irp5CountInput'),
+    irp5RowsContainer: document.getElementById('ind_irp5Rows'),
     flagList: document.getElementById('ind_flagList'),
     flagsSummary: document.getElementById('ind_flagsSummary'),
     importBtn: document.getElementById('ind_importBtn'),
@@ -1129,7 +1144,7 @@
   };
 
   var indDisabilityYN = initYesNo('ind_disabilityYN', false, function(){ calcIndividual(); markDirty(); });
-  var indIrp5YN = initYesNo('ind_irp5YN', true, function(v){ ind.irp5Warn.hidden = v; markDirty(); });
+  var indIrp5YN = initYesNo('ind_irp5YN', true, function(v){ ind.irp5Warn.hidden = v; ind.irp5CountReveal.hidden = !v; markDirty(); });
   var indRetYN = initYesNo('ind_retYN', true, function(v){ ind.retReveal.hidden = !v; calcIndividual(); markDirty(); });
   var indMedYN = initYesNo('ind_medYN', true, function(v){ ind.medReveal.hidden = !v; calcIndividual(); markDirty(); });
   var indOtherMedYN = initYesNo('ind_otherMedYN', false, function(v){ ind.otherMedReveal.hidden = !v; calcIndividual(); markDirty(); });
@@ -1248,6 +1263,8 @@
       ageBand: ind.ageBand.value, disability: indDisabilityYN.get(), freq: indFreq,
       irp5: indIrp5YN.get(),
       gross: ind.grossInput.value,
+      irp5Count: irp5Rows.length,
+      irp5Rows: irp5Rows.map(function(r){ return { employer: r.employer, gross: r.gross }; }),
       hasRet: indRetYN.get(), ret: ind.retInput.value,
       hasMed: indMedYN.get(), members: ind.membersInput.value, premium: ind.premiumInput.value,
       hasOtherMed: indOtherMedYN.get(), expenses: ind.expensesInput.value,
@@ -1274,6 +1291,15 @@
     if (s.expenses !== undefined) ind.expensesInput.value = s.expenses;
     indIrp5YN.set(s.irp5 !== undefined ? !!s.irp5 : true, true);
     ind.irp5Warn.hidden = indIrp5YN.get();
+    ind.irp5CountReveal.hidden = !indIrp5YN.get();
+    if (s.irp5Rows && s.irp5Rows.length){
+      irp5Rows = s.irp5Rows.map(function(r){ return { employer: r.employer || '', gross: r.gross != null ? r.gross : '0' }; });
+      ind.irp5CountInput.value = s.irp5Count || irp5Rows.length;
+    } else {
+      irp5Rows = [{ employer: '', gross: s.gross !== undefined ? s.gross : ind.grossInput.value }];
+      ind.irp5CountInput.value = 1;
+    }
+    renderIrp5Rows();
     indDonationYN.set(s.hasDonation !== undefined ? !!s.hasDonation : (parseFloat(s.donation) > 0), true);
     ind.donationReveal.hidden = !indDonationYN.get();
     if (s.donation !== undefined) ind.donationInput.value = s.donation;
@@ -1405,6 +1431,69 @@
       flags: flaggedItems.map(function(f){ return f.label; })
     };
   }
+
+  var irp5Rows = [{ employer: '', gross: '450000' }];
+
+  function irp5Total(){
+    return irp5Rows.reduce(function(sum, r){ return sum + (parseFloat(r.gross) || 0); }, 0);
+  }
+  function applyIrp5Total(){
+    ind.grossInput.value = round2(irp5Total());
+    calcIndividual();
+  }
+  function renderIrp5Rows(){
+    var n = Math.max(1, Math.min(20, parseInt(ind.irp5CountInput.value, 10) || 1));
+    ind.irp5CountInput.value = n;
+
+    if (n < 2){
+      irp5Rows = [{ employer: '', gross: ind.grossInput.value }];
+      ind.grossInput.readOnly = false;
+      ind.freqAnnual.disabled = false;
+      ind.freqMonthly.disabled = false;
+      var suffix0 = indFreq === 'annual' ? 'per year' : 'per month';
+      ind.grossLabel.textContent = 'Gross salary, ' + suffix0;
+      ind.irp5RowsContainer.innerHTML = '';
+      return;
+    }
+
+    // Certificates report annual totals, so lock the toggle to Annual while
+    // more than one is captured (avoids double-converting the summed total).
+    if (indFreq !== 'annual') setIndFrequency('annual', false);
+    ind.freqAnnual.disabled = true;
+    ind.freqMonthly.disabled = true;
+
+    while (irp5Rows.length < n) irp5Rows.push({ employer: '', gross: '0' });
+    irp5Rows.length = n;
+
+    ind.grossInput.readOnly = true;
+    ind.grossLabel.textContent = 'Total gross salary (' + n + ' certificates), per year';
+
+    ind.irp5RowsContainer.innerHTML = '';
+    irp5Rows.forEach(function(row, i){
+      var wrap = document.createElement('div');
+      wrap.className = 'two-col irp5-row';
+      wrap.innerHTML =
+        '<div class="field"><label>Certificate ' + (i + 1) + ' \u2014 employer / fund</label>' +
+        '<input type="text" class="irp5-employer" placeholder="Optional"></div>' +
+        '<div class="field"><label>Gross salary, per year</label>' +
+        '<div class="input-r"><input type="number" class="irp5-gross" min="0" step="100" inputmode="decimal"></div></div>';
+      var empInput = wrap.querySelector('.irp5-employer');
+      var grossInput = wrap.querySelector('.irp5-gross');
+      empInput.value = row.employer || '';
+      grossInput.value = row.gross;
+      empInput.addEventListener('input', function(){ irp5Rows[i].employer = empInput.value; markDirty(); });
+      grossInput.addEventListener('input', function(){ irp5Rows[i].gross = grossInput.value; applyIrp5Total(); markDirty(); });
+      ind.irp5RowsContainer.appendChild(wrap);
+    });
+
+    applyIrp5Total();
+  }
+  ind.irp5CountInput.addEventListener('change', function(){ renderIrp5Rows(); markDirty(); });
+  // Keep the single-certificate row in sync so a figure typed directly into
+  // the gross field isn't lost if the preparer then bumps the count up.
+  ind.grossInput.addEventListener('input', function(){
+    if (irp5Rows.length < 2) irp5Rows[0] = { employer: (irp5Rows[0] && irp5Rows[0].employer) || '', gross: ind.grossInput.value };
+  });
 
   function setIndFrequency(next, silent){
     if (next === indFreq) return;
@@ -2462,6 +2551,7 @@
   populateTaxYearSelect();
   updateFigureSpans();
   buildIndBracketRows();
+  renderIrp5Rows();
   calcIndividual();
   calcCompany();
   calcTrust();
