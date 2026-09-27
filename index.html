@@ -470,7 +470,7 @@
         </div>
         <div class="ribbon-client">
           <select id="taxYearSelect" aria-label="Tax year"></select>
-          <button type="button" id="saveCalcBtn" class="rbtn primary" disabled>Save</button>
+          <button type="button" id="saveCalcBtn" class="rbtn primary" disabled>Save now</button>
           <button type="button" id="reportBtn" class="rbtn">Download PDF</button>
           <span class="save-status" id="saveStatus">Loading&hellip;</span>
         </div>
@@ -1002,6 +1002,12 @@
   var TAX_YEAR_ORDER = ['2025-2026', '2026-2027'];
   var DEFAULT_TAX_YEAR = '2026-2027';
   var currentTaxYear = DEFAULT_TAX_YEAR;
+
+  function previousTaxYear(year){
+    var idx = TAX_YEAR_ORDER.indexOf(year);
+    if (idx <= 0) return null;
+    return TAX_YEAR_ORDER[idx - 1];
+  }
   var CO_RATE = 0.27;
   var UIF_RATE = 0.01;
 
@@ -1629,11 +1635,13 @@
 
   function switchTab(type){
     if (type === currentTaxType) return;
-    currentTaxType = type;
-    rtabs.forEach(function(t){ t.classList.toggle('active', t.dataset.type === type); });
-    panels.forEach(function(p){ p.hidden = p.dataset.panel !== type; });
-    setupScrollspy();
-    loadSavedCalcForCurrentType();
+    flushPendingSave().then(function(){
+      currentTaxType = type;
+      rtabs.forEach(function(t){ t.classList.toggle('active', t.dataset.type === type); });
+      panels.forEach(function(p){ p.hidden = p.dataset.panel !== type; });
+      setupScrollspy();
+      loadSavedCalcForCurrentType();
+    });
   }
   rtabs.forEach(function(t){ t.addEventListener('click', function(){ switchTab(t.dataset.type); }); });
 
@@ -1653,13 +1661,42 @@
   var panelNewClientName = document.getElementById('panelNewClientName');
   var panelAddClientBtn = document.getElementById('panelAddClientBtn');
   var dirty = false;
+  var saveTimer = null;
+  var AUTOSAVE_DELAY = 900;
+  var AUTOSAVE_RETRY_DELAY = 4000;
 
-  taxYearSelect.addEventListener('change', function(){ setTaxYear(taxYearSelect.value); });
+  taxYearSelect.addEventListener('change', function(){
+    var newYear = taxYearSelect.value;
+    flushPendingSave().then(function(){
+      setTaxYear(newYear, true);
+      loadSavedCalcForCurrentType();
+    });
+  });
 
   function markDirty(){
     if (!currentClientId) return;
     dirty = true;
     saveStatus.textContent = 'Unsaved changes';
+    scheduleAutoSave();
+  }
+
+  // Debounced autosave: fires ~900ms after the user stops typing, so a run of
+  // keystrokes triggers one save, not one per keystroke.
+  function scheduleAutoSave(){
+    if (!currentClientId || !dbApi) return;
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){
+      saveTimer = null;
+      saveCurrentCalc();
+    }, AUTOSAVE_DELAY);
+  }
+
+  // Saves immediately (skipping the debounce wait) if there's anything pending.
+  // Used before switching client/tab/signing out so an edit is never dropped.
+  function flushPendingSave(){
+    if (saveTimer){ clearTimeout(saveTimer); saveTimer = null; }
+    if (dirty && dbApi && currentClientId) return saveCurrentCalc();
+    return Promise.resolve();
   }
 
   function clientName(id){
@@ -1684,6 +1721,7 @@
     else if (kind === 'sandbox'){ saveStatus.textContent = 'No client selected — showing example figures'; }
     else if (kind === 'new-for-client'){ saveStatus.textContent = 'New calculation for ' + clientName(currentClientId) + ' — not yet saved'; }
     else if (kind === 'loaded'){ saveStatus.textContent = clientName(currentClientId) + ' — saved ' + relTime(extra); }
+    else if (kind === 'rolled-over'){ saveStatus.textContent = 'Rolled over from ' + (TAX_TABLES[extra] ? TAX_TABLES[extra].label : extra) + ' — review &amp; save'; }
     dirty = false;
   }
 
@@ -1752,10 +1790,12 @@
   clientFilter.addEventListener('input', renderClientPanelList);
 
   function selectClient(id){
-    currentClientId = id;
-    updateSidebarClientLabel();
     closeClientPanel();
-    loadSavedCalcForCurrentType();
+    flushPendingSave().then(function(){
+      currentClientId = id;
+      updateSidebarClientLabel();
+      loadSavedCalcForCurrentType();
+    });
   }
 
   function gatherCurrent(){
@@ -1773,28 +1813,56 @@
     if (!dbApi){ setStatus('no-db'); saveCalcBtn.disabled = true; return; }
     if (!currentClientId){ setStatus('sandbox'); saveCalcBtn.disabled = true; return; }
     saveCalcBtn.disabled = false;
-    dbApi.doc('clients/' + currentClientId + '/calcs/' + currentTaxType).get().then(function(snap){
+    var year = currentTaxYear;
+    var clientId = currentClientId;
+    var taxType = currentTaxType;
+    dbApi.doc('clients/' + clientId + '/calcs/' + taxType + '/' + year).get().then(function(snap){
       if (snap.exists){
         var data = snap.data();
         applyCurrent(data.inputs);
         setStatus('loaded', data.savedAt);
-      } else {
-        setStatus('new-for-client');
+        return;
       }
+      // Nothing saved for this client under this tax year yet — roll last
+      // year's figures in as an editable starting point, if there are any.
+      var prevYear = previousTaxYear(year);
+      if (!prevYear){ setStatus('new-for-client'); return; }
+      dbApi.doc('clients/' + clientId + '/calcs/' + taxType + '/' + prevYear).get().then(function(prevSnap){
+        // Bail out quietly if the client/tab/year moved on while this was in flight.
+        if (clientId !== currentClientId || taxType !== currentTaxType || year !== currentTaxYear) return;
+        if (prevSnap.exists){
+          var prevInputs = prevSnap.data().inputs;
+          var rolled = {};
+          for (var k in prevInputs){ if (Object.prototype.hasOwnProperty.call(prevInputs, k)) rolled[k] = prevInputs[k]; }
+          rolled.taxYear = year;
+          applyCurrent(rolled);
+          setStatus('rolled-over', prevYear);
+        } else {
+          setStatus('new-for-client');
+        }
+      }).catch(function(){ setStatus('new-for-client'); });
     }).catch(function(){ setStatus('new-for-client'); });
   }
 
   function saveCurrentCalc(){
-    if (!dbApi || !currentClientId) return;
+    if (!dbApi || !currentClientId) return Promise.resolve();
     var inputs = gatherCurrent();
     var savedAt = new Date().toISOString();
     saveCalcBtn.disabled = true;
-    dbApi.doc('clients/' + currentClientId + '/calcs/' + currentTaxType).set({ inputs: inputs, savedAt: savedAt })
+    saveStatus.textContent = 'Saving\u2026';
+    return dbApi.doc('clients/' + currentClientId + '/calcs/' + currentTaxType + '/' + currentTaxYear).set({ inputs: inputs, savedAt: savedAt })
       .then(function(){ setStatus('loaded', savedAt); })
-      .catch(function(){ saveStatus.textContent = 'Save failed — try again'; })
+      .catch(function(){
+        saveStatus.textContent = 'Save failed \u2014 will retry shortly';
+        if (saveTimer) clearTimeout(saveTimer);
+        saveTimer = setTimeout(function(){ saveTimer = null; saveCurrentCalc(); }, AUTOSAVE_RETRY_DELAY);
+      })
       .finally(function(){ saveCalcBtn.disabled = false; });
   }
-  saveCalcBtn.addEventListener('click', saveCurrentCalc);
+  saveCalcBtn.addEventListener('click', function(){
+    if (saveTimer){ clearTimeout(saveTimer); saveTimer = null; }
+    saveCurrentCalc();
+  });
 
   panelNewClientName.addEventListener('keydown', function(ev){ if (ev.key === 'Enter') panelAddClientBtn.click(); });
   panelAddClientBtn.addEventListener('click', function(){
@@ -1854,10 +1922,10 @@
   function makeDbApi(client){
     function docRef(path){
       var parts = path.split('/');
-      var clientId = parts[1], taxType = parts[3];
+      var clientId = parts[1], taxType = parts[3], taxYear = parts[4];
       return {
         get: function(){
-          return toPromise(client.from('calcs').select('inputs,saved_at').eq('client_id', clientId).eq('tax_type', taxType).maybeSingle())
+          return toPromise(client.from('calcs').select('inputs,saved_at').eq('client_id', clientId).eq('tax_type', taxType).eq('tax_year', taxYear).maybeSingle())
             .then(function(res){
               if (res.error) throw res.error;
               if (!res.data) return { exists: false };
@@ -1866,8 +1934,8 @@
         },
         set: function(obj){
           return toPromise(client.from('calcs').upsert(
-            { client_id: clientId, tax_type: taxType, inputs: obj.inputs, saved_at: obj.savedAt },
-            { onConflict: 'client_id,tax_type' }
+            { client_id: clientId, tax_type: taxType, tax_year: taxYear, inputs: obj.inputs, saved_at: obj.savedAt },
+            { onConflict: 'client_id,tax_type,tax_year' }
           )).then(function(res){ if (res.error) throw res.error; });
         }
       };
@@ -1991,16 +2059,18 @@
   });
 
   function doSignOut(){
-    sb.auth.signOut();
-    dbApi = null;
-    currentUser = null;
-    clients = [];
-    currentClientId = '';
-    authEmail.value = '';
-    authPassword.value = '';
-    authMode = 'signin';
-    renderAuthMode();
-    showGateForm();
+    flushPendingSave().then(function(){
+      sb.auth.signOut();
+      dbApi = null;
+      currentUser = null;
+      clients = [];
+      currentClientId = '';
+      authEmail.value = '';
+      authPassword.value = '';
+      authMode = 'signin';
+      renderAuthMode();
+      showGateForm();
+    });
   }
   authPendingSignOutBtn.addEventListener('click', doSignOut);
   signOutBtn.addEventListener('click', doSignOut);
