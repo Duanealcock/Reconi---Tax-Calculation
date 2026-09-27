@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tax Questionnaire — RECONI Tax</title>
+<style>
+  :root{
+    --navy-900: #0e1526;
+    --gold: #e0a83c;
+    --gold-ink: #96650f;
+    --gold-soft: #fbeed2;
+    --blue: #3366ee;
+    --blue-dark: #2650c4;
+    --page-bg: #eef1f6;
+    --surface: #ffffff;
+    --surface-2: #f6f8fb;
+    --ink: #12172a;
+    --ink-2: #545b68;
+    --ink-muted: #8a93a6;
+    --border: #e3e6ec;
+    --shadow: 0 1px 3px rgba(16,24,40,0.05), 0 1px 2px rgba(16,24,40,0.03);
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin: 0; background: var(--page-bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px; line-height: 1.45;
+  }
+  header.top{
+    background: var(--navy-900); color: #fff; padding: 22px 20px;
+  }
+  .top-inner{ max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+  .brand-mark{ flex: none; }
+  .brand-text .wordmark{ font-weight: 800; font-size: 16px; letter-spacing: 0.02em; }
+  .brand-text .wordmark .r2{ color: var(--gold); }
+  .brand-text .sub{ font-size: 12px; color: #c7cee3; margin-top: 2px; }
+  main{ max-width: 640px; margin: 0 auto; padding: 22px 16px 60px; }
+  .intro{
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 18px; margin-bottom: 18px; box-shadow: var(--shadow);
+  }
+  .intro h1{ font-size: 18px; margin: 0 0 8px; }
+  .intro p{ margin: 0 0 8px; color: var(--ink-2); }
+  .intro p:last-child{ margin-bottom: 0; }
+  .card{
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow);
+  }
+  .card h2{ font-size: 15px; margin: 0 0 4px; }
+  .card .hint-top{ font-size: 12.5px; color: var(--ink-muted); margin: 0 0 14px; }
+  .field{ margin-bottom: 14px; }
+  .field:last-child{ margin-bottom: 0; }
+  .field label{ display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .field input[type="text"], .field input[type="email"], .field input[type="number"], .field select{
+    width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
+    font-size: 14px; font-family: inherit; background: var(--surface-2); color: var(--ink);
+  }
+  .field input:focus, .field select:focus{ outline: 2px solid var(--blue); outline-offset: 1px; }
+  .field .hint{ font-size: 12px; color: var(--ink-muted); margin-top: 6px; }
+  .two-col{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px){ .two-col{ grid-template-columns: 1fr; } }
+  .qrow{ display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 12px 0; border-top: 1px solid var(--border); }
+  .qrow:first-of-type{ border-top: 0; padding-top: 0; }
+  .qtext{ font-size: 13.5px; font-weight: 500; flex: 1; }
+  .yn{ display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; flex: none; }
+  .yn button{
+    border: 0; background: var(--surface); color: var(--ink-2); font-size: 12.5px; font-weight: 700;
+    padding: 8px 14px; cursor: pointer;
+  }
+  .yn button[aria-pressed="true"]{ background: var(--blue); color: #fff; }
+  .yn button + button{ border-left: 1px solid var(--border); }
+  .qreveal{ border-left: 2px solid var(--border); padding: 2px 0 2px 14px; margin: 4px 0 14px 2px; }
+  .qreveal[hidden]{ display: none !important; }
+  .freq-toggle{ display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
+  .freq-toggle button{ border: 0; background: var(--surface); color: var(--ink-2); font-size: 12.5px; font-weight: 700; padding: 8px 14px; cursor: pointer; }
+  .freq-toggle button[aria-pressed="true"]{ background: var(--blue); color: #fff; }
+  .freq-toggle button + button{ border-left: 1px solid var(--border); }
+  .warn-banner{ background: var(--gold-soft); color: var(--gold-ink); border-radius: 8px; padding: 10px 12px; font-size: 12.5px; font-weight: 500; margin: 10px 0 0; }
+  .warn-banner[hidden]{ display: none !important; }
+  .flag-list{ display: flex; flex-direction: column; gap: 10px; }
+  .check-row{ display: flex; align-items: flex-start; gap: 10px; }
+  .check-row input[type="checkbox"]{ margin-top: 2px; flex: none; width: 17px; height: 17px; accent-color: var(--blue); }
+  .check-row label{ font-size: 13px; color: var(--ink-2); }
+  .submit-card{ text-align: center; }
+  .submit-btn{
+    display: inline-flex; align-items: center; gap: 8px; background: var(--blue); color: #fff;
+    border: 0; border-radius: 9px; font-size: 14.5px; font-weight: 700; padding: 13px 22px; cursor: pointer;
+  }
+  .submit-btn:hover{ background: var(--blue-dark); }
+  .submit-note{ font-size: 12.5px; color: var(--ink-muted); margin-top: 10px; }
+  .status-msg{ border-radius: 9px; padding: 12px 14px; font-size: 13px; font-weight: 600; margin-top: 14px; }
+  .status-msg[hidden]{ display: none !important; }
+  .status-msg.ok{ background: #e5f6ea; color: #157a3a; }
+  .status-msg.err{ background: var(--gold-soft); color: var(--gold-ink); }
+  .req{ color: var(--gold-ink); }
+  footer.foot{ max-width: 640px; margin: 0 auto; padding: 0 16px 40px; font-size: 11.5px; color: var(--ink-muted); text-align: center; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <img class="brand-mark" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJEAAACgCAMAAAA7IH4ZAAADAFBMVEVHcEwGCiP8+LkRFRkECRb//+gFChMDAANdUWI0NDQIDCQNFy4IEy6dgUMIEisRGC4UGi2Ue0BOTESNeUkTHDIIFTCYg0+AdFMHFDAJEy0IFS8QGTBrZFOGdUsIFDCdgUAIFjMJFDAIEzAHEy8JFjEHFTEHEzB5dGCmlWaOdkAIFTAJEy9xd3FneIIHEzBdWElVVVILFjAHEzCPeUa2l1IIFjFceZKEdlKllGkKFjGLhGlzjJs7PkGTg1xgYFtFRkM4P0pFSlN6io6vnW1/iINrkLEVKD+afj1GTVWtmmd6blD/AABARk6FhncACC2hgjweKTuPdjyGcT5bWFAxQWJ4bVEzO0eJfFhtYUSChXmKfFmohjqTeDwmLTxNaH4IFjEJFzIADS8KGDIJGDQIFjM2YbcqVKx+cVCCcEcACC1kWUFCb8QmT6h8dFw8Z70/ar44ZLuBbD4wWa53Zj+biFh0aU+YfkWQfE1Dbb2CdFAzXbIkS6EdQ5igjVx8bkxvdHmWg1WGeFZ8eW1eY2lgbH5FZaGTekAzVJgwXbhobHB6akZhcYt3b1pIaakYPZCGc0cgR52FcEBgXFI7YatwY0VZcZxgeKCMdUFPY4WUgE7aqUQoS5U+W5VXdq4sWLUdPYRJYpBoZ2NcZnadg0fhtFQ4UoZTXnBwbmbhr0c3W6J1c2yHf2lHc8VpeJJNVmXLmDN4e3wDEzEsUqFPapolRIlFW4ZefbLSnzhxa1paU0KEgXZveIY/Z7RPb6uOf1sUNYIvTIhAYJ1EVHZZXWJVaIpRdrwTMXmEe2HoulXvxWRQX3xnXkoKJWepikT20HQ3SnTL6PzkvmXq690pQXj47MiVi3CQhGKnoYfHkSangzjYwIe1kURJcLq53/nsyXP846DLsnmi1/rMy7TZ6O1DS2AfM0T+6a305byUkoS5sZD22Y65o3G+wKfL2tS7hyPkzpclNmGHh4LQrF3i17J6go4NHznj8vbh4tLLoky2y8T+99Wmz9+7fwAEAAMAAQRHcExI/Ik0AAABAHRSTlMADgIFCwEIAQICEyhTuiAvGeH9/jfSwtGoSF5A/tm80IR7nYz45rLJtd3cZsS/lP79dcbW/vG75v1uz9n9yf7vkbrW+NTa+9d28t8B1NHuxOPN89j87ljeotTYuJ/O0v////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8AsbJyfAAAIABJREFUeNrM2X9MmvkdB3AsCkWfgBaeCyCx/I6DxB1MIiSe9tKka7fGmZq7Jk0a4cEV3MJtVpDRBARx3qHcjJaewl2XYll9qnelZtdif8xcrr0U2uiFLDosifGf/tMmXs6didlf+zwPaAG7rFrb+iGYJ7bN8/L9+Xy/34dKoexKMbLvPVMMCvNQ2V4iMSj8+vl6ZO+QGJTyxvl/zzcyf71XSIwS1rs//OeHdzkle0dEOfXsX89OUfaKiLGPUn1Y9L7ocDVlH2PPgMooRZSyPULKgqjw2hukLGg/hQ7vvUDaBBG1F0gE6NgGaC+QckD0/fQM6djbJGVBxP3p2TfjrZIY++gEiEpCGEcZJI1KkOhvh5QFkQmVMKofV9NL6G+VlAURM0QFkPZDbTVjH2OjcW+BxCgBEJNCo9GoxaWl1VqknHesurS0iEqjUilMIL3pM44BsRzjFJWXVfIQBHlPq0L4iFJbDdcIp6y8mAOBvVkSTHG1lleGKJVKnUpyUlslh+LKnSdrVCqdUokweUAiFh/9DWDocBNGEbP6mE6pEtVw5Wr1SacCVShkMhRVOOvUVXKuRKhSirTvsKhvwkP80LRSFu8dZ41QXIWiqMxgchpaMX2rXq/HWg1Ok0EB360SS8Ta93gcajH9NccEARWXshDlKaeci8pkUj3WngFliiS1Y5hUJlOI5c5TSoRTSnvdA1TO4eskdU6FTCMlCBlQa1bUmiUR1xoZCmOlRFhM6usaJ8ifUcZBVMKqOueUlLgrlp/QRkoOSAm6iEmbnHVioQjhFL+2ASL6JRSrT5CxYHr9VhBJsgIJ4iJ1dShXqOSxil/LTlDM5CEScVXTZp9eBHpO2uihrEos5PPKGPRdTwgC0onlaJPLmlXkg4zkK4eEZS9NTahcrOOV0em73TEeX8hVy9pzQeQllvFsTWmTZJCpuSolq2hX55tWytNJ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" width="26" height="29" alt="">
+    <div class="brand-text">
+      <div class="wordmark">RECONI <span class="r2">TAX</span></div>
+      <div class="sub">Client Questionnaire — Individual</div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="intro">
+    <h1>Before we prepare your tax return</h1>
+    <p>Please answer the questions below as accurately as you can — it should only take a few minutes. If you're not sure about something, give your best answer and mention it to your accountant.</p>
+    <p>When you're done, click <b>&ldquo;Save my answers&rdquo;</b> at the bottom of the page. This saves a small file to your computer or phone — please email that file back to your accountant, or send it however they've asked you to. Nothing you enter here is sent anywhere until you send that file yourself.</p>
+  </div>
+
+  <div class="card">
+    <h2>Your details</h2>
+    <p class="hint-top">So your accountant can match this to your file.</p>
+    <div class="field">
+      <label for="clientName">Your full name <span class="req">*</span></label>
+      <input type="text" id="clientName" placeholder="e.g. John Doe" autocomplete="name">
+    </div>
+    <div class="field">
+      <label for="contactInfo">Email or phone number (optional)</label>
+      <input type="text" id="contactInfo" placeholder="In case your accountant has a question">
+    </div>
+    <div class="field">
+      <label for="taxYear">Which tax year is this for?</label>
+      <select id="taxYear">
+        <option value="2026-2027" selected>1 March 2026 to 28 February 2027</option>
+        <option value="2025-2026">1 March 2025 to 28 February 2026</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>About you</h2>
+    <div class="field">
+      <label for="ageBand">What is your age?</label>
+      <select id="ageBand">
+        <option value="under65" selected>Under 65</option>
+        <option value="65to74">65 to 74</option>
+        <option value="75plus">75 and older</option>
+      </select>
+    </div>
+    <div class="qrow">
+      <div class="qtext">Do you, your spouse, or someone who depends on you financially have a disability, as defined by SARS (a long-term physical, sensory, communication, intellectual or mental impairment that affects daily life)?</div>
+      <div class="yn" id="disabilityYN" role="group" aria-label="Disability">
+        <button type="button" data-val="yes" aria-pressed="false">Yes</button>
+        <button type="button" data-val="no" aria-pressed="true">No</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Employment income</h2>
+    <div class="qrow">
+      <div class="qtext">Did you receive a salary or wage this year, and get an IRP5 (or IT3[a]) tax certificate from your employer?</div>
+      <div class="yn" id="irp5YN" role="group" aria-label="IRP5 income">
+        <button type="button" data-val="yes" aria-pressed="true">Yes</button>
+        <button type="button" data-val="no" aria-pressed="false">No</button>
+      </div>
+    </div>
+    <div class="warn-banner" id="irp5Warn" hidden>No problem — just leave the salary amount below as is, and let your accountant know how you were paid instead (e.g. self-employed, rental, investments).</div>
+    <div class="field" style="margin-top:14px;">
+      <label>I'll give the figures below as</label>
+      <div class="freq-toggle" role="group" aria-label="Entry frequency">
+        <button type="button" id="freqAnnual" aria-pressed="true">A yearly total</button>
+        <button type="button" id="freqMonthly" aria-pressed="false">A monthly average</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="grossInput" id="grossLabel">Gross salary, per year (before any deductions)</label>
+      <div class="input-r"><input type="number" id="grossInput" min="0" step="100" value="" inputmode="decimal" placeholder="e.g. 450000"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Retirement savings</h2>
+    <div class="qrow">
+      <div class="qtext">Did you pay into a retirement annuity, pension or provident fund yourself this year? (If you're not sure, say yes and give your accountant the total on your payslip or certificate.)</div>
+      <div class="yn" id="retYN" role="group" aria-label="Retirement contribution">
+        <button type="button" data-val="yes" aria-pressed="true">Yes</button>
+        <button type="button" data-val="no" aria-pressed="false">No</button>
+      </div>
+    </div>
+    <div class="qreveal" id="retReveal">
+      <div class="field">
+        <label for="retInput">Total contributions, per year</label>
+        <input type="number" id="retInput" min="0" step="50" value="" inputmode="decimal" placeholder="e.g. 27000">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Medical expenses</h2>
+    <div class="qrow">
+      <div class="qtext">Do you belong to a medical aid scheme (as the main member) that you or your employer pays for?</div>
+      <div class="yn" id="medYN" role="group" aria-label="Medical aid membership">
+        <button type="button" data-val="yes" aria-pressed="true">Yes</button>
+        <button type="button" data-val="no" aria-pressed="false">No</button>
+      </div>
+    </div>
+    <div class="qreveal" id="medReveal">
+      <div class="two-col">
+        <div class="field">
+          <label for="membersInput">People covered (including you)</label>
+          <input type="number" id="membersInput" min="0" step="1" value="1" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="premiumInput">Premium, per month</label>
+          <input type="number" id="premiumInput" min="0" step="50" value="" inputmode="decimal" placeholder="e.g. 2450">
+        </div>
+      </div>
+    </div>
+    <div class="qrow">
+      <div class="qtext">Did you pay for other medical or disability-related expenses this year that your medical aid didn't cover (e.g. specialist visits, medication, glasses, dentist)?</div>
+      <div class="yn" id="otherMedYN" role="group" aria-label="Other medical expenses">
+        <button type="button" data-val="yes" aria-pressed="false">Yes</button>
+        <button type="button" data-val="no" aria-pressed="true">No</button>
+      </div>
+    </div>
+    <div class="qreveal" id="otherMedReveal" hidden>
+      <div class="field">
+        <label for="expensesInput">Amount you paid yourself, per year</label>
+        <input type="number" id="expensesInput" min="0" step="100" value="" inputmode="decimal" placeholder="e.g. 8000">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Donations</h2>
+    <div class="qrow">
+      <div class="qtext">Did you donate money to a registered charity or Public Benefit Organisation this year, and do you have a section 18A tax certificate for it?</div>
+      <div class="yn" id="donationYN" role="group" aria-label="Donations">
+        <button type="button" data-val="yes" aria-pressed="false">Yes</button>
+        <button type="button" data-val="no" aria-pressed="true">No</button>
+      </div>
+    </div>
+    <div class="qreveal" id="donationReveal" hidden>
+      <div class="field">
+        <label for="donationInput">Total donated, per year</label>
+        <input type="number" id="donationInput" min="0" step="100" value="" inputmode="decimal" placeholder="e.g. 10000">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Anything else?</h2>
+    <p class="hint-top">Please tick anything that applied to you this year — your accountant will follow up on these separately.</p>
+    <div class="flag-list" id="flagList"></div>
+  </div>
+
+  <div class="card submit-card">
+    <button type="button" class="submit-btn" id="submitBtn">&#8595; Save my answers</button>
+    <div class="submit-note">This downloads a small file (not a PDF) — please email it back to your accountant.</div>
+    <div class="status-msg" id="statusMsg" hidden></div>
+  </div>
+</main>
+
+<footer class="foot">Prepared for Alcock Consulting &middot; your answers stay on this device until you send the saved file yourself.</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  function initYesNo(containerId, defaultYes, onChange){
+    var container = document.getElementById(containerId);
+    var btns = Array.prototype.slice.call(container.querySelectorAll('button'));
+    var state = !!defaultYes;
+    function render(){
+      btns.forEach(function(b){ b.setAttribute('aria-pressed', String((b.dataset.val === 'yes') === state)); });
+    }
+    btns.forEach(function(b){
+      b.addEventListener('click', function(){
+        var val = b.dataset.val === 'yes';
+        if (val === state) return;
+        state = val;
+        render();
+        if (onChange) onChange(state);
+      });
+    });
+    render();
+    return {
+      get: function(){ return state; },
+      set: function(v, silent){ state = !!v; render(); if (!silent && onChange) onChange(state); }
+    };
+  }
+
+  var retReveal = document.getElementById('retReveal');
+  var medReveal = document.getElementById('medReveal');
+  var otherMedReveal = document.getElementById('otherMedReveal');
+  var donationReveal = document.getElementById('donationReveal');
+  var irp5Warn = document.getElementById('irp5Warn');
+
+  var disabilityYN = initYesNo('disabilityYN', false);
+  var irp5YN = initYesNo('irp5YN', true, function(v){ irp5Warn.hidden = v; });
+  var retYN = initYesNo('retYN', true, function(v){ retReveal.hidden = !v; });
+  var medYN = initYesNo('medYN', true, function(v){ medReveal.hidden = !v; });
+  var otherMedYN = initYesNo('otherMedYN', false, function(v){ otherMedReveal.hidden = !v; });
+  var donationYN = initYesNo('donationYN', false, function(v){ donationReveal.hidden = !v; });
+
+  var freqAnnual = document.getElementById('freqAnnual');
+  var freqMonthly = document.getElementById('freqMonthly');
+  var grossLabel = document.getElementById('grossLabel');
+  var freq = 'annual';
+  function setFreq(next){
+    if (next === freq) return;
+    freq = next;
+    freqAnnual.setAttribute('aria-pressed', String(freq === 'annual'));
+    freqMonthly.setAttribute('aria-pressed', String(freq === 'monthly'));
+    grossLabel.textContent = freq === 'annual' ? 'Gross salary, per year (before any deductions)' : 'Gross salary, per month (before any deductions)';
+  }
+  freqAnnual.addEventListener('click', function(){ setFreq('annual'); });
+  freqMonthly.addEventListener('click', function(){ setFreq('monthly'); });
+
+  var FLAG_DEFS = [
+    { id: 'unemployedPart', label: 'I was unemployed, or didn\'t work, for part of the year' },
+    { id: 'foreignEmployment', label: 'I worked and earned income outside South Africa' },
+    { id: 'investmentIncome', label: 'I earned interest, dividends, or income from property funds (REITs)' },
+    { id: 'trustBeneficiary', label: 'I received money from a trust, or income was allocated to me by a trust' },
+    { id: 'taxFreeActivity', label: 'I have a Tax-Free Savings Account that had money paid in, taken out, or growth this year' },
+    { id: 'rentalIncome', label: 'I earned rental income from a property I let out' },
+    { id: 'businessPartner', label: 'I run my own business, freelance, or I\'m a partner in a business' },
+    { id: 'capitalGains', label: 'I sold property, shares, crypto or other assets for a profit or loss this year' },
+    { id: 'foreignIncome', label: 'I received other income from outside South Africa (not interest or dividends)' },
+    { id: 'farming', label: 'I farm, or I\'m involved in farming operations' },
+    { id: 'otherReceipts', label: 'I received other taxable income not covered above' },
+    { id: 'nonTaxable', label: 'I received an amount I believe is not taxable' },
+    { id: 'vcc', label: 'I sold shares in a SARS-approved Venture Capital Company' },
+    { id: 'otherDeductions', label: 'I have other tax-deductible expenses not covered above (e.g. a home office)' },
+    { id: 'director', label: 'I\'m a director of a company, or a member of a close corporation' },
+    { id: 'largeAssets', label: 'I own assets (property, investments, etc.) worth more than R50 million' },
+    { id: 'vdp', label: 'This relates to a SARS Voluntary Disclosure Programme application' }
+  ];
+  var flagList = document.getElementById('flagList');
+  FLAG_DEFS.forEach(function(def){
+    var row = document.createElement('div');
+    row.className = 'check-row';
+    row.innerHTML = '<input type="checkbox" id="flag_' + def.id + '"><label for="flag_' + def.id + '">' + def.label + '</label>';
+    flagList.appendChild(row);
+  });
+  function getFlagState(){
+    var state = {};
+    FLAG_DEFS.forEach(function(def){ state[def.id] = document.getElementById('flag_' + def.id).checked; });
+    return state;
+  }
+
+  function numVal(el){ var n = parseFloat(String(el.value).replace(/[^0-9.\\-]/g, '')); return isNaN(n) ? 0 : n; }
+
+  function slugify(s){
+    return String(s || 'client').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'client';
+  }
+
+  var statusMsg = document.getElementById('statusMsg');
+  function showStatus(ok, message){
+    statusMsg.hidden = false;
+    statusMsg.className = 'status-msg ' + (ok ? 'ok' : 'err');
+    statusMsg.textContent = message;
+  }
+
+  document.getElementById('submitBtn').addEventListener('click', function(){
+    var nameEl = document.getElementById('clientName');
+    var name = nameEl.value.trim();
+    if (!name){
+      showStatus(false, 'Please enter your full name before saving.');
+      nameEl.focus();
+      return;
+    }
+
+    var freqMult = freq === 'annual' ? 1 : 12;
+    var grossAnnual = numVal(document.getElementById('grossInput')) * freqMult;
+    var retAnnual = numVal(document.getElementById('retInput'));
+
+    var data = {
+      taxYear: document.getElementById('taxYear').value,
+      ageBand: document.getElementById('ageBand').value,
+      disability: disabilityYN.get(),
+      freq: 'annual',
+      irp5: irp5YN.get(),
+      gross: String(grossAnnual),
+      hasRet: retYN.get(),
+      ret: String(retAnnual),
+      hasMed: medYN.get(),
+      members: document.getElementById('membersInput').value || '0',
+      premium: document.getElementById('premiumInput').value || '0',
+      hasOtherMed: otherMedYN.get(),
+      expenses: document.getElementById('expensesInput').value || '0',
+      hasDonation: donationYN.get(),
+      donation: document.getElementById('donationInput').value || '0',
+      flags: getFlagState()
+    };
+
+    var payload = {
+      formVersion: 1,
+      formType: 'individual-questionnaire',
+      clientName: name,
+      contact: document.getElementById('contactInfo').value.trim(),
+      generatedAt: new Date().toISOString(),
+      data: data
+    };
+
+    var filename = 'tax-questionnaire-' + slugify(name) + '-' + data.taxYear + '.json';
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+
+    showStatus(true, '\\u2713 Saved as ' + filename + '. Please email this file back to your accountant.');
+  });
+})();
+</script>
+</body>
+</html>
