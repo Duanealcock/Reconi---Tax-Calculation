@@ -3575,35 +3575,27 @@
   function slug(s){ return (s || '').replace(/[\\/:*?"<>|]/g, '').trim(); }
 
   function pdfBrandHeader(doc){
-    // Embed the actual logo image used elsewhere in the app (sidebar/auth screen)
-    // instead of a hand-drawn approximation, so the PDF always matches whichever
-    // logo is currently in use. The badge itself now bakes in the "RECONI"/"TAX"
-    // wording, so it's placed on its own at a larger size instead of alongside
-    // separately hand-drawn text (which would just duplicate it). Falls back to
-    // the old triangle + text mark if the image ever fails to embed.
-    var placedLogo = false;
-    try {
-      var logoImg = document.querySelector('.brand-mark');
-      if (logoImg && logoImg.src && logoImg.src.indexOf('data:image') === 0){
-        doc.addImage(logoImg.src, 'PNG', MARGIN - 2, 18, 46, 46);
-        placedLogo = true;
-      }
-    } catch (e) { placedLogo = false; }
-    if (!placedLogo){
-      doc.setFillColor.apply(doc, C_GOLD);
-      doc.triangle(MARGIN, 34, MARGIN + 13, 58, MARGIN - 11, 58, 'F');
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor.apply(doc, C_NAVY);
-      doc.text('RECONI', MARGIN + 26, 47);
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor.apply(doc, C_GOLD);
-      doc.text('T A X', MARGIN + 26, 57);
-    }
-    doc.setDrawColor.apply(doc, C_HAIR); doc.setLineWidth(1);
+    // Light-touch Alcock Consulting letterhead: the firm's own logo, name
+    // and tagline in its navy/gold colors -- matching the Cover Page's
+    // branding -- but without the heavy angular header band or the
+    // full-width footer used there. This document is data-dense and often
+    // runs several pages, so the branding stays compact and gets out of
+    // the way of the numbers. Falls back cleanly if brand fields are blank
+    // since getDocBrand() always returns the firm defaults in that case.
+    var brand = getDocBrand();
+    pdfAlcockLogo(doc, MARGIN + 14, 18, 28, C_ALCGOLD);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(12.5); doc.setTextColor.apply(doc, C_ALCNAVY);
+    doc.text(brand.firm, MARGIN + 38, 36);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor.apply(doc, C_ALCGOLD);
+    doc.text(brand.tagline, MARGIN + 38, 46);
+    doc.setDrawColor.apply(doc, C_ALCGOLD); doc.setLineWidth(1.25);
     doc.line(MARGIN, 72, PAGE_W - MARGIN, 72);
     return 90;
   }
   function pdfRunningHeader(doc, title){
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_MUTED);
-    doc.text('RECONI TAX', MARGIN, 36);
+    var brand = getDocBrand();
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_ALCNAVY);
+    doc.text(brand.firm, MARGIN, 36);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_MUTED);
     doc.text(title, PAGE_W - MARGIN, 36, { align: 'right' });
     doc.setDrawColor.apply(doc, C_HAIR); doc.setLineWidth(0.75);
@@ -3729,12 +3721,6 @@
 
     if (type === 'individual'){
       var r = ind.last; if (!r) return doc;
-      y = pdfStatTiles(doc, y, [
-        { label: 'Tax payable / mo', value: fmtR(r.taxPayableMonthly) },
-        { label: 'Tax payable / yr', value: fmtR(r.taxPayableAnnual, 0) },
-        { label: 'Effective rate', value: fmtPct(r.effectiveRate) },
-        { label: 'Take-home / mo', value: fmtR(r.netMonthly) }
-      ]);
 
       y = pdfEnsureSpace(doc, y, 140, title);
       y = pdfSectionLabel(doc, y, 'Inputs used');
