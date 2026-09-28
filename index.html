@@ -1988,7 +1988,7 @@
         return {
           employer: r.employer, sourceCodes: r.sourceCodes,
           gross: rowGross(r), sourceCode: (r.sourceCodes && r.sourceCodes[0] && r.sourceCodes[0].code) || '3601',
-          uif: r.uif, paye: r.paye, sdl: r.sdl, medCredit: r.medCredit
+          uif: r.uif, paye: r.paye, sdl: r.sdl, medCredit: r.medCredit, deductionCodes: r.deductionCodes
         };
       }),
       hasRet: indRetYN.get(), ret: ind.retInput.value,
@@ -2166,6 +2166,18 @@
     // catch a payroll under/over-application, not a second calculation.
     var medCreditDiff = totalMedicalCredit - irp5MedCreditFromCert;
 
+    // Same idea for the deduction/contribution codes captured per
+    // certificate (4001/4005/4030 etc.) — purely a record-keeping
+    // cross-check against what's entered in Retirement / Medical /
+    // Donations, never a second source for the calculation itself.
+    var hasIrp5DeductionCodes = indIrp5YN.get() && irp5HasAnyDeductionCodes();
+    var irp5RetirementCodesTotal = hasIrp5DeductionCodes ? irp5RetirementDeductionTotal() : 0;
+    var irp5MedicalCodesTotal = hasIrp5DeductionCodes ? irp5MedicalDeductionTotal() : 0;
+    var irp5DonationCodesTotal = hasIrp5DeductionCodes ? irp5DonationDeductionTotal() : 0;
+    var retCodeDiff = retContribAnnual - irp5RetirementCodesTotal;
+    var medCodeDiff = medicalContribAnnual - irp5MedicalCodesTotal;
+    var donationCodeDiff = donationAnnual - irp5DonationCodesTotal;
+
     ind.heroMonthly.textContent = fmtR(taxPayableMonthly) + ' / mo';
     ind.heroAnnual.textContent = fmtR(taxPayableAnnual) + ' per year';
     ind.statEffective.textContent = fmtPct(effectiveRate);
@@ -2246,6 +2258,26 @@
     if (hasIrp5SdlFigures){
       ind.checklist.appendChild(checklistItem(true, 'Employer SDL per IRP5 <b>(' + fmtR(irp5SdlAmount, 0) + ')</b> — paid by the employer, doesn’t affect this tax calculation'));
     }
+    if (hasIrp5DeductionCodes){
+      if (irp5RetirementCodesTotal > 0){
+        ind.checklist.appendChild(checklistItem(Math.abs(retCodeDiff) <= 5,
+          Math.abs(retCodeDiff) <= 5
+            ? 'Retirement section matches the IRP5 deduction codes <b>(' + fmtR(irp5RetirementCodesTotal, 0) + ')</b>'
+            : 'Retirement section <b>(' + fmtR(retContribAnnual, 0) + ')</b> differs from the IRP5 deduction codes <b>(' + fmtR(irp5RetirementCodesTotal, 0) + ')</b> — check codes 4001/4003/4006/4472/4473/4475'));
+      }
+      if (irp5MedicalCodesTotal > 0){
+        ind.checklist.appendChild(checklistItem(Math.abs(medCodeDiff) <= 5,
+          Math.abs(medCodeDiff) <= 5
+            ? 'Medical contributions match the IRP5 deduction codes <b>(' + fmtR(irp5MedicalCodesTotal, 0) + ')</b>'
+            : 'Medical contributions <b>(' + fmtR(medicalContribAnnual, 0) + ')</b> differ from the IRP5 deduction codes <b>(' + fmtR(irp5MedicalCodesTotal, 0) + ')</b> — check codes 4005/4474'));
+      }
+      if (irp5DonationCodesTotal > 0){
+        ind.checklist.appendChild(checklistItem(Math.abs(donationCodeDiff) <= 5,
+          Math.abs(donationCodeDiff) <= 5
+            ? 'Donations match the IRP5 deduction codes <b>(' + fmtR(irp5DonationCodesTotal, 0) + ')</b>'
+            : 'Donations <b>(' + fmtR(donationAnnual, 0) + ')</b> differ from the IRP5 deduction codes <b>(' + fmtR(irp5DonationCodesTotal, 0) + ')</b> — check codes 4030/4011'));
+      }
+    }
     ind.checklistBadge.innerHTML = retExcess > 0
       ? '<span class="badge warn">! Needs attention</span>'
       : '<span class="badge ok">&#10003; All calculated</span>';
@@ -2268,13 +2300,19 @@
       hasIrp5PayeFigures: hasIrp5PayeFigures,
       irp5SdlAmount: irp5SdlAmount, hasIrp5SdlFigures: hasIrp5SdlFigures,
       irp5MedCreditFromCert: irp5MedCreditFromCert, hasIrp5MedCreditFigures: hasIrp5MedCreditFigures, medCreditDiff: medCreditDiff,
+      hasIrp5DeductionCodes: hasIrp5DeductionCodes,
+      irp5RetirementCodesTotal: irp5RetirementCodesTotal, retCodeDiff: retCodeDiff,
+      irp5MedicalCodesTotal: irp5MedicalCodesTotal, medCodeDiff: medCodeDiff,
+      irp5DonationCodesTotal: irp5DonationCodesTotal, donationCodeDiff: donationCodeDiff,
       irp5RowsSnapshot: indIrp5YN.get() ? irp5Rows.map(function(r){
         var codes = (r.sourceCodes || []).map(function(sc){ return { code: sc.code || '3601', amount: parseFloat(sc.amount) || 0 }; });
+        var dcodes = (r.deductionCodes || []).map(function(dc){ return { code: dc.code || '4001', amount: parseFloat(dc.amount) || 0 }; });
         return {
           employer: r.employer || '', sourceCodes: codes,
           sourceCode: (codes[0] && codes[0].code) || '3601', gross: rowGross(r),
           uif: parseFloat(r.uif) || 0, paye: parseFloat(r.paye) || 0,
-          sdl: parseFloat(r.sdl) || 0, medCredit: parseFloat(r.medCredit) || 0
+          sdl: parseFloat(r.sdl) || 0, medCredit: parseFloat(r.medCredit) || 0,
+          deductionCodes: dcodes
         };
       }) : [],
       msftcMonthly: medDependantsArr.map(function(count){ return msftcForMonth(count); }),
@@ -2403,7 +2441,45 @@
     }).join('');
   }
 
-  var irp5Rows = [{ employer: '', sourceCodes: [{ code: '3601', amount: '450000' }], uif: '0', paye: '0', sdl: '0', medCredit: '0' }];
+  // Deduction/contribution/information codes that can appear on an IRP5
+  // alongside the income source codes above \u2014 captured per certificate
+  // purely for record-keeping (they do NOT feed the calculation) so the
+  // preparer can cross-check them against what's entered in the
+  // Retirement / Medical / Donations sections. PAYE (4102), the medical
+  // credit (4116), UIF (4141) and SDL (4142) already have their own
+  // dedicated fields above, so they're deliberately left out of this list.
+  var IRP5_DEDUCTION_CODES = [
+    { code: '4001', group: 'Retirement fund contributions', label: '4001 \u2014 Pension fund contributions (current, employee)' },
+    { code: '4003', group: 'Retirement fund contributions', label: '4003 \u2014 Provident fund contributions (current, employee)' },
+    { code: '4006', group: 'Retirement fund contributions', label: '4006 \u2014 Retirement annuity fund contributions (current, employee)' },
+    { code: '4472', group: 'Retirement fund contributions', label: '4472 \u2014 Employer\u2019s pension fund contribution (fringe benefit)' },
+    { code: '4473', group: 'Retirement fund contributions', label: '4473 \u2014 Employer\u2019s provident fund contribution (fringe benefit)' },
+    { code: '4475', group: 'Retirement fund contributions', label: '4475 \u2014 Employer\u2019s retirement annuity contribution (fringe benefit)' },
+    { code: '4005', group: 'Medical', label: '4005 \u2014 Medical aid contributions' },
+    { code: '4474', group: 'Medical', label: '4474 \u2014 Employer\u2019s medical aid contribution (fringe benefit)' },
+    { code: '4024', group: 'Medical', label: '4024 \u2014 Medical services costs not covered by a scheme' },
+    { code: '4030', group: 'Donations', label: '4030 \u2014 Donations deducted from remuneration, paid by employer' },
+    { code: '4011', group: 'Donations', label: '4011 \u2014 Donations (s18A, as declared on the return)' }
+  ];
+  var IRP5_RETIREMENT_DEDUCTION_CODES = ['4001', '4003', '4006', '4472', '4473', '4475'];
+  var IRP5_MEDICAL_DEDUCTION_CODES = ['4005', '4474'];
+  var IRP5_DONATION_DEDUCTION_CODES = ['4030', '4011'];
+  function irp5DeductionCodeOptions(selected){
+    var groups = [];
+    var byGroup = {};
+    IRP5_DEDUCTION_CODES.forEach(function(dc){
+      if (!byGroup[dc.group]){ byGroup[dc.group] = []; groups.push(dc.group); }
+      byGroup[dc.group].push(dc);
+    });
+    return groups.map(function(g){
+      var opts = byGroup[g].map(function(dc){
+        return '<option value="' + dc.code + '"' + (dc.code === selected ? ' selected' : '') + '>' + dc.label + '</option>';
+      }).join('');
+      return '<optgroup label="' + g + '">' + opts + '</optgroup>';
+    }).join('');
+  }
+
+  var irp5Rows = [{ employer: '', sourceCodes: [{ code: '3601', amount: '450000' }], uif: '0', paye: '0', sdl: '0', medCredit: '0', deductionCodes: [] }];
 
   // A certificate's gross is the sum of its source-code amounts.
   function rowGross(row){
@@ -2420,14 +2496,35 @@
     } else {
       sourceCodes = [{ code: row.sourceCode || '3601', amount: row.gross != null ? row.gross : '0' }];
     }
+    var deductionCodes = Array.isArray(row.deductionCodes)
+      ? row.deductionCodes.map(function(dc){ return { code: dc.code || '4001', amount: dc.amount != null ? dc.amount : '0' }; })
+      : [];
     return {
       employer: row.employer || '',
       sourceCodes: sourceCodes,
       uif: row.uif != null ? row.uif : '0',
       paye: row.paye != null ? row.paye : '0',
       sdl: row.sdl != null ? row.sdl : '0',
-      medCredit: row.medCredit != null ? row.medCredit : '0'
+      medCredit: row.medCredit != null ? row.medCredit : '0',
+      deductionCodes: deductionCodes
     };
+  }
+
+  // Sums this IRP5 row's captured deduction/contribution codes, filtered to
+  // a given code list (e.g. the retirement group) \u2014 used only for the
+  // record-keeping cross-check below, never for the tax calculation itself.
+  function irp5DeductionCodesTotal(codes){
+    return irp5Rows.reduce(function(sum, r){
+      return sum + (r.deductionCodes || []).reduce(function(s2, dc){
+        return s2 + (codes.indexOf(dc.code) >= 0 ? (parseFloat(dc.amount) || 0) : 0);
+      }, 0);
+    }, 0);
+  }
+  function irp5RetirementDeductionTotal(){ return irp5DeductionCodesTotal(IRP5_RETIREMENT_DEDUCTION_CODES); }
+  function irp5MedicalDeductionTotal(){ return irp5DeductionCodesTotal(IRP5_MEDICAL_DEDUCTION_CODES); }
+  function irp5DonationDeductionTotal(){ return irp5DeductionCodesTotal(IRP5_DONATION_DEDUCTION_CODES); }
+  function irp5HasAnyDeductionCodes(){
+    return irp5Rows.some(function(r){ return (r.deductionCodes || []).length > 0; });
   }
 
   function irp5Total(){
@@ -2459,7 +2556,7 @@
     // gross salary. A single certificate can report income under several
     // source codes (basic salary, bonus, travel allowance, etc.), so each
     // one holds a list of source-code lines rather than just one.
-    while (irp5Rows.length < n) irp5Rows.push({ employer: '', sourceCodes: [{ code: '3601', amount: '0' }], uif: '0', paye: '0', sdl: '0', medCredit: '0' });
+    while (irp5Rows.length < n) irp5Rows.push({ employer: '', sourceCodes: [{ code: '3601', amount: '0' }], uif: '0', paye: '0', sdl: '0', medCredit: '0', deductionCodes: [] });
     irp5Rows.length = n;
     for (var ri = 0; ri < irp5Rows.length; ri++) irp5Rows[ri] = normalizeIrp5Row(irp5Rows[ri]);
 
@@ -2496,6 +2593,12 @@
           '<div class="field"><label>Medical scheme fees tax credit (code 4116), per year</label>' +
           '<div class="input-r"><input type="number" class="irp5-medcredit" min="0" step="10" inputmode="decimal"></div>' +
           '<div class="hint">What the certificate already shows — checked against the credit calculated below</div></div>' +
+        '</div>' +
+        '<div class="irp5-sc-field">' +
+          '<label>Deductions / contributions / information (optional)</label>' +
+          '<div class="hint" style="margin-bottom:8px;">Capture any other codes from the certificate (e.g. 4001, 4005, 4030) — for record-keeping only, so RECONI can flag a mismatch against the Retirement / Medical / Donations sections below. It doesn’t change this calculation.</div>' +
+          '<div class="irp5-sc-list irp5-ded-list"></div>' +
+          '<button type="button" class="irp5-sc-add irp5-ded-add">+ Add deduction / contribution code</button>' +
         '</div>';
       var empInput = wrap.querySelector('.irp5-employer');
       var scList = wrap.querySelector('.irp5-sc-list');
@@ -2505,6 +2608,8 @@
       var payeInput = wrap.querySelector('.irp5-paye');
       var sdlInput = wrap.querySelector('.irp5-sdl');
       var medCreditInput = wrap.querySelector('.irp5-medcredit');
+      var dedList = wrap.querySelector('.irp5-ded-list');
+      var dedAddBtn = wrap.querySelector('.irp5-ded-add');
       empInput.value = row.employer || '';
       uifInput.value = row.uif;
       payeInput.value = row.paye;
@@ -2547,6 +2652,43 @@
         row.sourceCodes.push({ code: '3601', amount: '0' });
         renderScLines();
         markDirty();
+      });
+
+      // Deductions/contributions list — same pattern as the source codes
+      // above, but this one can be empty (nothing forces a preparer to
+      // capture it) and its amounts never touch the calculation; they only
+      // feed the mismatch check in calcIndividual().
+      function renderDeductionLines(){
+        dedList.innerHTML = '';
+        row.deductionCodes.forEach(function(dc, j){
+          var line = document.createElement('div');
+          line.className = 'irp5-sc-row irp5-ded-row';
+          line.innerHTML =
+            '<select class="irp5-sc-code irp5-ded-code">' + irp5DeductionCodeOptions(dc.code) + '</select>' +
+            '<div class="input-r"><input type="number" class="irp5-sc-amount irp5-ded-amount" min="0" step="100" inputmode="decimal"></div>' +
+            '<button type="button" class="irp5-sc-remove irp5-ded-remove" title="Remove this line">✕</button>';
+          var codeSel = line.querySelector('.irp5-ded-code');
+          var amtInput = line.querySelector('.irp5-ded-amount');
+          var removeBtn = line.querySelector('.irp5-ded-remove');
+          amtInput.value = dc.amount;
+          codeSel.addEventListener('change', function(){ row.deductionCodes[j].code = codeSel.value; calcIndividual(); markDirty(); });
+          amtInput.addEventListener('input', function(){
+            row.deductionCodes[j].amount = amtInput.value;
+            calcIndividual(); markDirty();
+          });
+          removeBtn.addEventListener('click', function(){
+            row.deductionCodes.splice(j, 1);
+            renderDeductionLines();
+            calcIndividual(); markDirty();
+          });
+          dedList.appendChild(line);
+        });
+      }
+      renderDeductionLines();
+      dedAddBtn.addEventListener('click', function(){
+        row.deductionCodes.push({ code: '4001', amount: '0' });
+        renderDeductionLines();
+        calcIndividual(); markDirty();
       });
 
       empInput.addEventListener('input', function(){ row.employer = empInput.value; markDirty(); });
@@ -3642,6 +3784,23 @@
         y = pdfKvRow(doc, y, 'Employer SDL per IRP5 (code 4142)', fmtR(r.irp5SdlAmount), {
           rule: false, note: 'Paid by the employer — for record only, doesn’t affect this tax calculation'
         });
+      }
+      if (r.hasIrp5DeductionCodes && (r.irp5RetirementCodesTotal > 0 || r.irp5MedicalCodesTotal > 0 || r.irp5DonationCodesTotal > 0)){
+        if (r.irp5RetirementCodesTotal > 0){
+          y = pdfKvRow(doc, y, 'Retirement per IRP5 deduction codes', fmtR(r.irp5RetirementCodesTotal), {
+            rule: false, note: Math.abs(r.retCodeDiff) <= 5 ? 'matches the Retirement section' : 'differs from the Retirement section (' + fmtR(r.retContribAnnual, 0) + ') by ' + fmtR(Math.abs(r.retCodeDiff), 0)
+          });
+        }
+        if (r.irp5MedicalCodesTotal > 0){
+          y = pdfKvRow(doc, y, 'Medical per IRP5 deduction codes', fmtR(r.irp5MedicalCodesTotal), {
+            rule: false, note: Math.abs(r.medCodeDiff) <= 5 ? 'matches the Medical section' : 'differs from the Medical section (' + fmtR(r.medicalContribAnnual, 0) + ') by ' + fmtR(Math.abs(r.medCodeDiff), 0)
+          });
+        }
+        if (r.irp5DonationCodesTotal > 0){
+          y = pdfKvRow(doc, y, 'Donations per IRP5 deduction codes', fmtR(r.irp5DonationCodesTotal), {
+            rule: false, note: Math.abs(r.donationCodeDiff) <= 5 ? 'matches the Donations section' : 'differs from the Donations section (' + fmtR(r.donationAnnual, 0) + ') by ' + fmtR(Math.abs(r.donationCodeDiff), 0)
+          });
+        }
       }
       y += 14;
 
