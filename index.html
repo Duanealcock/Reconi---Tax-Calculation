@@ -301,10 +301,10 @@
   .freq-toggle button[aria-pressed="true"]{ background: var(--blue); color: #fff; }
   .freq-toggle button:disabled{ opacity: 0.45; cursor: not-allowed; }
   input[readonly]{ background: var(--surface-2); color: var(--ink-2); cursor: not-allowed; }
-  .irp5-row, .ret-row{ padding-top: 11px; margin-top: 7px; border-top: 1px dashed var(--border); }
-  .irp5-row:first-child, .ret-row:first-child{ padding-top: 0; margin-top: 0; border-top: 0; }
-  .ret-row-grid{ display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
-  @media (max-width: 640px){ .ret-row-grid{ grid-template-columns: 1fr; } }
+  .irp5-row, .ret-row, .int-row{ padding-top: 11px; margin-top: 7px; border-top: 1px dashed var(--border); }
+  .irp5-row:first-child, .ret-row:first-child, .int-row:first-child{ padding-top: 0; margin-top: 0; border-top: 0; }
+  .ret-row-grid, .int-row-grid{ display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+  @media (max-width: 640px){ .ret-row-grid, .int-row-grid{ grid-template-columns: 1fr; } }
   .irp5-detail-grid{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 11px; margin-top: 11px; }
   @media (max-width: 640px){ .irp5-detail-grid{ grid-template-columns: 1fr; } }
   .irp5-sc-field{ margin-top: 11px; }
@@ -729,6 +729,30 @@
                   <label for="ind_retInput" id="ind_retLabel">Total retirement contribution (1 fund), per year</label>
                   <div class="input-r"><input type="number" id="ind_retInput" min="0" step="50" readonly></div>
                   <div class="hint">Deductible up to 27.5% of income, capped at <span data-fig="retCap">R430,000</span>/year &mdash; excess carries forward.</div>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Interest</legend>
+              <div class="qrow">
+                <div class="qtext">Did you receive any local interest income (bank, unit trust, fixed deposit, etc.) during the year?</div>
+                <div class="yn" id="ind_intYN" role="group" aria-label="Interest income">
+                  <button type="button" data-val="yes" aria-pressed="false">Yes</button>
+                  <button type="button" data-val="no" aria-pressed="true">No</button>
+                </div>
+              </div>
+              <div class="qreveal" id="ind_intReveal" hidden>
+                <div class="field">
+                  <label for="ind_intCountInput">Number of interest sources</label>
+                  <input type="number" id="ind_intCountInput" min="1" max="20" step="1" value="1" inputmode="numeric" style="max-width:110px">
+                  <div class="hint">Interest from more than one bank account, unit trust or fixed deposit this year? Add one for each and we’ll total it automatically.</div>
+                </div>
+                <div id="ind_intRows"></div>
+                <div class="field">
+                  <label for="ind_intInput" id="ind_intLabel">Total interest received (1 source), per year</label>
+                  <div class="input-r"><input type="number" id="ind_intInput" min="0" step="50" readonly></div>
+                  <div class="hint">The first <span data-fig="interestExemptUnder65">R23,800</span>/year is exempt (<span data-fig="interestExempt65Plus">R34,500</span>/year from age 65) &mdash; only the amount above that is added to taxable income. This exemption applies to South African-source interest only; foreign interest doesn't qualify &mdash; flag that separately under "Other items" below.</div>
                 </div>
               </div>
             </fieldset>
@@ -1196,6 +1220,8 @@
           <div class="field"><label for="ay_uifCeiling">UIF monthly remuneration ceiling (R)</label><input type="number" id="ay_uifCeiling"></div>
           <div class="field"><label for="ay_msftcFirst">Medical credit, first two members (R)</label><input type="number" id="ay_msftcFirst"></div>
           <div class="field"><label for="ay_msftcAdditional">Medical credit, each additional member (R)</label><input type="number" id="ay_msftcAdditional"></div>
+          <div class="field"><label for="ay_interestExemptUnder65">Local interest exemption, under 65 (R)</label><input type="number" id="ay_interestExemptUnder65"></div>
+          <div class="field"><label for="ay_interestExempt65Plus">Local interest exemption, 65 and older (R)</label><input type="number" id="ay_interestExempt65Plus"></div>
         </div>
       </fieldset>
 
@@ -1322,7 +1348,8 @@
         ],
         rebatePrimary: 17235, rebateSecondary: 9444, rebateTertiary: 3145,
         retirementCap: 350000, uifCeiling: 17712,
-        msftcFirstTwo: 364, msftcAdditional: 246
+        msftcFirstTwo: 364, msftcAdditional: 246,
+        interestExemptUnder65: 23800, interestExempt65Plus: 34500
       },
       co: {
         sbc: [
@@ -1348,7 +1375,8 @@
         ],
         rebatePrimary: 17820, rebateSecondary: 9765, rebateTertiary: 3249,
         retirementCap: 430000, uifCeiling: 17712,
-        msftcFirstTwo: 376, msftcAdditional: 254
+        msftcFirstTwo: 376, msftcAdditional: 254,
+        interestExemptUnder65: 23800, interestExempt65Plus: 34500
       },
       co: {
         sbc: [
@@ -1383,6 +1411,8 @@
       rebateTertiary: fmtFig(T.ind.rebateTertiary),
       msftcFirst: fmtFig(T.ind.msftcFirstTwo),
       msftcAdditional: fmtFig(T.ind.msftcAdditional),
+      interestExemptUnder65: fmtFig(T.ind.interestExemptUnder65),
+      interestExempt65Plus: fmtFig(T.ind.interestExempt65Plus),
       uifCeiling: fmtFig(T.ind.uifCeiling),
       uifCeilingHalf: fmtR(T.ind.uifCeiling * UIF_RATE, 2),
       yearLabel: T.label,
@@ -1528,6 +1558,8 @@
     document.getElementById('ay_uifCeiling').value = T.ind.uifCeiling;
     document.getElementById('ay_msftcFirst').value = T.ind.msftcFirstTwo;
     document.getElementById('ay_msftcAdditional').value = T.ind.msftcAdditional;
+    document.getElementById('ay_interestExemptUnder65').value = T.ind.interestExemptUnder65;
+    document.getElementById('ay_interestExempt65Plus').value = T.ind.interestExempt65Plus;
     document.getElementById('ay_sbc1').value = T.co.sbc[1].min;
     document.getElementById('ay_sbc1r').value = +(T.co.sbc[1].rate * 100).toFixed(4);
     document.getElementById('ay_sbc2').value = T.co.sbc[2].min;
@@ -1573,7 +1605,8 @@
       if (!(starts[j] > starts[j - 1])) return 'Individual bracket starting amounts must all be different.';
     }
     var fieldIds = ['ay_rebatePrimary', 'ay_rebateSecondary', 'ay_rebateTertiary', 'ay_retirementCap', 'ay_uifCeiling',
-      'ay_msftcFirst', 'ay_msftcAdditional', 'ay_sbc1', 'ay_sbc1r', 'ay_sbc2', 'ay_sbc2r', 'ay_sbc3', 'ay_sbc3r', 'ay_trustRate'];
+      'ay_msftcFirst', 'ay_msftcAdditional', 'ay_interestExemptUnder65', 'ay_interestExempt65Plus',
+      'ay_sbc1', 'ay_sbc1r', 'ay_sbc2', 'ay_sbc2r', 'ay_sbc3', 'ay_sbc3r', 'ay_trustRate'];
     for (var k = 0; k < fieldIds.length; k++){
       if (ayNumVal(fieldIds[k]) === null) return 'Fill in every field — check for anything left blank.';
     }
@@ -1599,7 +1632,8 @@
         brackets: indBrackets,
         rebatePrimary: ayNumVal('ay_rebatePrimary'), rebateSecondary: ayNumVal('ay_rebateSecondary'), rebateTertiary: ayNumVal('ay_rebateTertiary'),
         retirementCap: ayNumVal('ay_retirementCap'), uifCeiling: ayNumVal('ay_uifCeiling'),
-        msftcFirstTwo: ayNumVal('ay_msftcFirst'), msftcAdditional: ayNumVal('ay_msftcAdditional')
+        msftcFirstTwo: ayNumVal('ay_msftcFirst'), msftcAdditional: ayNumVal('ay_msftcAdditional'),
+        interestExemptUnder65: ayNumVal('ay_interestExemptUnder65'), interestExempt65Plus: ayNumVal('ay_interestExempt65Plus')
       },
       co: { sbc: sbcBrackets },
       trust: { rate: ayNumVal('ay_trustRate') / 100 }
@@ -1717,6 +1751,11 @@
     retReveal: document.getElementById('ind_retReveal'),
     retCountInput: document.getElementById('ind_retCountInput'),
     retRowsContainer: document.getElementById('ind_retRows'),
+    intInput: document.getElementById('ind_intInput'),
+    intLabel: document.getElementById('ind_intLabel'),
+    intReveal: document.getElementById('ind_intReveal'),
+    intCountInput: document.getElementById('ind_intCountInput'),
+    intRowsContainer: document.getElementById('ind_intRows'),
     medSchemeName: document.getElementById('ind_medSchemeName'),
     medMembershipNo: document.getElementById('ind_medMembershipNo'),
     medDepGrid: document.getElementById('ind_medDepGrid'),
@@ -1787,7 +1826,7 @@
   // already were) locks it to Annual — it only unlocks once neither is
   // in use.
   function updateFreqLock(){
-    var locked = indIrp5YN.get() || indRetYN.get();
+    var locked = indIrp5YN.get() || indRetYN.get() || indIntYN.get();
     ind.freqAnnual.disabled = locked;
     ind.freqMonthly.disabled = locked;
   }
@@ -1809,6 +1848,16 @@
     ind.retReveal.hidden = !v;
     if (v){
       renderRetRows();
+    } else {
+      updateFreqLock();
+      calcIndividual();
+    }
+    markDirty();
+  });
+  var indIntYN = initYesNo('ind_intYN', false, function(v){
+    ind.intReveal.hidden = !v;
+    if (v){
+      renderIntRows();
     } else {
       updateFreqLock();
       calcIndividual();
@@ -1945,6 +1994,9 @@
       hasRet: indRetYN.get(), ret: ind.retInput.value,
       retCount: retRows.length,
       retRows: retRows.map(function(r){ return { name: r.name, amount: r.amount }; }),
+      hasInt: indIntYN.get(), interest: ind.intInput.value,
+      intCount: intRows.length,
+      intRows: intRows.map(function(r){ return { name: r.name, amount: r.amount }; }),
       hasMed: indMedYN.get(),
       medSchemeName: ind.medSchemeName.value, medMembershipNo: ind.medMembershipNo.value,
       medDependants: getMedDependants(), medTotalContrib: ind.medTotalContribInput.value,
@@ -1970,6 +2022,16 @@
       ind.retCountInput.value = 1;
     }
     renderRetRows();
+    indIntYN.set(s.hasInt !== undefined ? !!s.hasInt : (parseFloat(s.interest) > 0), true);
+    ind.intReveal.hidden = !indIntYN.get();
+    if (s.intRows && s.intRows.length){
+      intRows = s.intRows.map(normalizeIntRow);
+      ind.intCountInput.value = s.intCount || intRows.length;
+    } else {
+      intRows = [normalizeIntRow({ name: '', amount: s.interest !== undefined ? s.interest : '0' })];
+      ind.intCountInput.value = 1;
+    }
+    renderIntRows();
     indMedYN.set(s.hasMed !== undefined ? !!s.hasMed : true, true);
     ind.medReveal.hidden = !indMedYN.get();
     ind.medSchemeName.value = s.medSchemeName || '';
@@ -2018,6 +2080,7 @@
 
     var grossAnnual = numVal(ind.grossInput) * freqMult;
     var retContribAnnual = indRetYN.get() ? numVal(ind.retInput) * freqMult : 0;
+    var totalInterestAnnual = indIntYN.get() ? numVal(ind.intInput) * freqMult : 0;
     var medDependantsArr = indMedYN.get() ? getMedDependants() : MED_MONTHS.map(function(){ return 0; });
     var medicalContribAnnual = indMedYN.get() ? numVal(ind.medTotalContribInput) : 0;
     var otherMedicalAnnual = indOtherMedYN.get() ? numVal(ind.expensesInput) : 0;
@@ -2027,10 +2090,19 @@
     var retDeduction = Math.min(retContribAnnual, retCap);
     var retExcess = Math.max(0, retContribAnnual - retDeduction);
     var incomeAfterRet = Math.max(0, grossAnnual - retDeduction);
-    var donationCap = 0.10 * incomeAfterRet;
+
+    // Local interest exemption (s10(1)(i)): the first R23,800/year is
+    // exempt (R34,500/year from age 65) — only the excess counts toward
+    // taxable income. Doesn't apply to foreign interest.
+    var interestExemption = ageBand === 'under65' ? T.interestExemptUnder65 : T.interestExempt65Plus;
+    var interestExemptApplied = Math.min(totalInterestAnnual, interestExemption);
+    var taxableInterest = Math.max(0, totalInterestAnnual - interestExemption);
+    var incomeAfterInterest = incomeAfterRet + taxableInterest;
+
+    var donationCap = 0.10 * incomeAfterInterest;
     var donationDeduction = Math.min(donationAnnual, donationCap);
     var donationExcess = Math.max(0, donationAnnual - donationDeduction);
-    var taxableIncome = Math.max(0, incomeAfterRet - donationDeduction);
+    var taxableIncome = Math.max(0, incomeAfterInterest - donationDeduction);
 
     var taxResult = taxByBrackets(T.brackets, taxableIncome);
     var taxBeforeRebates = taxResult.tax, bracketIndex = taxResult.index;
@@ -2071,7 +2143,9 @@
     var monthlyGross = grossAnnual / 12;
     var uifAnnualEmployee = UIF_RATE * Math.min(monthlyGross, T.uifCeiling) * 12;
 
-    var netAnnual = grossAnnual - retContribAnnual - uifAnnualEmployee - taxPayableAnnual;
+    // Interest received is real cash in the client's pocket too (not just a
+    // tax-base add-on), so it's included in take-home alongside salary.
+    var netAnnual = grossAnnual + totalInterestAnnual - retContribAnnual - uifAnnualEmployee - taxPayableAnnual;
     var netMonthly = netAnnual / 12;
     var effectiveRate = grossAnnual > 0 ? (taxPayableAnnual / grossAnnual) * 100 : 0;
 
@@ -2111,6 +2185,12 @@
     ind.ledger.appendChild(ledgerRow('Less: retirement contribution', retDeduction, {
       negative: true, note: retExcess > 0 ? (fmtR(retExcess, 0) + ' above the deduction cap carries forward') : null
     }));
+    if (indIntYN.get()){
+      ind.ledger.appendChild(ledgerRow('Interest received', totalInterestAnnual));
+      ind.ledger.appendChild(ledgerRow('Less: local interest exemption', interestExemptApplied, {
+        negative: true, note: 'taxable interest ' + fmtR(taxableInterest, 0)
+      }));
+    }
     ind.ledger.appendChild(ledgerRow('Less: donations (s18A)', donationDeduction, {
       negative: true, note: donationExcess > 0 ? (fmtR(donationExcess, 0) + ' above the 10% of income cap carries forward') : null
     }));
@@ -2139,6 +2219,11 @@
       : (donationExcess === 0
         ? 'Donation deduction within the 10% of income cap'
         : 'Donation deduction capped <b>(' + fmtR(donationExcess, 0) + ' carried forward)</b>')));
+    if (indIntYN.get()){
+      ind.checklist.appendChild(checklistItem(true, taxableInterest === 0
+        ? 'Interest fully covered by the local interest exemption <b>(' + fmtR(interestExemption, 0) + ')</b>'
+        : 'Local interest exemption applied <b>(' + fmtR(interestExemptApplied, 0) + ')</b> — <b>' + fmtR(taxableInterest, 0) + '</b> added to taxable income'));
+    }
     ind.checklist.appendChild(checklistItem(true, maxDependants > 0
       ? 'Medical tax credits calculated <b>(' + medDependantsDisplay + ' dependant' + (maxDependants === 1 && minDependants === 1 ? '' : 's') + ' per month)</b>'
       : 'No medical aid captured'));
@@ -2170,6 +2255,8 @@
     ind.last = {
       ageBand: ageBand, disability: hasDisability, freq: indFreq, irp5: indIrp5YN.get(),
       grossAnnual: grossAnnual, retContribAnnual: retContribAnnual, retDeduction: retDeduction, retExcess: retExcess,
+      hasInt: indIntYN.get(), totalInterestAnnual: totalInterestAnnual, interestExemption: interestExemption,
+      interestExemptApplied: interestExemptApplied, taxableInterest: taxableInterest,
       medSchemeName: indMedYN.get() ? ind.medSchemeName.value : '', medMembershipNo: indMedYN.get() ? ind.medMembershipNo.value : '',
       medDependantsDisplay: medDependantsDisplay, medicalContribAnnual: medicalContribAnnual, otherMedicalAnnual: otherMedicalAnnual,
       donationAnnual: donationAnnual, donationDeduction: donationDeduction, donationExcess: donationExcess,
@@ -2535,6 +2622,67 @@
     applyRetTotal();
   }
   ind.retCountInput.addEventListener('change', function(){ renderRetRows(); markDirty(); });
+
+  // ================= INTEREST INCOME =================
+  // Same pattern again: a count opens that many blocks (one per bank
+  // account / unit trust / fixed deposit), each with its own amount,
+  // summed into the read-only total. The local interest exemption is
+  // applied to that total (not per-source) in calcIndividual.
+  var intRows = [{ name: '', amount: '0' }];
+
+  function intRowsTotal(){
+    return intRows.reduce(function(sum, r){ return sum + (parseFloat(r.amount) || 0); }, 0);
+  }
+  function normalizeIntRow(row){
+    row = row || {};
+    return {
+      name: row.name || '',
+      amount: row.amount != null ? row.amount : '0'
+    };
+  }
+  function applyIntTotal(){
+    ind.intInput.value = round2(intRowsTotal());
+    calcIndividual();
+  }
+  function renderIntRows(){
+    var n = Math.max(1, Math.min(20, parseInt(ind.intCountInput.value, 10) || 1));
+    ind.intCountInput.value = n;
+
+    while (intRows.length < n) intRows.push({ name: '', amount: '0' });
+    intRows.length = n;
+    for (var ii = 0; ii < intRows.length; ii++) intRows[ii] = normalizeIntRow(intRows[ii]);
+
+    // Interest certificates (IT3(b)) report annual totals, so lock the
+    // toggle to Annual while interest is being captured this way — same
+    // reason as the IRP5 certificates and retirement funds above.
+    if (indFreq !== 'annual') setIndFrequency('annual', false);
+    updateFreqLock();
+
+    ind.intLabel.textContent = n === 1 ? 'Total interest received (1 source), per year' : 'Total interest received (' + n + ' sources), per year';
+
+    ind.intRowsContainer.innerHTML = '';
+    intRows.forEach(function(row, i){
+      var wrap = document.createElement('div');
+      wrap.className = 'int-row';
+      wrap.innerHTML =
+        '<div class="int-row-grid">' +
+          '<div class="field"><label>Source ' + (i + 1) + ' — name (optional)</label>' +
+          '<input type="text" class="int-fund-name" placeholder="Optional"></div>' +
+          '<div class="field"><label>Interest received, per year</label>' +
+          '<div class="input-r"><input type="number" class="int-fund-amount" min="0" step="50" inputmode="decimal"></div></div>' +
+        '</div>';
+      var nameInput = wrap.querySelector('.int-fund-name');
+      var amountInput = wrap.querySelector('.int-fund-amount');
+      nameInput.value = row.name || '';
+      amountInput.value = row.amount;
+      nameInput.addEventListener('input', function(){ row.name = nameInput.value; markDirty(); });
+      amountInput.addEventListener('input', function(){ row.amount = amountInput.value; applyIntTotal(); markDirty(); });
+      ind.intRowsContainer.appendChild(wrap);
+    });
+
+    applyIntTotal();
+  }
+  ind.intCountInput.addEventListener('change', function(){ renderIntRows(); markDirty(); });
 
   function setIndFrequency(next, silent){
     if (next === indFreq) return;
@@ -3451,6 +3599,7 @@
       y = pdfKvRow(doc, y, 'Age', AGE_LABEL[r.ageBand] + (r.disability ? ', qualifying disability' : ''));
       y = pdfKvRow(doc, y, 'Gross salary, per year', fmtR(r.grossAnnual));
       y = pdfKvRow(doc, y, 'Retirement contribution, per year', fmtR(r.retContribAnnual));
+      if (r.hasInt){ y = pdfKvRow(doc, y, 'Interest received, per year', fmtR(r.totalInterestAnnual)); }
       if (r.medSchemeName){ y = pdfKvRow(doc, y, 'Medical scheme', r.medSchemeName + (r.medMembershipNo ? (' (No. ' + r.medMembershipNo + ')') : '')); }
       y = pdfKvRow(doc, y, 'Dependants covered, per month', r.medDependantsDisplay || '0');
       y = pdfKvRow(doc, y, 'Medical aid total contributions, per year', fmtR(r.medicalContribAnnual));
@@ -3464,6 +3613,12 @@
       y = pdfKvRow(doc, y, 'Less: retirement contribution', '-' + fmtR(r.retDeduction), {
         note: r.retExcess > 0 ? (fmtR(r.retExcess, 0) + ' above the deduction cap carries forward') : null
       });
+      if (r.hasInt){
+        y = pdfKvRow(doc, y, 'Interest received', fmtR(r.totalInterestAnnual));
+        y = pdfKvRow(doc, y, 'Less: local interest exemption', '-' + fmtR(r.interestExemptApplied), {
+          note: 'taxable interest ' + fmtR(r.taxableInterest, 0)
+        });
+      }
       y = pdfKvRow(doc, y, 'Less: donations (s18A)', '-' + fmtR(r.donationDeduction), {
         note: r.donationExcess > 0 ? (fmtR(r.donationExcess, 0) + ' above the 10% of income cap carries forward') : null
       });
@@ -3983,6 +4138,7 @@
   renderMedDepGrid();
   renderIrp5Rows();
   renderRetRows();
+  renderIntRows();
   calcIndividual();
   calcCompany();
   calcTrust();
