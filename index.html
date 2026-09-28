@@ -324,6 +324,35 @@
   }
   .irp5-sc-add:hover{ background: var(--surface-2); border-color: var(--blue); }
   @media (max-width: 640px){ .irp5-sc-row{ grid-template-columns: 1fr 100px 28px; } }
+
+  /* ---- Add tax year modal ---- */
+  .modal-overlay{ position: fixed; inset: 0; background: rgba(14,21,38,0.55); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 60; }
+  .modal-overlay[hidden]{ display: none; }
+  .modal-card{ background: var(--surface); border-radius: 14px; box-shadow: 0 20px 60px rgba(16,24,40,0.3); width: 100%; max-width: 640px; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; }
+  .modal-head{ display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); flex: none; }
+  .modal-head h2{ font-size: 16px; margin: 0; color: var(--ink); }
+  .modal-close{ border: 0; background: none; color: var(--ink-muted); font-size: 14px; cursor: pointer; width: 28px; height: 28px; border-radius: 7px; flex: none; }
+  .modal-close:hover{ background: var(--surface-2); color: var(--ink); }
+  .modal-body{ padding: 18px 20px; overflow-y: auto; }
+  .modal-note{ font-size: 12.5px; color: var(--ink-2); margin: 0 0 14px; line-height: 1.45; }
+  .modal-limitation{ font-size: 12px; color: var(--gold-ink); background: var(--gold-soft); border-radius: 8px; padding: 10px 12px; margin: 6px 0 0; line-height: 1.45; }
+  .modal-error{ font-size: 12.5px; color: #b42318; background: #fde8e8; border: 1px solid #f3b4b4; border-radius: 8px; padding: 9px 11px; margin-top: 12px; }
+  .modal-foot{ display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--border); background: var(--surface-2); flex: none; }
+  .modal-foot .rbtn{ background: var(--surface); color: var(--ink); border: 1px solid var(--border); }
+  .modal-foot .rbtn:not(.primary):hover{ background: var(--page-bg); }
+  .modal-foot .rbtn.primary{ background: var(--blue); color: #fff; border-color: var(--blue); }
+  .modal-foot .rbtn.primary:hover{ background: var(--blue-dark); }
+  .modal-foot .rbtn:disabled{ opacity: 0.5; cursor: not-allowed; }
+  .ay-year-preview{ font-size: 12px; color: var(--ink-2); margin-top: 6px; min-height: 15px; }
+  .ay-bracket-head{ display: grid; grid-template-columns: 1fr 110px 28px; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 7px; }
+  .ay-bracket-row{ display: grid; grid-template-columns: 1fr 110px 28px; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .ay-sbc-grid{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 11px; }
+  @media (max-width: 640px){
+    .ay-sbc-grid{ grid-template-columns: 1fr 1fr; }
+    .ay-bracket-head{ display: none; }
+    .ay-bracket-row{ grid-template-columns: 1fr 84px 28px; }
+  }
+
   .check-row{ display: flex; align-items: flex-start; gap: 9px; }
   .check-row input{ margin-top: 3px; accent-color: var(--blue); width: 15px; height: 15px; flex: none; }
   .check-row label{ font-size: 13px; font-weight: 400; margin: 0; }
@@ -540,6 +569,7 @@
         </div>
         <div class="ribbon-client">
           <select id="taxYearSelect" aria-label="Tax year"></select>
+          <button type="button" id="addYearBtn" class="rbtn" title="Add a new tax year">+ Year</button>
           <button type="button" id="saveCalcBtn" class="rbtn primary" disabled>Save now</button>
           <button type="button" id="reportBtn" class="rbtn">Download PDF</button>
         </div>
@@ -1125,6 +1155,73 @@
 
     </main>
   </div>
+
+  <div class="modal-overlay" id="addYearOverlay" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="addYearTitle">
+    <div class="modal-head">
+      <h2 id="addYearTitle">Add a new tax year</h2>
+      <button type="button" class="modal-close" id="addYearCloseBtn" aria-label="Close">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-note">Enter the real SARS figures for the new year of assessment. Once saved, this year is available to every approved staff member and stays selectable here &mdash; no app update needed. It's pre-filled with the latest year's figures as a starting point &mdash; update whatever SARS has changed.</p>
+
+      <div class="field">
+        <label for="ay_startYear">Year of assessment starts (1 March)</label>
+        <input type="number" id="ay_startYear" inputmode="numeric" placeholder="e.g. 2027" min="2000" max="2100" step="1">
+        <div class="ay-year-preview" id="ay_yearPreview"></div>
+      </div>
+
+      <fieldset>
+        <legend>Individual tax brackets</legend>
+        <div class="ay-bracket-head"><span>Taxable income from (R)</span><span>Rate (%)</span><span></span></div>
+        <div id="ay_indBrackets"></div>
+        <button type="button" class="irp5-sc-add" id="ay_addBracketBtn">+ Add bracket</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>Individual rebates, caps &amp; credits</legend>
+        <div class="irp5-detail-grid">
+          <div class="field"><label for="ay_rebatePrimary">Primary rebate (R)</label><input type="number" id="ay_rebatePrimary"></div>
+          <div class="field"><label for="ay_rebateSecondary">Secondary rebate, 65+ (R)</label><input type="number" id="ay_rebateSecondary"></div>
+          <div class="field"><label for="ay_rebateTertiary">Tertiary rebate, 75+ (R)</label><input type="number" id="ay_rebateTertiary"></div>
+          <div class="field"><label for="ay_retirementCap">Retirement contribution cap (R)</label><input type="number" id="ay_retirementCap"></div>
+          <div class="field"><label for="ay_uifCeiling">UIF monthly remuneration ceiling (R)</label><input type="number" id="ay_uifCeiling"></div>
+          <div class="field"><label for="ay_msftcFirst">Medical credit, first two members (R)</label><input type="number" id="ay_msftcFirst"></div>
+          <div class="field"><label for="ay_msftcAdditional">Medical credit, each additional member (R)</label><input type="number" id="ay_msftcAdditional"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Company &mdash; Small Business Corporation (SBC) scale</legend>
+        <p class="modal-note">The 0% band from R0 up to the first threshold is automatic &mdash; just the three thresholds and the rates above each are needed.</p>
+        <div class="ay-sbc-grid">
+          <div class="field"><label for="ay_sbc1">Threshold 1 (R)</label><input type="number" id="ay_sbc1"></div>
+          <div class="field"><label for="ay_sbc1r">Rate above it (%)</label><input type="number" id="ay_sbc1r" step="0.01"></div>
+          <div class="field"><label for="ay_sbc2">Threshold 2 (R)</label><input type="number" id="ay_sbc2"></div>
+          <div class="field"><label for="ay_sbc2r">Rate above it (%)</label><input type="number" id="ay_sbc2r" step="0.01"></div>
+          <div class="field"><label for="ay_sbc3">Threshold 3 (R)</label><input type="number" id="ay_sbc3"></div>
+          <div class="field"><label for="ay_sbc3r">Rate above it (%)</label><input type="number" id="ay_sbc3r" step="0.01"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Trust</legend>
+        <div class="field">
+          <label for="ay_trustRate">Flat trust rate (%)</label>
+          <input type="number" id="ay_trustRate" step="0.01">
+        </div>
+      </fieldset>
+
+      <p class="modal-limitation">Heads up: the flat 27% rate for non-SBC companies is still a fixed app setting, not stored per year yet &mdash; if SARS changes it, that one figure needs an app update. Everything else on this form is saved per year and takes effect immediately.</p>
+
+      <div class="modal-error" id="ay_error" hidden></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="rbtn" id="addYearCancelBtn">Cancel</button>
+      <button type="button" class="rbtn primary" id="addYearSaveBtn">Save &amp; switch to this year</button>
+    </div>
+  </div>
+  </div>
 </div>
 
 <script>
@@ -1321,6 +1418,257 @@
     calcCompany();
     calcTrust();
     if (!silent) markDirty();
+  }
+
+  // ================= ADD TAX YEAR =================
+  // Lets an approved user type in a brand-new year's real SARS figures and
+  // have it saved to Supabase (table: tax_years), so every approved staff
+  // member sees it and it's available without a code/file update. `sb` and
+  // `toPromise` are declared further down (Supabase section) but, being a
+  // `var`/`function` in this same scope, are safe to reference here since
+  // none of this code runs until the modal is actually opened/submitted,
+  // well after the whole script has finished initializing.
+  var addYearOverlay = document.getElementById('addYearOverlay');
+  var addYearBtn = document.getElementById('addYearBtn');
+  var addYearCloseBtn = document.getElementById('addYearCloseBtn');
+  var addYearCancelBtn = document.getElementById('addYearCancelBtn');
+  var addYearSaveBtn = document.getElementById('addYearSaveBtn');
+  var ayErrorEl = document.getElementById('ay_error');
+  var ayBracketRows = []; // in-memory rows being edited: [{ start, ratePct }]
+
+  function isLeapYear(y){ return (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)); }
+  function taxYearMetaFromStart(startYear){
+    var endYear = startYear + 1;
+    var feb = isLeapYear(endYear) ? '29' : '28';
+    return {
+      key: startYear + '-' + endYear,
+      label: startYear + '/' + endYear,
+      range: '1 Mar ' + startYear + ' – ' + feb + ' Feb ' + endYear
+    };
+  }
+
+  // Bracket base amounts are always exactly derivable from each bracket's
+  // (start, rate) — so the form only collects those two per row, and this
+  // fills in max/base the same way the built-in years already work.
+  function buildBracketsWithBase(rows){
+    var sorted = rows.slice().sort(function(a, b){ return a.start - b.start; });
+    var brackets = [];
+    var base = 0;
+    for (var i = 0; i < sorted.length; i++){
+      var min = sorted[i].start;
+      var max = (i + 1 < sorted.length) ? sorted[i + 1].start : Infinity;
+      brackets.push({ min: min, max: max, rate: sorted[i].rate, base: base });
+      if (i + 1 < sorted.length) base += (max - min) * sorted[i].rate;
+    }
+    return brackets;
+  }
+
+  function renderAddYearBrackets(){
+    if (ayBracketRows.length) ayBracketRows[0].start = 0; // first bracket always starts at R0
+    var container = document.getElementById('ay_indBrackets');
+    container.innerHTML = '';
+    ayBracketRows.forEach(function(row, idx){
+      var div = document.createElement('div');
+      div.className = 'ay-bracket-row';
+      div.innerHTML =
+        '<input type="number" class="ay-bracket-start"' + (idx === 0 ? ' readonly title="The first bracket always starts at R0"' : '') + '>' +
+        '<input type="number" class="ay-bracket-rate" step="0.01">' +
+        '<button type="button" class="irp5-sc-remove" title="Remove this bracket"' + (ayBracketRows.length <= 1 ? ' disabled' : '') + '>✕</button>';
+      var startInput = div.querySelector('.ay-bracket-start');
+      var rateInput = div.querySelector('.ay-bracket-rate');
+      startInput.value = row.start;
+      rateInput.value = row.ratePct;
+      startInput.addEventListener('input', function(){ row.start = parseFloat(startInput.value); });
+      rateInput.addEventListener('input', function(){ row.ratePct = parseFloat(rateInput.value); });
+      div.querySelector('.irp5-sc-remove').addEventListener('click', function(){
+        var i = ayBracketRows.indexOf(row);
+        if (i > -1 && ayBracketRows.length > 1){ ayBracketRows.splice(i, 1); renderAddYearBrackets(); }
+      });
+      container.appendChild(div);
+    });
+  }
+  document.getElementById('ay_addBracketBtn').addEventListener('click', function(){
+    var last = ayBracketRows[ayBracketRows.length - 1];
+    ayBracketRows.push({ start: last ? last.start + 100000 : 0, ratePct: last ? last.ratePct : 18 });
+    renderAddYearBrackets();
+  });
+
+  function updateYearPreview(){
+    var el = document.getElementById('ay_startYear');
+    var preview = document.getElementById('ay_yearPreview');
+    var startYear = parseInt(el.value, 10);
+    if (!startYear || startYear < 2000 || startYear > 2100){ preview.textContent = ''; return; }
+    var meta = taxYearMetaFromStart(startYear);
+    var existsNote = TAX_TABLES[meta.key] ? ' — a year with this key already exists and will be overwritten' : '';
+    preview.textContent = meta.label + ' (' + meta.range + ')' + existsNote;
+  }
+  document.getElementById('ay_startYear').addEventListener('input', updateYearPreview);
+
+  function fillAddYearFormDefaults(){
+    // Pre-fills from the latest known year as an editable starting point,
+    // so the user only has to change the figures SARS actually changed.
+    var latestKey = TAX_YEAR_ORDER[TAX_YEAR_ORDER.length - 1];
+    var T = TAX_TABLES[latestKey];
+    document.getElementById('ay_startYear').value = '';
+    document.getElementById('ay_yearPreview').textContent = '';
+    ayBracketRows = T.ind.brackets.map(function(b){ return { start: b.min, ratePct: +(b.rate * 100).toFixed(4) }; });
+    renderAddYearBrackets();
+    document.getElementById('ay_rebatePrimary').value = T.ind.rebatePrimary;
+    document.getElementById('ay_rebateSecondary').value = T.ind.rebateSecondary;
+    document.getElementById('ay_rebateTertiary').value = T.ind.rebateTertiary;
+    document.getElementById('ay_retirementCap').value = T.ind.retirementCap;
+    document.getElementById('ay_uifCeiling').value = T.ind.uifCeiling;
+    document.getElementById('ay_msftcFirst').value = T.ind.msftcFirstTwo;
+    document.getElementById('ay_msftcAdditional').value = T.ind.msftcAdditional;
+    document.getElementById('ay_sbc1').value = T.co.sbc[1].min;
+    document.getElementById('ay_sbc1r').value = +(T.co.sbc[1].rate * 100).toFixed(4);
+    document.getElementById('ay_sbc2').value = T.co.sbc[2].min;
+    document.getElementById('ay_sbc2r').value = +(T.co.sbc[2].rate * 100).toFixed(4);
+    document.getElementById('ay_sbc3').value = T.co.sbc[3].min;
+    document.getElementById('ay_sbc3r').value = +(T.co.sbc[3].rate * 100).toFixed(4);
+    document.getElementById('ay_trustRate').value = +(T.trust.rate * 100).toFixed(4);
+    ayErrorEl.hidden = true;
+    ayErrorEl.textContent = '';
+  }
+
+  function openAddYearModal(){
+    fillAddYearFormDefaults();
+    addYearOverlay.hidden = false;
+    document.getElementById('ay_startYear').focus();
+  }
+  function closeAddYearModal(){ addYearOverlay.hidden = true; }
+  addYearBtn.addEventListener('click', openAddYearModal);
+  addYearCloseBtn.addEventListener('click', closeAddYearModal);
+  addYearCancelBtn.addEventListener('click', closeAddYearModal);
+  addYearOverlay.addEventListener('click', function(ev){ if (ev.target === addYearOverlay) closeAddYearModal(); });
+  document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape' && !addYearOverlay.hidden) closeAddYearModal(); });
+
+  function ayNumVal(id){
+    var v = parseFloat(document.getElementById(id).value);
+    return isNaN(v) ? null : v;
+  }
+
+  function validateAddYear(){
+    var startYear = parseInt(document.getElementById('ay_startYear').value, 10);
+    if (!startYear || startYear < 2000 || startYear > 2100){
+      return 'Enter a valid year the tax year starts on (e.g. 2027).';
+    }
+    if (!ayBracketRows.length) return 'Add at least one individual tax bracket.';
+    for (var i = 0; i < ayBracketRows.length; i++){
+      var r = ayBracketRows[i].ratePct;
+      if (r === null || r === undefined || isNaN(r) || r < 0 || r > 100){
+        return 'Each individual bracket needs a rate between 0 and 100%.';
+      }
+    }
+    var starts = ayBracketRows.map(function(row){ return row.start; }).sort(function(a, b){ return a - b; });
+    for (var j = 1; j < starts.length; j++){
+      if (!(starts[j] > starts[j - 1])) return 'Individual bracket starting amounts must all be different.';
+    }
+    var fieldIds = ['ay_rebatePrimary', 'ay_rebateSecondary', 'ay_rebateTertiary', 'ay_retirementCap', 'ay_uifCeiling',
+      'ay_msftcFirst', 'ay_msftcAdditional', 'ay_sbc1', 'ay_sbc1r', 'ay_sbc2', 'ay_sbc2r', 'ay_sbc3', 'ay_sbc3r', 'ay_trustRate'];
+    for (var k = 0; k < fieldIds.length; k++){
+      if (ayNumVal(fieldIds[k]) === null) return 'Fill in every field — check for anything left blank.';
+    }
+    if (!(ayNumVal('ay_sbc1') < ayNumVal('ay_sbc2') && ayNumVal('ay_sbc2') < ayNumVal('ay_sbc3'))){
+      return 'The SBC thresholds must increase: Threshold 1 < Threshold 2 < Threshold 3.';
+    }
+    return null;
+  }
+
+  function collectAddYearData(){
+    var startYear = parseInt(document.getElementById('ay_startYear').value, 10);
+    var meta = taxYearMetaFromStart(startYear);
+    var indBrackets = buildBracketsWithBase(ayBracketRows.map(function(row){ return { start: row.start, rate: row.ratePct / 100 }; }));
+    var sbcBrackets = buildBracketsWithBase([
+      { start: 0, rate: 0 },
+      { start: ayNumVal('ay_sbc1'), rate: ayNumVal('ay_sbc1r') / 100 },
+      { start: ayNumVal('ay_sbc2'), rate: ayNumVal('ay_sbc2r') / 100 },
+      { start: ayNumVal('ay_sbc3'), rate: ayNumVal('ay_sbc3r') / 100 }
+    ]);
+    var entry = {
+      label: meta.label, range: meta.range,
+      ind: {
+        brackets: indBrackets,
+        rebatePrimary: ayNumVal('ay_rebatePrimary'), rebateSecondary: ayNumVal('ay_rebateSecondary'), rebateTertiary: ayNumVal('ay_rebateTertiary'),
+        retirementCap: ayNumVal('ay_retirementCap'), uifCeiling: ayNumVal('ay_uifCeiling'),
+        msftcFirstTwo: ayNumVal('ay_msftcFirst'), msftcAdditional: ayNumVal('ay_msftcAdditional')
+      },
+      co: { sbc: sbcBrackets },
+      trust: { rate: ayNumVal('ay_trustRate') / 100 }
+    };
+    return { key: meta.key, entry: entry };
+  }
+
+  function applyCustomTaxYear(key, entry, opts){
+    var isNewYear = !TAX_TABLES[key];
+    TAX_TABLES[key] = entry;
+    if (isNewYear){
+      TAX_YEAR_ORDER.push(key);
+      TAX_YEAR_ORDER.sort(); // 'YYYY-YYYY' keys sort correctly as plain strings
+    }
+    populateTaxYearSelect();
+    if (!opts || opts.switchTo !== false) setTaxYear(key);
+  }
+
+  function saveAddYear(){
+    var err = validateAddYear();
+    if (err){ ayErrorEl.textContent = err; ayErrorEl.hidden = false; return; }
+    var built = collectAddYearData();
+    ayErrorEl.hidden = true;
+    addYearSaveBtn.disabled = true;
+    addYearSaveBtn.textContent = 'Saving…';
+    var finish = function(){
+      applyCustomTaxYear(built.key, built.entry);
+      closeAddYearModal();
+      addYearSaveBtn.disabled = false;
+      addYearSaveBtn.textContent = 'Save & switch to this year';
+    };
+    if (!sb){
+      // No live Supabase connection right now — apply for this session only.
+      finish();
+      return;
+    }
+    toPromise(sb.from('tax_years').upsert(
+      { key: built.key, label: built.entry.label, range_text: built.entry.range, data: built.entry },
+      { onConflict: 'key' }
+    )).then(function(res){
+      if (res.error) throw res.error;
+      finish();
+    }).catch(function(){
+      addYearSaveBtn.disabled = false;
+      addYearSaveBtn.textContent = 'Save & switch to this year';
+      ayErrorEl.textContent = 'Could not save this to the shared list — check your connection and try again.';
+      ayErrorEl.hidden = false;
+    });
+  }
+  addYearSaveBtn.addEventListener('click', saveAddYear);
+
+  // Supabase stores brackets as jsonb, and JSON has no way to represent
+  // Infinity (JSON.stringify turns it into null) — so the top bracket's
+  // `max` comes back as null after a round trip. Put Infinity back before
+  // this data is used, otherwise the top bracket silently stops matching
+  // any income (`income <= null` is never true for a positive income).
+  function reviveTaxYearEntry(entry){
+    function fixTopMax(list){
+      if (!list || !list.length) return;
+      var last = list[list.length - 1];
+      if (last.max === null || last.max === undefined) last.max = Infinity;
+    }
+    if (entry && entry.ind) fixTopMax(entry.ind.brackets);
+    if (entry && entry.co) fixTopMax(entry.co.sbc);
+    return entry;
+  }
+
+  // Loads every custom year already saved by any approved staff member, so
+  // they all show up in the dropdown without switching the current view.
+  function loadCustomTaxYears(){
+    if (!sb) return Promise.resolve();
+    return toPromise(sb.from('tax_years').select('key,data').order('key')).then(function(res){
+      if (res.error || !res.data) return;
+      res.data.forEach(function(row){
+        if (row && row.key && row.data) applyCustomTaxYear(row.key, reviveTaxYearEntry(row.data), { switchTo: false });
+      });
+    }).catch(function(){ /* non-fatal — custom years just won't show up this session */ });
   }
 
   // ================= INDIVIDUAL =================
@@ -2601,6 +2949,7 @@
     acctEmail.title = currentUser.email;
     sidebarAddClientBtn.disabled = false;
     sidebarClientBtn.disabled = false;
+    loadCustomTaxYears();
     dbApi.collection('clients').get().then(function(snap){
       clients = snap.docs.map(function(d){ return { id: d.id, name: (d.data() || {}).name || '(unnamed)' }; });
       clients.sort(function(a, b){ return a.name.localeCompare(b.name); });
