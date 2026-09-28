@@ -45,8 +45,17 @@
     position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
     display: flex; flex-direction: column;
   }
-  .sidebar-account{
+  .sidebar-foot{
     margin-top: auto; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .sidebar-save-status{ font-size: 11.5px; color: #97a0b5; font-weight: 500; line-height: 1.4; }
+  .sidebar-save-status::before{ content: "\25cf"; margin-right: 5px; font-size: 9px; position: relative; top: -1px; color: #5c6a8a; }
+  .sidebar-save-status.is-busy{ color: #dfe6ff; }
+  .sidebar-save-status.is-busy::before{ color: #7ea0ff; }
+  .sidebar-save-status.is-error{ color: #ffb4a8; }
+  .sidebar-save-status.is-error::before{ color: #ff6b5e; }
+  .sidebar-account{
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
   }
   .sidebar-account .acct-email{ font-size: 11.5px; color: #97a0b5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -150,7 +159,6 @@
   .rbtn.primary{ background: #fff; color: var(--blue-dark); }
   .rbtn.primary:hover{ background: #eef1ff; }
   .rbtn:disabled{ opacity: 0.45; cursor: not-allowed; }
-  .save-status{ font-size: 11.5px; color: #dfe6ff; font-weight: 500; white-space: nowrap; }
   .new-client-form{ display: flex; gap: 6px; align-items: center; }
   .new-client-form input{ border: 0; border-radius: 7px; padding: 7px 10px; font-size: 12.5px; min-width: 140px; }
 
@@ -507,9 +515,12 @@
         </div>
       </nav>
 
-      <div class="sidebar-account" id="sidebarAccount">
-        <span class="acct-email" id="acctEmail"></span>
-        <button type="button" id="signOutBtn">Sign out</button>
+      <div class="sidebar-foot">
+        <div class="sidebar-save-status" id="saveStatus">Loading&hellip;</div>
+        <div class="sidebar-account" id="sidebarAccount">
+          <span class="acct-email" id="acctEmail"></span>
+          <button type="button" id="signOutBtn">Sign out</button>
+        </div>
       </div>
     </aside>
 
@@ -531,7 +542,6 @@
           <select id="taxYearSelect" aria-label="Tax year"></select>
           <button type="button" id="saveCalcBtn" class="rbtn primary" disabled>Save now</button>
           <button type="button" id="reportBtn" class="rbtn">Download PDF</button>
-          <span class="save-status" id="saveStatus">Loading&hellip;</span>
         </div>
       </div>
 
@@ -2200,6 +2210,14 @@
   var panelAddClientBtn = document.getElementById('panelAddClientBtn');
   var dirty = false;
   var saveTimer = null;
+  var savePromise = null;   // the in-flight save, if any — guards against two overlapping
+                             // upserts racing for the same row (that was surfacing as
+                             // occasional 409 conflict errors when edits came in quickly)
+  var pendingResave = false; // set when an edit arrives while a save is already in flight;
+                              // kept separate from `dirty` because setStatus('loaded', ...)
+                              // unconditionally clears `dirty` when the in-flight save
+                              // finishes, which would otherwise wipe out this signal too
+  var lastSavedAtIso = null;
   var AUTOSAVE_DELAY = 900;
   var AUTOSAVE_RETRY_DELAY = 4000;
 
@@ -2214,6 +2232,7 @@
   function markDirty(){
     if (!currentClientId) return;
     dirty = true;
+    saveStatus.classList.remove('is-error', 'is-busy');
     saveStatus.textContent = 'Unsaved changes';
     scheduleAutoSave();
   }
@@ -2255,13 +2274,24 @@
   }
 
   function setStatus(kind, extra){
+    saveStatus.classList.remove('is-error', 'is-busy');
     if (kind === 'no-db'){ saveStatus.textContent = "Client save isn't available in this view"; }
     else if (kind === 'sandbox'){ saveStatus.textContent = 'No client selected — showing example figures'; }
     else if (kind === 'new-for-client'){ saveStatus.textContent = 'New calculation for ' + clientName(currentClientId) + ' — not yet saved'; }
-    else if (kind === 'loaded'){ saveStatus.textContent = clientName(currentClientId) + ' — saved ' + relTime(extra); }
+    else if (kind === 'loaded'){ lastSavedAtIso = extra; saveStatus.textContent = clientName(currentClientId) + ' — saved ' + relTime(extra); }
     else if (kind === 'rolled-over'){ saveStatus.textContent = 'Rolled over from ' + (TAX_TABLES[extra] ? TAX_TABLES[extra].label : extra) + ' — review &amp; save'; }
     dirty = false;
   }
+
+  // Keeps the "saved X ago" text ticking forward on its own, the same way
+  // Books & Ledgers' sidebar status does, instead of freezing at whatever
+  // it said the moment the save completed.
+  function tickSaveStatus(){
+    if (dirty || !lastSavedAtIso || !currentClientId || !dbApi) return;
+    if (saveStatus.classList.contains('is-busy') || saveStatus.classList.contains('is-error')) return;
+    saveStatus.textContent = clientName(currentClientId) + ' — saved ' + relTime(lastSavedAtIso);
+  }
+  setInterval(tickSaveStatus, 15000);
 
   function updateSidebarClientLabel(){
     if (!currentClientId){
@@ -2385,18 +2415,40 @@
 
   function saveCurrentCalc(){
     if (!dbApi || !currentClientId) return Promise.resolve();
+    // A save is already in flight for this client/tab/year \u2014 don't fire a second,
+    // overlapping upsert at the same row (two concurrent upserts racing to insert
+    // the same not-yet-existing row is exactly what was causing the occasional
+    // "409 conflict" errors). Just flag that there's more to save; the in-flight
+    // one picks it up in its .finally() below once it settles.
+    if (savePromise){ pendingResave = true; dirty = true; return savePromise; }
     var inputs = gatherCurrent();
     var savedAt = new Date().toISOString();
+    var clientId = currentClientId, taxType = currentTaxType, taxYear = currentTaxYear;
     saveCalcBtn.disabled = true;
+    dirty = false;
+    saveStatus.classList.remove('is-error');
+    saveStatus.classList.add('is-busy');
     saveStatus.textContent = 'Saving\u2026';
-    return dbApi.doc('clients/' + currentClientId + '/calcs/' + currentTaxType + '/' + currentTaxYear).set({ inputs: inputs, savedAt: savedAt })
+    savePromise = dbApi.doc('clients/' + clientId + '/calcs/' + taxType + '/' + taxYear).set({ inputs: inputs, savedAt: savedAt })
       .then(function(){ setStatus('loaded', savedAt); })
       .catch(function(){
+        saveStatus.classList.remove('is-busy');
+        saveStatus.classList.add('is-error');
         saveStatus.textContent = 'Save failed \u2014 will retry shortly';
         if (saveTimer) clearTimeout(saveTimer);
         saveTimer = setTimeout(function(){ saveTimer = null; saveCurrentCalc(); }, AUTOSAVE_RETRY_DELAY);
       })
-      .finally(function(){ saveCalcBtn.disabled = false; });
+      .finally(function(){
+        saveCalcBtn.disabled = false;
+        savePromise = null;
+        // Something changed (or another caller tried to save) while this
+        // request was in flight \u2014 catch it up now instead of waiting for
+        // the next keystroke. (Checked via pendingResave, not dirty \u2014
+        // setStatus('loaded', ...) above always clears dirty, which would
+        // otherwise erase this signal before we get to read it.)
+        if (pendingResave){ pendingResave = false; scheduleAutoSave(); }
+      });
+    return savePromise;
   }
   saveCalcBtn.addEventListener('click', function(){
     if (saveTimer){ clearTimeout(saveTimer); saveTimer = null; }
