@@ -301,8 +301,10 @@
   .freq-toggle button[aria-pressed="true"]{ background: var(--blue); color: #fff; }
   .freq-toggle button:disabled{ opacity: 0.45; cursor: not-allowed; }
   input[readonly]{ background: var(--surface-2); color: var(--ink-2); cursor: not-allowed; }
-  .irp5-row{ padding-top: 11px; margin-top: 7px; border-top: 1px dashed var(--border); }
-  .irp5-row:first-child{ padding-top: 0; margin-top: 0; border-top: 0; }
+  .irp5-row, .ret-row{ padding-top: 11px; margin-top: 7px; border-top: 1px dashed var(--border); }
+  .irp5-row:first-child, .ret-row:first-child{ padding-top: 0; margin-top: 0; border-top: 0; }
+  .ret-row-grid{ display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+  @media (max-width: 640px){ .ret-row-grid{ grid-template-columns: 1fr; } }
   .irp5-detail-grid{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 11px; margin-top: 11px; }
   @media (max-width: 640px){ .irp5-detail-grid{ grid-template-columns: 1fr; } }
   .irp5-sc-field{ margin-top: 11px; }
@@ -718,8 +720,14 @@
               </div>
               <div class="qreveal" id="ind_retReveal">
                 <div class="field">
-                  <label for="ind_retInput" id="ind_retLabel">Retirement contribution, per year</label>
-                  <div class="input-r"><input type="number" id="ind_retInput" min="0" step="50" value="27000" inputmode="decimal"></div>
+                  <label for="ind_retCountInput">Number of retirement funds</label>
+                  <input type="number" id="ind_retCountInput" min="1" max="20" step="1" value="1" inputmode="numeric" style="max-width:110px">
+                  <div class="hint">Contributed to more than one pension, RA or provident fund this year? Add one for each and we’ll total the contribution automatically.</div>
+                </div>
+                <div id="ind_retRows"></div>
+                <div class="field">
+                  <label for="ind_retInput" id="ind_retLabel">Total retirement contribution (1 fund), per year</label>
+                  <div class="input-r"><input type="number" id="ind_retInput" min="0" step="50" readonly></div>
                   <div class="hint">Deductible up to 27.5% of income, capped at <span data-fig="retCap">R430,000</span>/year &mdash; excess carries forward.</div>
                 </div>
               </div>
@@ -1707,6 +1715,8 @@
     retInput: document.getElementById('ind_retInput'),
     retLabel: document.getElementById('ind_retLabel'),
     retReveal: document.getElementById('ind_retReveal'),
+    retCountInput: document.getElementById('ind_retCountInput'),
+    retRowsContainer: document.getElementById('ind_retRows'),
     medSchemeName: document.getElementById('ind_medSchemeName'),
     medMembershipNo: document.getElementById('ind_medMembershipNo'),
     medDepGrid: document.getElementById('ind_medDepGrid'),
@@ -1771,6 +1781,16 @@
   }
 
   var indDisabilityYN = initYesNo('ind_disabilityYN', false, function(){ calcIndividual(); markDirty(); });
+  // The Annual/Monthly toggle drives both gross salary and retirement
+  // contributions. Either the IRP5 certificates or the retirement funds
+  // list (both always entered as annual totals, like the certificates
+  // already were) locks it to Annual — it only unlocks once neither is
+  // in use.
+  function updateFreqLock(){
+    var locked = indIrp5YN.get() || indRetYN.get();
+    ind.freqAnnual.disabled = locked;
+    ind.freqMonthly.disabled = locked;
+  }
   var indIrp5YN = initYesNo('ind_irp5YN', true, function(v){
     ind.irp5Warn.hidden = v;
     ind.irp5CountReveal.hidden = !v;
@@ -1778,15 +1798,23 @@
       renderIrp5Rows();
     } else {
       ind.grossInput.readOnly = false;
-      ind.freqAnnual.disabled = false;
-      ind.freqMonthly.disabled = false;
+      updateFreqLock();
       var suffix0 = indFreq === 'annual' ? 'per year' : 'per month';
       ind.grossLabel.textContent = 'Gross salary, ' + suffix0;
       calcIndividual();
     }
     markDirty();
   });
-  var indRetYN = initYesNo('ind_retYN', true, function(v){ ind.retReveal.hidden = !v; calcIndividual(); markDirty(); });
+  var indRetYN = initYesNo('ind_retYN', true, function(v){
+    ind.retReveal.hidden = !v;
+    if (v){
+      renderRetRows();
+    } else {
+      updateFreqLock();
+      calcIndividual();
+    }
+    markDirty();
+  });
   var indMedYN = initYesNo('ind_medYN', true, function(v){ ind.medReveal.hidden = !v; calcIndividual(); markDirty(); });
   ind.medSchemeName.addEventListener('input', function(){ markDirty(); });
   ind.medMembershipNo.addEventListener('input', function(){ markDirty(); });
@@ -1915,6 +1943,8 @@
         };
       }),
       hasRet: indRetYN.get(), ret: ind.retInput.value,
+      retCount: retRows.length,
+      retRows: retRows.map(function(r){ return { name: r.name, amount: r.amount }; }),
       hasMed: indMedYN.get(),
       medSchemeName: ind.medSchemeName.value, medMembershipNo: ind.medMembershipNo.value,
       medDependants: getMedDependants(), medTotalContrib: ind.medTotalContribInput.value,
@@ -1932,7 +1962,14 @@
     if (s.gross !== undefined) ind.grossInput.value = s.gross;
     indRetYN.set(s.hasRet !== undefined ? !!s.hasRet : (parseFloat(s.ret) > 0), true);
     ind.retReveal.hidden = !indRetYN.get();
-    if (s.ret !== undefined) ind.retInput.value = s.ret;
+    if (s.retRows && s.retRows.length){
+      retRows = s.retRows.map(normalizeRetRow);
+      ind.retCountInput.value = s.retCount || retRows.length;
+    } else {
+      retRows = [normalizeRetRow({ name: '', amount: s.ret !== undefined ? s.ret : ind.retInput.value })];
+      ind.retCountInput.value = 1;
+    }
+    renderRetRows();
     indMedYN.set(s.hasMed !== undefined ? !!s.hasMed : true, true);
     ind.medReveal.hidden = !indMedYN.get();
     ind.medSchemeName.value = s.medSchemeName || '';
@@ -2343,8 +2380,7 @@
     // IRP5 income is being captured this way (avoids double-converting the
     // summed total).
     if (indFreq !== 'annual') setIndFrequency('annual', false);
-    ind.freqAnnual.disabled = true;
-    ind.freqMonthly.disabled = true;
+    updateFreqLock();
 
     ind.grossInput.readOnly = true;
     ind.grossLabel.textContent = n === 1 ? 'Total gross salary (1 certificate), per year' : 'Total gross salary (' + n + ' certificates), per year';
@@ -2437,6 +2473,68 @@
     applyIrp5Total();
   }
   ind.irp5CountInput.addEventListener('change', function(){ renderIrp5Rows(); markDirty(); });
+
+  // ================= RETIREMENT FUNDS =================
+  // Same pattern as the IRP5 certificates above: a count opens that many
+  // blocks (one per pension / RA / provident fund), each with its own
+  // contribution, summed into the read-only total — since a taxpayer can
+  // belong to more than one fund and all of them count toward the same
+  // 27.5%-of-income deduction cap.
+  var retRows = [{ name: '', amount: '27000' }];
+
+  function retRowsTotal(){
+    return retRows.reduce(function(sum, r){ return sum + (parseFloat(r.amount) || 0); }, 0);
+  }
+  function normalizeRetRow(row){
+    row = row || {};
+    return {
+      name: row.name || '',
+      amount: row.amount != null ? row.amount : '0'
+    };
+  }
+  function applyRetTotal(){
+    ind.retInput.value = round2(retRowsTotal());
+    calcIndividual();
+  }
+  function renderRetRows(){
+    var n = Math.max(1, Math.min(20, parseInt(ind.retCountInput.value, 10) || 1));
+    ind.retCountInput.value = n;
+
+    while (retRows.length < n) retRows.push({ name: '', amount: '0' });
+    retRows.length = n;
+    for (var ri = 0; ri < retRows.length; ri++) retRows[ri] = normalizeRetRow(retRows[ri]);
+
+    // Funds report annual totals, so lock the toggle to Annual while
+    // retirement contributions are being captured this way — same reason
+    // as the IRP5 certificates above.
+    if (indFreq !== 'annual') setIndFrequency('annual', false);
+    updateFreqLock();
+
+    ind.retLabel.textContent = n === 1 ? 'Total retirement contribution (1 fund), per year' : 'Total retirement contribution (' + n + ' funds), per year';
+
+    ind.retRowsContainer.innerHTML = '';
+    retRows.forEach(function(row, i){
+      var wrap = document.createElement('div');
+      wrap.className = 'ret-row';
+      wrap.innerHTML =
+        '<div class="ret-row-grid">' +
+          '<div class="field"><label>Fund ' + (i + 1) + ' — name (optional)</label>' +
+          '<input type="text" class="ret-fund-name" placeholder="Optional"></div>' +
+          '<div class="field"><label>Contribution, per year</label>' +
+          '<div class="input-r"><input type="number" class="ret-fund-amount" min="0" step="50" inputmode="decimal"></div></div>' +
+        '</div>';
+      var nameInput = wrap.querySelector('.ret-fund-name');
+      var amountInput = wrap.querySelector('.ret-fund-amount');
+      nameInput.value = row.name || '';
+      amountInput.value = row.amount;
+      nameInput.addEventListener('input', function(){ row.name = nameInput.value; markDirty(); });
+      amountInput.addEventListener('input', function(){ row.amount = amountInput.value; applyRetTotal(); markDirty(); });
+      ind.retRowsContainer.appendChild(wrap);
+    });
+
+    applyRetTotal();
+  }
+  ind.retCountInput.addEventListener('change', function(){ renderRetRows(); markDirty(); });
 
   function setIndFrequency(next, silent){
     if (next === indFreq) return;
@@ -3884,6 +3982,7 @@
   buildIndBracketRows();
   renderMedDepGrid();
   renderIrp5Rows();
+  renderRetRows();
   calcIndividual();
   calcCompany();
   calcTrust();
