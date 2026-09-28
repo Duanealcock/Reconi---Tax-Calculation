@@ -1911,7 +1911,7 @@
         return {
           employer: r.employer, sourceCodes: r.sourceCodes,
           gross: rowGross(r), sourceCode: (r.sourceCodes && r.sourceCodes[0] && r.sourceCodes[0].code) || '3601',
-          uif: r.uif, paye: r.paye
+          uif: r.uif, paye: r.paye, sdl: r.sdl, medCredit: r.medCredit
         };
       }),
       hasRet: indRetYN.get(), ret: ind.retInput.value,
@@ -1962,7 +1962,7 @@
       irp5Rows = s.irp5Rows.map(normalizeIrp5Row);
       ind.irp5CountInput.value = s.irp5Count || irp5Rows.length;
     } else {
-      irp5Rows = [normalizeIrp5Row({ employer: '', gross: s.gross !== undefined ? s.gross : ind.grossInput.value, sourceCode: '3601', uif: '0', paye: '0' })];
+      irp5Rows = [normalizeIrp5Row({ employer: '', gross: s.gross !== undefined ? s.gross : ind.grossInput.value, sourceCode: '3601', uif: '0', paye: '0', sdl: '0', medCredit: '0' })];
       ind.irp5CountInput.value = 1;
     }
     renderIrp5Rows();
@@ -2043,8 +2043,17 @@
     // whether the client is due a refund or owes SARS on assessment.
     var irp5PayeDeducted = indIrp5YN.get() ? irp5PayeTotal() : 0;
     var irp5UifDeducted = indIrp5YN.get() ? irp5UifTotal() : 0;
+    var irp5SdlAmount = indIrp5YN.get() ? irp5SdlTotal() : 0;
+    var irp5MedCreditFromCert = indIrp5YN.get() ? irp5MedCreditTotal() : 0;
     var taxBalance = taxPayableAnnual - irp5PayeDeducted;
     var hasIrp5PayeFigures = indIrp5YN.get() && irp5PayeDeducted > 0;
+    var hasIrp5SdlFigures = indIrp5YN.get() && irp5SdlAmount > 0;
+    var hasIrp5MedCreditFigures = indIrp5YN.get() && irp5MedCreditFromCert > 0;
+    // totalMedicalCredit (this app's own dependant-based calculation, above)
+    // is what actually reduces the tax figure — this comparison is a
+    // cross-check against what the certificate(s) already show, to help
+    // catch a payroll under/over-application, not a second calculation.
+    var medCreditDiff = totalMedicalCredit - irp5MedCreditFromCert;
 
     ind.heroMonthly.textContent = fmtR(taxPayableMonthly) + ' / mo';
     ind.heroAnnual.textContent = fmtR(taxPayableAnnual) + ' per year';
@@ -2106,6 +2115,15 @@
     } else if (indIrp5YN.get()){
       ind.checklist.appendChild(checklistItem(false, 'Add the PAYE deducted on each IRP5 to see the refund / amount owing'));
     }
+    if (hasIrp5MedCreditFigures){
+      ind.checklist.appendChild(checklistItem(Math.abs(medCreditDiff) <= 5,
+        Math.abs(medCreditDiff) <= 5
+          ? 'Medical tax credit matches the IRP5 <b>(' + fmtR(irp5MedCreditFromCert, 0) + ')</b>'
+          : 'Medical tax credit per IRP5 <b>(' + fmtR(irp5MedCreditFromCert, 0) + ')</b> differs from the calculated <b>(' + fmtR(totalMedicalCredit, 0) + ')</b> — worth checking with the client’s payroll'));
+    }
+    if (hasIrp5SdlFigures){
+      ind.checklist.appendChild(checklistItem(true, 'Employer SDL per IRP5 <b>(' + fmtR(irp5SdlAmount, 0) + ')</b> — paid by the employer, doesn’t affect this tax calculation'));
+    }
     ind.checklistBadge.innerHTML = retExcess > 0
       ? '<span class="badge warn">! Needs attention</span>'
       : '<span class="badge ok">&#10003; All calculated</span>';
@@ -2124,12 +2142,15 @@
       uifAnnualEmployee: uifAnnualEmployee, netAnnual: netAnnual, netMonthly: netMonthly, effectiveRate: effectiveRate,
       irp5PayeDeducted: irp5PayeDeducted, irp5UifDeducted: irp5UifDeducted, taxBalance: taxBalance,
       hasIrp5PayeFigures: hasIrp5PayeFigures,
+      irp5SdlAmount: irp5SdlAmount, hasIrp5SdlFigures: hasIrp5SdlFigures,
+      irp5MedCreditFromCert: irp5MedCreditFromCert, hasIrp5MedCreditFigures: hasIrp5MedCreditFigures, medCreditDiff: medCreditDiff,
       irp5RowsSnapshot: indIrp5YN.get() ? irp5Rows.map(function(r){
         var codes = (r.sourceCodes || []).map(function(sc){ return { code: sc.code || '3601', amount: parseFloat(sc.amount) || 0 }; });
         return {
           employer: r.employer || '', sourceCodes: codes,
           sourceCode: (codes[0] && codes[0].code) || '3601', gross: rowGross(r),
-          uif: parseFloat(r.uif) || 0, paye: parseFloat(r.paye) || 0
+          uif: parseFloat(r.uif) || 0, paye: parseFloat(r.paye) || 0,
+          sdl: parseFloat(r.sdl) || 0, medCredit: parseFloat(r.medCredit) || 0
         };
       }) : [],
       msftcMonthly: medDependantsArr.map(function(count){ return msftcForMonth(count); }),
@@ -2258,7 +2279,7 @@
     }).join('');
   }
 
-  var irp5Rows = [{ employer: '', sourceCodes: [{ code: '3601', amount: '450000' }], uif: '0', paye: '0' }];
+  var irp5Rows = [{ employer: '', sourceCodes: [{ code: '3601', amount: '450000' }], uif: '0', paye: '0', sdl: '0', medCredit: '0' }];
 
   // A certificate's gross is the sum of its source-code amounts.
   function rowGross(row){
@@ -2279,7 +2300,9 @@
       employer: row.employer || '',
       sourceCodes: sourceCodes,
       uif: row.uif != null ? row.uif : '0',
-      paye: row.paye != null ? row.paye : '0'
+      paye: row.paye != null ? row.paye : '0',
+      sdl: row.sdl != null ? row.sdl : '0',
+      medCredit: row.medCredit != null ? row.medCredit : '0'
     };
   }
 
@@ -2291,6 +2314,12 @@
   }
   function irp5PayeTotal(){
     return irp5Rows.reduce(function(sum, r){ return sum + (parseFloat(r.paye) || 0); }, 0);
+  }
+  function irp5SdlTotal(){
+    return irp5Rows.reduce(function(sum, r){ return sum + (parseFloat(r.sdl) || 0); }, 0);
+  }
+  function irp5MedCreditTotal(){
+    return irp5Rows.reduce(function(sum, r){ return sum + (parseFloat(r.medCredit) || 0); }, 0);
   }
   function applyIrp5Total(){
     ind.grossInput.value = round2(irp5Total());
@@ -2306,7 +2335,7 @@
     // gross salary. A single certificate can report income under several
     // source codes (basic salary, bonus, travel allowance, etc.), so each
     // one holds a list of source-code lines rather than just one.
-    while (irp5Rows.length < n) irp5Rows.push({ employer: '', sourceCodes: [{ code: '3601', amount: '0' }], uif: '0', paye: '0' });
+    while (irp5Rows.length < n) irp5Rows.push({ employer: '', sourceCodes: [{ code: '3601', amount: '0' }], uif: '0', paye: '0', sdl: '0', medCredit: '0' });
     irp5Rows.length = n;
     for (var ri = 0; ri < irp5Rows.length; ri++) irp5Rows[ri] = normalizeIrp5Row(irp5Rows[ri]);
 
@@ -2338,6 +2367,12 @@
           '<div class="input-r"><input type="number" class="irp5-uif" min="0" step="10" inputmode="decimal"></div></div>' +
           '<div class="field"><label>PAYE deducted (code 4102), per year</label>' +
           '<div class="input-r"><input type="number" class="irp5-paye" min="0" step="10" inputmode="decimal"></div></div>' +
+          '<div class="field"><label>SDL (code 4142), per year</label>' +
+          '<div class="input-r"><input type="number" class="irp5-sdl" min="0" step="10" inputmode="decimal"></div>' +
+          '<div class="hint">Paid by the employer — for record only, doesn’t affect this tax calculation</div></div>' +
+          '<div class="field"><label>Medical scheme fees tax credit (code 4116), per year</label>' +
+          '<div class="input-r"><input type="number" class="irp5-medcredit" min="0" step="10" inputmode="decimal"></div>' +
+          '<div class="hint">What the certificate already shows — checked against the credit calculated below</div></div>' +
         '</div>';
       var empInput = wrap.querySelector('.irp5-employer');
       var scList = wrap.querySelector('.irp5-sc-list');
@@ -2345,9 +2380,13 @@
       var grossInput = wrap.querySelector('.irp5-gross');
       var uifInput = wrap.querySelector('.irp5-uif');
       var payeInput = wrap.querySelector('.irp5-paye');
+      var sdlInput = wrap.querySelector('.irp5-sdl');
+      var medCreditInput = wrap.querySelector('.irp5-medcredit');
       empInput.value = row.employer || '';
       uifInput.value = row.uif;
       payeInput.value = row.paye;
+      sdlInput.value = row.sdl;
+      medCreditInput.value = row.medCredit;
 
       function refreshGross(){ grossInput.value = round2(rowGross(row)); }
 
@@ -2390,6 +2429,8 @@
       empInput.addEventListener('input', function(){ row.employer = empInput.value; markDirty(); });
       uifInput.addEventListener('input', function(){ row.uif = uifInput.value; calcIndividual(); markDirty(); });
       payeInput.addEventListener('input', function(){ row.paye = payeInput.value; calcIndividual(); markDirty(); });
+      sdlInput.addEventListener('input', function(){ row.sdl = sdlInput.value; calcIndividual(); markDirty(); });
+      medCreditInput.addEventListener('input', function(){ row.medCredit = medCreditInput.value; calcIndividual(); markDirty(); });
       ind.irp5RowsContainer.appendChild(wrap);
     });
 
@@ -3332,7 +3373,10 @@
       y = pdfKvRow(doc, y, 'Tax per brackets (' + Math.round(r.marginalRate) + '% marginal)', fmtR(r.taxBeforeRebates));
       y = pdfKvRow(doc, y, 'Less: rebates', '-' + fmtR(r.rebate));
       y = pdfKvRow(doc, y, 'Less: medical tax credits', '-' + fmtR(r.totalMedicalCredit), {
-        note: 'MSFTC ' + fmtR(r.msftcAnnual, 0) + ' + additional credit ' + fmtR(Math.max(0, r.amtc), 0)
+        note: 'MSFTC ' + fmtR(r.msftcAnnual, 0) + ' + additional credit ' + fmtR(Math.max(0, r.amtc), 0) +
+          (r.hasIrp5MedCreditFigures && Math.abs(r.medCreditDiff) > 5
+            ? ' — differs from IRP5 (' + fmtR(r.irp5MedCreditFromCert, 0) + ') by ' + fmtR(Math.abs(r.medCreditDiff), 0)
+            : (r.hasIrp5MedCreditFigures ? ' — matches the IRP5 (code 4116)' : ''))
       });
       y = pdfKvRow(doc, y, 'Tax payable, per year', fmtR(r.taxPayableAnnual), { bold: true, rule: false, totalRule: true });
       y = pdfKvRow(doc, y, 'Tax payable, per month', fmtR(r.taxPayableMonthly), { rule: false });
@@ -3340,6 +3384,11 @@
         y = pdfKvRow(doc, y, 'Less: PAYE already deducted (per IRP5)', '-' + fmtR(r.irp5PayeDeducted));
         y = pdfKvRow(doc, y, r.taxBalance >= 0 ? 'Balance: amount owing to SARS' : 'Balance: refund due from SARS',
           fmtR(Math.abs(r.taxBalance)), { bold: true, rule: false, totalRule: true });
+      }
+      if (r.hasIrp5SdlFigures){
+        y = pdfKvRow(doc, y, 'Employer SDL per IRP5 (code 4142)', fmtR(r.irp5SdlAmount), {
+          rule: false, note: 'Paid by the employer — for record only, doesn’t affect this tax calculation'
+        });
       }
       y += 14;
 
