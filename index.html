@@ -297,6 +297,25 @@
   .irp5-row:first-child{ padding-top: 0; margin-top: 0; border-top: 0; }
   .irp5-detail-grid{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 11px; margin-top: 11px; }
   @media (max-width: 640px){ .irp5-detail-grid{ grid-template-columns: 1fr; } }
+  .irp5-sc-field{ margin-top: 11px; }
+  .irp5-sc-field > label{ display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: var(--ink); }
+  .irp5-sc-row{ display: grid; grid-template-columns: 1fr 150px 28px; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .irp5-sc-row:last-child{ margin-bottom: 0; }
+  .irp5-sc-row select{ min-width: 0; width: 100%; }
+  .irp5-sc-row .input-r{ min-width: 0; }
+  .irp5-sc-remove{
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--ink-muted);
+    width: 28px; height: 28px; border-radius: 7px; cursor: pointer; font-size: 15px; line-height: 1;
+    display: flex; align-items: center; justify-content: center; flex: none; padding: 0;
+  }
+  .irp5-sc-remove:hover:not(:disabled){ background: #fde8e8; border-color: #f3b4b4; color: #b42318; }
+  .irp5-sc-remove:disabled{ opacity: 0.35; cursor: not-allowed; }
+  .irp5-sc-add{
+    border: 1px dashed var(--border); background: none; color: var(--blue); font-size: 12.5px; font-weight: 600;
+    padding: 7px 11px; border-radius: 7px; cursor: pointer; margin-top: 2px;
+  }
+  .irp5-sc-add:hover{ background: var(--surface-2); border-color: var(--blue); }
+  @media (max-width: 640px){ .irp5-sc-row{ grid-template-columns: 1fr 100px 28px; } }
   .check-row{ display: flex; align-items: flex-start; gap: 9px; }
   .check-row input{ margin-top: 3px; accent-color: var(--blue); width: 15px; height: 15px; flex: none; }
   .check-row label{ font-size: 13px; font-weight: 400; margin: 0; }
@@ -1530,7 +1549,13 @@
       irp5: indIrp5YN.get(),
       gross: ind.grossInput.value,
       irp5Count: irp5Rows.length,
-      irp5Rows: irp5Rows.map(function(r){ return { employer: r.employer, gross: r.gross, sourceCode: r.sourceCode, uif: r.uif, paye: r.paye }; }),
+      irp5Rows: irp5Rows.map(function(r){
+        return {
+          employer: r.employer, sourceCodes: r.sourceCodes,
+          gross: rowGross(r), sourceCode: (r.sourceCodes && r.sourceCodes[0] && r.sourceCodes[0].code) || '3601',
+          uif: r.uif, paye: r.paye
+        };
+      }),
       hasRet: indRetYN.get(), ret: ind.retInput.value,
       hasMed: indMedYN.get(),
       medSchemeName: ind.medSchemeName.value, medMembershipNo: ind.medMembershipNo.value,
@@ -1576,15 +1601,10 @@
     ind.irp5Warn.hidden = indIrp5YN.get();
     ind.irp5CountReveal.hidden = !indIrp5YN.get();
     if (s.irp5Rows && s.irp5Rows.length){
-      irp5Rows = s.irp5Rows.map(function(r){
-        return {
-          employer: r.employer || '', gross: r.gross != null ? r.gross : '0',
-          sourceCode: r.sourceCode || '3601', uif: r.uif != null ? r.uif : '0', paye: r.paye != null ? r.paye : '0'
-        };
-      });
+      irp5Rows = s.irp5Rows.map(normalizeIrp5Row);
       ind.irp5CountInput.value = s.irp5Count || irp5Rows.length;
     } else {
-      irp5Rows = [{ employer: '', gross: s.gross !== undefined ? s.gross : ind.grossInput.value, sourceCode: '3601', uif: '0', paye: '0' }];
+      irp5Rows = [normalizeIrp5Row({ employer: '', gross: s.gross !== undefined ? s.gross : ind.grossInput.value, sourceCode: '3601', uif: '0', paye: '0' })];
       ind.irp5CountInput.value = 1;
     }
     renderIrp5Rows();
@@ -1747,7 +1767,12 @@
       irp5PayeDeducted: irp5PayeDeducted, irp5UifDeducted: irp5UifDeducted, taxBalance: taxBalance,
       hasIrp5PayeFigures: hasIrp5PayeFigures,
       irp5RowsSnapshot: indIrp5YN.get() ? irp5Rows.map(function(r){
-        return { employer: r.employer || '', sourceCode: r.sourceCode || '3601', gross: parseFloat(r.gross) || 0, uif: parseFloat(r.uif) || 0, paye: parseFloat(r.paye) || 0 };
+        var codes = (r.sourceCodes || []).map(function(sc){ return { code: sc.code || '3601', amount: parseFloat(sc.amount) || 0 }; });
+        return {
+          employer: r.employer || '', sourceCodes: codes,
+          sourceCode: (codes[0] && codes[0].code) || '3601', gross: rowGross(r),
+          uif: parseFloat(r.uif) || 0, paye: parseFloat(r.paye) || 0
+        };
       }) : [],
       msftcMonthly: medDependantsArr.map(function(count){ return msftcForMonth(count); }),
       medDependantsArr: medDependantsArr,
@@ -1773,10 +1798,33 @@
     }).join('');
   }
 
-  var irp5Rows = [{ employer: '', gross: '450000', sourceCode: '3601', uif: '0', paye: '0' }];
+  var irp5Rows = [{ employer: '', sourceCodes: [{ code: '3601', amount: '450000' }], uif: '0', paye: '0' }];
+
+  // A certificate's gross is the sum of its source-code amounts.
+  function rowGross(row){
+    return (row.sourceCodes || []).reduce(function(sum, sc){ return sum + (parseFloat(sc.amount) || 0); }, 0);
+  }
+  // Normalises a row to the current { sourceCodes:[{code,amount}] } shape,
+  // migrating older saved/imported data (a single sourceCode + one gross
+  // figure \u2014 e.g. from the client questionnaire) transparently.
+  function normalizeIrp5Row(row){
+    row = row || {};
+    var sourceCodes;
+    if (Array.isArray(row.sourceCodes) && row.sourceCodes.length){
+      sourceCodes = row.sourceCodes.map(function(sc){ return { code: sc.code || '3601', amount: sc.amount != null ? sc.amount : '0' }; });
+    } else {
+      sourceCodes = [{ code: row.sourceCode || '3601', amount: row.gross != null ? row.gross : '0' }];
+    }
+    return {
+      employer: row.employer || '',
+      sourceCodes: sourceCodes,
+      uif: row.uif != null ? row.uif : '0',
+      paye: row.paye != null ? row.paye : '0'
+    };
+  }
 
   function irp5Total(){
-    return irp5Rows.reduce(function(sum, r){ return sum + (parseFloat(r.gross) || 0); }, 0);
+    return irp5Rows.reduce(function(sum, r){ return sum + rowGross(r); }, 0);
   }
   function irp5UifTotal(){
     return irp5Rows.reduce(function(sum, r){ return sum + (parseFloat(r.uif) || 0); }, 0);
@@ -1792,17 +1840,15 @@
     var n = Math.max(1, Math.min(20, parseInt(ind.irp5CountInput.value, 10) || 1));
     ind.irp5CountInput.value = n;
 
-    // Every certificate \u2014 even just one \u2014 gets its own source code, UIF
-    // and PAYE fields, since those are what let the calculator reconcile
+    // Every certificate \u2014 even just one \u2014 gets its own source code(s),
+    // UIF and PAYE fields, since those are what let the calculator reconcile
     // against the actual figures on the certificate(s) rather than just the
-    // gross salary.
-    while (irp5Rows.length < n) irp5Rows.push({ employer: '', gross: '0', sourceCode: '3601', uif: '0', paye: '0' });
+    // gross salary. A single certificate can report income under several
+    // source codes (basic salary, bonus, travel allowance, etc.), so each
+    // one holds a list of source-code lines rather than just one.
+    while (irp5Rows.length < n) irp5Rows.push({ employer: '', sourceCodes: [{ code: '3601', amount: '0' }], uif: '0', paye: '0' });
     irp5Rows.length = n;
-    irp5Rows.forEach(function(row){
-      if (row.sourceCode === undefined) row.sourceCode = '3601';
-      if (row.uif === undefined) row.uif = '0';
-      if (row.paye === undefined) row.paye = '0';
-    });
+    for (var ri = 0; ri < irp5Rows.length; ri++) irp5Rows[ri] = normalizeIrp5Row(irp5Rows[ri]);
 
     // Certificates report annual totals, so lock the toggle to Annual while
     // IRP5 income is being captured this way (avoids double-converting the
@@ -1819,34 +1865,71 @@
       var wrap = document.createElement('div');
       wrap.className = 'irp5-row';
       wrap.innerHTML =
-        '<div class="two-col">' +
-          '<div class="field"><label>Certificate ' + (i + 1) + ' \u2014 employer / fund</label>' +
-          '<input type="text" class="irp5-employer" placeholder="Optional"></div>' +
-          '<div class="field"><label>Source code</label>' +
-          '<select class="irp5-sourcecode">' + irp5SourceCodeOptions(row.sourceCode) + '</select></div>' +
+        '<div class="field"><label>Certificate ' + (i + 1) + ' \u2014 employer / fund</label>' +
+        '<input type="text" class="irp5-employer" placeholder="Optional"></div>' +
+        '<div class="irp5-sc-field"><label>Source code(s)</label>' +
+          '<div class="irp5-sc-list"></div>' +
+          '<button type="button" class="irp5-sc-add">+ Add source code</button>' +
         '</div>' +
         '<div class="irp5-detail-grid">' +
           '<div class="field"><label>Gross salary, per year</label>' +
-          '<div class="input-r"><input type="number" class="irp5-gross" min="0" step="100" inputmode="decimal"></div></div>' +
+          '<div class="input-r"><input type="number" class="irp5-gross" readonly></div></div>' +
           '<div class="field"><label>UIF (code 4141), per year</label>' +
           '<div class="input-r"><input type="number" class="irp5-uif" min="0" step="10" inputmode="decimal"></div></div>' +
           '<div class="field"><label>PAYE deducted (code 4102), per year</label>' +
           '<div class="input-r"><input type="number" class="irp5-paye" min="0" step="10" inputmode="decimal"></div></div>' +
         '</div>';
       var empInput = wrap.querySelector('.irp5-employer');
-      var scInput = wrap.querySelector('.irp5-sourcecode');
+      var scList = wrap.querySelector('.irp5-sc-list');
+      var scAddBtn = wrap.querySelector('.irp5-sc-add');
       var grossInput = wrap.querySelector('.irp5-gross');
       var uifInput = wrap.querySelector('.irp5-uif');
       var payeInput = wrap.querySelector('.irp5-paye');
       empInput.value = row.employer || '';
-      grossInput.value = row.gross;
       uifInput.value = row.uif;
       payeInput.value = row.paye;
-      empInput.addEventListener('input', function(){ irp5Rows[i].employer = empInput.value; markDirty(); });
-      scInput.addEventListener('change', function(){ irp5Rows[i].sourceCode = scInput.value; markDirty(); });
-      grossInput.addEventListener('input', function(){ irp5Rows[i].gross = grossInput.value; applyIrp5Total(); markDirty(); });
-      uifInput.addEventListener('input', function(){ irp5Rows[i].uif = uifInput.value; calcIndividual(); markDirty(); });
-      payeInput.addEventListener('input', function(){ irp5Rows[i].paye = payeInput.value; calcIndividual(); markDirty(); });
+
+      function refreshGross(){ grossInput.value = round2(rowGross(row)); }
+
+      function renderScLines(){
+        scList.innerHTML = '';
+        row.sourceCodes.forEach(function(sc, j){
+          var line = document.createElement('div');
+          line.className = 'irp5-sc-row';
+          line.innerHTML =
+            '<select class="irp5-sc-code">' + irp5SourceCodeOptions(sc.code) + '</select>' +
+            '<div class="input-r"><input type="number" class="irp5-sc-amount" min="0" step="100" inputmode="decimal"></div>' +
+            '<button type="button" class="irp5-sc-remove" title="Remove this source code">\u2715</button>';
+          var codeSel = line.querySelector('.irp5-sc-code');
+          var amtInput = line.querySelector('.irp5-sc-amount');
+          var removeBtn = line.querySelector('.irp5-sc-remove');
+          amtInput.value = sc.amount;
+          removeBtn.disabled = row.sourceCodes.length <= 1;
+          codeSel.addEventListener('change', function(){ row.sourceCodes[j].code = codeSel.value; markDirty(); });
+          amtInput.addEventListener('input', function(){
+            row.sourceCodes[j].amount = amtInput.value;
+            refreshGross(); applyIrp5Total(); markDirty();
+          });
+          removeBtn.addEventListener('click', function(){
+            if (row.sourceCodes.length <= 1) return;
+            row.sourceCodes.splice(j, 1);
+            renderScLines();
+            refreshGross(); applyIrp5Total(); markDirty();
+          });
+          scList.appendChild(line);
+        });
+      }
+      renderScLines();
+      refreshGross();
+      scAddBtn.addEventListener('click', function(){
+        row.sourceCodes.push({ code: '3601', amount: '0' });
+        renderScLines();
+        markDirty();
+      });
+
+      empInput.addEventListener('input', function(){ row.employer = empInput.value; markDirty(); });
+      uifInput.addEventListener('input', function(){ row.uif = uifInput.value; calcIndividual(); markDirty(); });
+      payeInput.addEventListener('input', function(){ row.paye = payeInput.value; calcIndividual(); markDirty(); });
       ind.irp5RowsContainer.appendChild(wrap);
     });
 
