@@ -2138,21 +2138,123 @@
     };
   }
 
+  // Full set of SARS IRP5/IT3(a) source codes that can appear as *income*
+  // on an individual's certificate (i.e. everything that adds to gross
+  // remuneration): normal income, allowances, fringe benefits and lump
+  // sums. Deduction/reason codes (pension, RA, medical, UIF, PAYE, SDL \u2014
+  // the 4xxx range) aren't here because they have their own dedicated
+  // fields on the certificate (UIF, PAYE deducted, etc.), not a source
+  // code line. Verified against SARS's own "Guide for Codes Applicable to
+  // Employees Tax Certificates" and cross-checked against independent
+  // summaries \u2014 codes and numbering should be reliable, but if exact
+  // SARS wording matters for a specific filing, confirm against the
+  // current-year guide.
   var IRP5_SOURCE_CODES = [
-    { code: '3601', label: '3601 \u2014 Income (taxable)' },
-    { code: '3605', label: '3605 \u2014 Annual payment' },
-    { code: '3615', label: '3615 \u2014 Travel allowance (taxable)' },
-    { code: '3697', label: '3697 \u2014 Other allowance (taxable)' },
-    { code: '3699', label: '3699 \u2014 Gross non-retirement funding income' },
-    { code: '3702', label: '3702 \u2014 Reimbursive travel (taxable)' },
-    { code: '3713', label: '3713 \u2014 Other allowances' },
-    { code: '3714', label: '3714 \u2014 Subsistence allowance (local)' },
-    { code: '3801', label: '3801 \u2014 General fringe benefit' },
-    { code: '3810', label: '3810 \u2014 Medical scheme fringe benefit' }
+    // ---- Income ----
+    { code: '3601', group: 'Income', label: '3601 \u2014 Income (taxable)' },
+    { code: '3602', group: 'Income', label: '3602 \u2014 Non-taxable income' },
+    { code: '3603', group: 'Income', label: '3603 \u2014 Pension (taxable)' },
+    { code: '3604', group: 'Income', label: '3604 \u2014 Pension (non-taxable)' },
+    { code: '3605', group: 'Income', label: '3605 \u2014 Annual payment (bonus / leave pay)' },
+    { code: '3606', group: 'Income', label: '3606 \u2014 Commission' },
+    { code: '3607', group: 'Income', label: '3607 \u2014 Overtime' },
+    { code: '3608', group: 'Income', label: '3608 \u2014 Arbitration award (taxable)' },
+    { code: '3609', group: 'Income', label: '3609 \u2014 Arbitration award (non-taxable)' },
+    { code: '3610', group: 'Income', label: '3610 \u2014 Annuity from a retirement annuity fund' },
+    { code: '3611', group: 'Income', label: '3611 \u2014 Purchased annuity (taxable portion)' },
+    { code: '3612', group: 'Income', label: '3612 \u2014 Purchased annuity (non-taxable / capital portion)' },
+    { code: '3613', group: 'Income', label: '3613 \u2014 Restraint of trade' },
+    { code: '3615', group: 'Income', label: '3615 \u2014 Director\u2019s remuneration' },
+    { code: '3616', group: 'Income', label: '3616 \u2014 Independent contractor' },
+    { code: '3617', group: 'Income', label: '3617 \u2014 Labour broker (with PAYE deducted)' },
+    { code: '3619', group: 'Income', label: '3619 \u2014 Labour broker (exemption certificate held, no PAYE)' },
+    { code: '3620', group: 'Income', label: '3620 \u2014 Non-executive director / audit committee fees \u2014 RSA resident' },
+    { code: '3621', group: 'Income', label: '3621 \u2014 Non-executive director fees \u2014 non-resident' },
+    { code: '3622', group: 'Income', label: '3622 \u2014 Long service cash award' },
+    { code: '3623', group: 'Income', label: '3623 \u2014 Antedated salary/pension (spanning prior tax years)' },
+    { code: '3696', group: 'Income', label: '3696 \u2014 Gross non-taxable income' },
+    { code: '3697', group: 'Income', label: '3697 \u2014 Gross retirement-funding employment income' },
+    { code: '3698', group: 'Income', label: '3698 \u2014 Gross non-retirement-funding employment income' },
+    { code: '3699', group: 'Income', label: '3699 \u2014 Gross employment income (taxable)' },
+    // ---- Allowances ----
+    { code: '3701', group: 'Allowances', label: '3701 \u2014 Travel allowance' },
+    { code: '3702', group: 'Allowances', label: '3702 \u2014 Reimbursive travel allowance (taxable portion)' },
+    { code: '3703', group: 'Allowances', label: '3703 \u2014 Reimbursive travel allowance (non-taxable)' },
+    { code: '3704', group: 'Allowances', label: '3704 \u2014 Subsistence allowance \u2014 local travel (taxable)' },
+    { code: '3705', group: 'Allowances', label: '3705 \u2014 Subsistence allowance (non-taxable)' },
+    { code: '3706', group: 'Allowances', label: '3706 \u2014 Entertainment allowance' },
+    { code: '3707', group: 'Allowances', label: '3707 \u2014 Share options exercised' },
+    { code: '3708', group: 'Allowances', label: '3708 \u2014 Public office allowance' },
+    { code: '3709', group: 'Allowances', label: '3709 \u2014 Uniform allowance (non-taxable)' },
+    { code: '3710', group: 'Allowances', label: '3710 \u2014 Tool allowance' },
+    { code: '3711', group: 'Allowances', label: '3711 \u2014 Computer allowance' },
+    { code: '3712', group: 'Allowances', label: '3712 \u2014 Telephone / cellphone allowance' },
+    { code: '3713', group: 'Allowances', label: '3713 \u2014 Other allowances (taxable)' },
+    { code: '3714', group: 'Allowances', label: '3714 \u2014 Other allowances (non-taxable)' },
+    { code: '3715', group: 'Allowances', label: '3715 \u2014 Subsistence allowance \u2014 foreign travel (taxable)' },
+    { code: '3716', group: 'Allowances', label: '3716 \u2014 Subsistence allowance \u2014 foreign travel (non-taxable)' },
+    { code: '3717', group: 'Allowances', label: '3717 \u2014 Broad-based employee share plan' },
+    { code: '3718', group: 'Allowances', label: '3718 \u2014 Vesting of equity instruments / return of capital' },
+    { code: '3719', group: 'Allowances', label: '3719 \u2014 Dividends not exempt (deemed remuneration)' },
+    { code: '3722', group: 'Allowances', label: '3722 \u2014 Reimbursive travel allowance (excess over prescribed rate)' },
+    { code: '3724', group: 'Allowances', label: '3724 \u2014 COVID-19 disaster relief payment' },
+    // ---- Fringe benefits ----
+    { code: '3801', group: 'Fringe benefits', label: '3801 \u2014 General fringe benefit' },
+    { code: '3802', group: 'Fringe benefits', label: '3802 \u2014 Use of motor vehicle (not via operating lease)' },
+    { code: '3803', group: 'Fringe benefits', label: '3803 \u2014 Use of asset' },
+    { code: '3804', group: 'Fringe benefits', label: '3804 \u2014 Meals, refreshments or vouchers' },
+    { code: '3805', group: 'Fringe benefits', label: '3805 \u2014 Accommodation' },
+    { code: '3806', group: 'Fringe benefits', label: '3806 \u2014 Services' },
+    { code: '3807', group: 'Fringe benefits', label: '3807 \u2014 Interest-free / low-interest loan, or subsidy' },
+    { code: '3808', group: 'Fringe benefits', label: '3808 \u2014 Employer-paid employee debt (excl. 3828)' },
+    { code: '3809', group: 'Fringe benefits', label: '3809 \u2014 Taxable bursary/scholarship \u2014 basic education' },
+    { code: '3810', group: 'Fringe benefits', label: '3810 \u2014 Medical aid contributions (fringe benefit)' },
+    { code: '3813', group: 'Fringe benefits', label: '3813 \u2014 Medical services costs paid by employer' },
+    { code: '3815', group: 'Fringe benefits', label: '3815 \u2014 Non-taxable bursary/scholarship \u2014 basic education' },
+    { code: '3816', group: 'Fringe benefits', label: '3816 \u2014 Use of motor vehicle (via operating lease)' },
+    { code: '3817', group: 'Fringe benefits', label: '3817 \u2014 Benefit: employer\u2019s pension fund contributions' },
+    { code: '3820', group: 'Fringe benefits', label: '3820 \u2014 Taxable bursary/scholarship \u2014 further education' },
+    { code: '3821', group: 'Fringe benefits', label: '3821 \u2014 Non-taxable bursary/scholarship \u2014 further education' },
+    { code: '3822', group: 'Fringe benefits', label: '3822 \u2014 Non-taxable benefit \u2014 acquisition of immovable property' },
+    { code: '3825', group: 'Fringe benefits', label: '3825 \u2014 Benefit: employer\u2019s provident fund contributions' },
+    { code: '3828', group: 'Fringe benefits', label: '3828 \u2014 Employee debt: employer-paid retirement annuity' },
+    { code: '3829', group: 'Fringe benefits', label: '3829 \u2014 Taxable bursary \u2014 disabled person, basic education' },
+    { code: '3830', group: 'Fringe benefits', label: '3830 \u2014 Non-taxable bursary \u2014 disabled person, basic education' },
+    { code: '3831', group: 'Fringe benefits', label: '3831 \u2014 Taxable bursary \u2014 disabled person, further education' },
+    { code: '3832', group: 'Fringe benefits', label: '3832 \u2014 Non-taxable bursary \u2014 disabled person, further education' },
+    { code: '3833', group: 'Fringe benefits', label: '3833 \u2014 Benefit: bargaining council employer contributions' },
+    { code: '3834', group: 'Fringe benefits', label: '3834 \u2014 Non-taxable benefit \u2014 loan for immovable residential property' },
+    { code: '3835', group: 'Fringe benefits', label: '3835 \u2014 Long service award (non-cash)' },
+    // ---- Lump sums ----
+    { code: '3901', group: 'Lump sums', label: '3901 \u2014 Gratuities / severance benefits' },
+    { code: '3902', group: 'Lump sums', label: '3902 \u2014 Pension/RAF lump sum \u2014 withdrawal' },
+    { code: '3903', group: 'Lump sums', label: '3903 \u2014 Pension/RAF lump sum \u2014 retirement or death' },
+    { code: '3904', group: 'Lump sums', label: '3904 \u2014 Provident fund lump sum \u2014 withdrawal' },
+    { code: '3905', group: 'Lump sums', label: '3905 \u2014 Provident fund lump sum \u2014 retirement or death' },
+    { code: '3906', group: 'Lump sums', label: '3906 \u2014 Special remuneration' },
+    { code: '3907', group: 'Lump sums', label: '3907 \u2014 Other lump sums' },
+    { code: '3908', group: 'Lump sums', label: '3908 \u2014 Exempt policy proceeds (non-taxable)' },
+    { code: '3909', group: 'Lump sums', label: '3909 \u2014 Unclaimed benefits' },
+    { code: '3915', group: 'Lump sums', label: '3915 \u2014 Retirement/termination lump sum (commutation of annuities)' },
+    { code: '3920', group: 'Lump sums', label: '3920 \u2014 Lump sum withdrawal benefit' },
+    { code: '3921', group: 'Lump sums', label: '3921 \u2014 Living annuity / section 15C surplus apportionment' },
+    { code: '3922', group: 'Lump sums', label: '3922 \u2014 Compensation \u2014 death during employment' },
+    { code: '3923', group: 'Lump sums', label: '3923 \u2014 Transfer of unclaimed benefits' },
+    { code: '3924', group: 'Lump sums', label: '3924 \u2014 Transfer on retirement' },
+    { code: '3926', group: 'Lump sums', label: '3926 \u2014 Savings withdrawal benefit (two-pot system)' }
   ];
   function irp5SourceCodeOptions(selected){
-    return IRP5_SOURCE_CODES.map(function(sc){
-      return '<option value="' + sc.code + '"' + (sc.code === selected ? ' selected' : '') + '>' + sc.label + '</option>';
+    var groups = [];
+    var byGroup = {};
+    IRP5_SOURCE_CODES.forEach(function(sc){
+      if (!byGroup[sc.group]){ byGroup[sc.group] = []; groups.push(sc.group); }
+      byGroup[sc.group].push(sc);
+    });
+    return groups.map(function(g){
+      var opts = byGroup[g].map(function(sc){
+        return '<option value="' + sc.code + '"' + (sc.code === selected ? ' selected' : '') + '>' + sc.label + '</option>';
+      }).join('');
+      return '<optgroup label="' + g + '">' + opts + '</optgroup>';
     }).join('');
   }
 
