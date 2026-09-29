@@ -246,6 +246,7 @@
   .doc-note a{ color: var(--blue); font-weight: 600; text-decoration: none; cursor: pointer; }
   .doc-note a:hover{ text-decoration: underline; }
   .doc-grid{ display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .doc-card-wide{ grid-column: 1 / -1; }
   .doc-card{ border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: var(--surface-2); display: flex; flex-direction: column; gap: 12px; }
   .doc-card-head{ display: flex; align-items: flex-start; gap: 10px; }
   .doc-icon{ flex: none; width: 32px; height: 32px; border-radius: 9px; background: var(--gold-soft); color: var(--gold-ink); display: flex; align-items: center; justify-content: center; }
@@ -289,15 +290,16 @@
   .field .hint{ font-size: 11.5px; color: var(--ink-muted); margin-top: 5px; line-height: 1.4; }
   .input-r{ position: relative; }
   .input-r::before{ content: "R"; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-muted); font-size: 13px; pointer-events: none; font-weight: 600; }
-  input[type=number], input[type=text], select{
+  input[type=number], input[type=text], select, textarea{
     width: 100%; font-size: 13.5px; color: var(--ink); background: var(--surface-2);
     border: 1px solid var(--border); border-radius: 8px; padding: 8px 11px; appearance: none; -webkit-appearance: none;
   }
+  textarea{ font-family: inherit; resize: vertical; }
   /* Must come after the generic input rule above: both have equal CSS specificity,
      so this needs to win on source order to keep the Rand prefix from overlapping
      the first digit. */
   .input-r input{ padding-left: 25px; }
-  input:focus, select:focus{ outline: 2px solid var(--blue); outline-offset: 1px; }
+  input:focus, select:focus, textarea:focus{ outline: 2px solid var(--blue); outline-offset: 1px; }
   .freq-toggle{ display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
   .freq-toggle button{ font-size: 12.5px; font-weight: 600; padding: 6px 13px; border: 0; background: var(--surface-2); color: var(--ink-2); cursor: pointer; }
   .freq-toggle button + button{ border-left: 1px solid var(--border); }
@@ -873,6 +875,29 @@
               </div>
               <div class="doc-actions">
                 <button type="button" class="card-btn doc-full-btn">Generate Full Report PDF</button>
+              </div>
+            </div>
+
+            <div class="doc-card doc-card-wide">
+              <div class="doc-card-head">
+                <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3.5h12v9H2z"/><path d="M2.3 3.8 8 9l5.7-5.2"/></svg></div>
+                <div><h3>Client Email Draft</h3><p>An editable email summarising the calculation, with a plain-English explanation of why the amount owing or refund differs from what was withheld during the year &mdash; copy it into your mail app, or open it there directly.</p></div>
+              </div>
+              <div class="doc-actions" style="margin-bottom:12px;">
+                <button type="button" class="card-btn" id="emailDraftGenBtn">Generate Email Draft</button>
+                <span class="doc-status ok" id="emailDraftNote" hidden></span>
+              </div>
+              <div id="emailDraftFields" hidden>
+                <fieldset class="doc-letter-fields">
+                  <legend>Email draft &mdash; edit before sending</legend>
+                  <div class="field"><label for="emailDraftSubject">Subject</label><input type="text" id="emailDraftSubject"></div>
+                  <div class="field"><label for="emailDraftBody">Body</label><textarea id="emailDraftBody" rows="16" style="font-family:inherit;"></textarea></div>
+                </fieldset>
+                <div class="doc-actions">
+                  <button type="button" class="card-btn" id="emailDraftCopyBtn">Copy to clipboard</button>
+                  <button type="button" class="card-btn" id="emailDraftMailtoBtn">Open in email client</button>
+                </div>
+                <p class="doc-note" style="margin:8px 0 0;">Add the client's email address yourself &mdash; we don't store one. &ldquo;Open in email client&rdquo; uses your computer's default mail app and may trim very long drafts; copy/paste is more reliable for a long one.</p>
               </div>
             </div>
           </div>
@@ -4364,6 +4389,149 @@
     if (medBtn){ exportMedicalPdf(medBtn); return; }
     var fullBtn = ev.target && ev.target.closest && ev.target.closest('.doc-full-btn');
     if (fullBtn){ exportCombinedPdf(fullBtn); return; }
+  });
+
+  // ================= CLIENT EMAIL DRAFT =================
+  // A plain-text email -- breakdown of the calculation plus a
+  // plain-English explanation of why the final balance (owing/refund)
+  // differs from what was withheld via PAYE during the year. Built from
+  // the same ind.last result the PDFs use, so it always matches them.
+  function buildEmailDraftText(){
+    var r = ind.last;
+    if (!r) return null;
+    var TY = TAX_TABLES[currentTaxYear];
+    var who = currentClientId ? clientName(currentClientId) : 'Client';
+    var salutation = (docLetter.salutation && docLetter.salutation.value) || ('Dear ' + who);
+    var brand = getDocBrand();
+    var yearEnd = fmtDateLong(taxYearEndDate(currentTaxYear));
+    var owing = r.hasIrp5PayeFigures ? (r.taxBalance >= 0) : null;
+
+    var lines = [];
+    lines.push(salutation + ',');
+    lines.push('');
+    lines.push('Please find below a summary of your income tax calculation for the year ended ' + yearEnd + ' (' + TY.label + ').');
+    lines.push('');
+    lines.push('INCOME TAX CALCULATION');
+    lines.push('Gross income: ' + fmtR(r.grossAnnual));
+    if (r.retContribAnnual > 0){
+      lines.push('Less: retirement contribution: -' + fmtR(r.retDeduction) +
+        (r.retExcess > 0 ? '  (capped for the year; ' + fmtR(r.retExcess, 0) + ' carries forward)' : ''));
+    }
+    if (r.hasInt && r.totalInterestAnnual > 0){
+      lines.push('Interest received: ' + fmtR(r.totalInterestAnnual) + '  (less exemption of ' + fmtR(r.interestExemptApplied) + ')');
+    }
+    if (r.donationAnnual > 0){
+      lines.push('Less: donations (s18A): -' + fmtR(r.donationDeduction) +
+        (r.donationExcess > 0 ? '  (capped for the year; ' + fmtR(r.donationExcess, 0) + ' carries forward)' : ''));
+    }
+    lines.push('Taxable income: ' + fmtR(r.taxableIncome));
+    lines.push('Tax per SARS brackets (' + Math.round(r.marginalRate) + '% marginal rate): ' + fmtR(r.taxBeforeRebates));
+    lines.push('Less: rebates: -' + fmtR(r.rebate));
+    if (r.totalMedicalCredit > 0){
+      lines.push('Less: medical tax credits: -' + fmtR(r.totalMedicalCredit));
+    }
+    lines.push('');
+    lines.push('TAX PAYABLE: ' + fmtR(r.taxPayableAnnual) + ' per year  (' + fmtR(r.taxPayableMonthly) + ' per month)');
+
+    if (r.hasIrp5PayeFigures){
+      lines.push('');
+      lines.push('Less: PAYE already deducted during the year (per your IRP5): -' + fmtR(r.irp5PayeDeducted));
+      lines.push('');
+      lines.push((owing ? 'BALANCE OWING TO SARS: ' : 'REFUND DUE FROM SARS: ') + fmtR(Math.abs(r.taxBalance)));
+      lines.push('');
+      lines.push('WHY THIS DIFFERS FROM WHAT WAS WITHHELD EACH MONTH');
+      lines.push('Your employer withholds PAYE every month using standard payroll tax tables, which spread an estimate of your annual tax evenly across the year. That monthly estimate doesn’t always line up exactly with the final annual assessment below:');
+      var reasons = [];
+      if (r.retExcess > 0){
+        reasons.push('your retirement contributions of ' + fmtR(r.retContribAnnual, 0) + ' were above the annual deduction cap, so ' + fmtR(r.retExcess, 0) + ' carries forward rather than reducing this year’s tax further');
+      } else if (r.retContribAnnual > 0){
+        reasons.push('retirement contributions are only fully accounted for once the full year’s total is known, rather than estimated month by month');
+      }
+      if (r.totalMedicalCredit > 0){
+        reasons.push('medical tax credits (the scheme fees credit, plus any additional medical expenses credit) are calculated on the full year’s contributions and dependants, which can differ from payroll’s monthly assumption');
+      }
+      if (r.donationAnnual > 0){
+        reasons.push('donations to approved organisations (' + fmtR(r.donationAnnual, 0) + ') are only deducted once confirmed on assessment');
+      }
+      if (r.hasInt && r.taxableInterest > 0){
+        reasons.push('interest received, and the exemption applied against it, is only finalised once the full year’s interest is known');
+      }
+      if (r.hasIrp5DeductionCodes && Math.abs(r.retCodeDiff) > 5){
+        reasons.push('the retirement contributions used in this calculation (' + fmtR(r.retContribAnnual, 0) + ') differ from what’s reflected on your IRP5 deduction codes (' + fmtR(r.irp5RetirementCodesTotal, 0) + ') — worth confirming with your payroll department');
+      }
+      if (r.hasIrp5DeductionCodes && Math.abs(r.medCodeDiff) > 5){
+        reasons.push('the medical aid contributions used in this calculation (' + fmtR(r.medicalContribAnnual, 0) + ') differ from your IRP5 deduction codes (' + fmtR(r.irp5MedicalCodesTotal, 0) + ') — worth confirming with your payroll department');
+      }
+      if (reasons.length === 0){
+        reasons.push('small rounding and timing differences between monthly payroll estimates and the final annual calculation are normal');
+      }
+      reasons.forEach(function(reason, i){
+        lines.push('  ' + (i + 1) + '. ' + reason.charAt(0).toUpperCase() + reason.slice(1) + '.');
+      });
+      lines.push('');
+      lines.push(owing
+        ? 'Together, these mean an additional ' + fmtR(Math.abs(r.taxBalance)) + ' is owing to SARS for this year of assessment.'
+        : 'Together, these mean you are due a refund of ' + fmtR(Math.abs(r.taxBalance)) + ' from SARS for this year of assessment.');
+    }
+
+    lines.push('');
+    lines.push('This is an estimate for planning purposes based on the information provided, and is not a substitute for your official SARS assessment. Please let us know if you have any questions, or if anything above doesn’t look right.');
+    lines.push('');
+    lines.push((docLetter.closing && docLetter.closing.value) || 'Thank you for your support during the year.');
+    lines.push('');
+    lines.push('Kind regards,');
+    lines.push(brand.accountant);
+    lines.push(brand.title);
+    lines.push(brand.firm);
+    lines.push(brand.phone + '  |  ' + brand.email);
+
+    var subject = (currentClientId ? who + ' — ' : '') + 'Individual Tax Calculation ' + TY.label +
+      (r.hasIrp5PayeFigures ? (owing ? ' — Balance Owing' : ' — Refund Due') : '');
+
+    return { subject: subject, body: lines.join('\n') };
+  }
+  function flashEmailDraftNote(text){
+    var note = document.getElementById('emailDraftNote');
+    if (!note) return;
+    note.textContent = text;
+    note.hidden = false;
+    clearTimeout(flashEmailDraftNote._t);
+    flashEmailDraftNote._t = setTimeout(function(){ note.hidden = true; }, 2200);
+  }
+  document.getElementById('emailDraftGenBtn').addEventListener('click', function(){
+    var draft = buildEmailDraftText();
+    var fields = document.getElementById('emailDraftFields');
+    if (!draft){
+      flashEmailDraftNote('Add the client’s income details on the Questionnaire tab first');
+      return;
+    }
+    document.getElementById('emailDraftSubject').value = draft.subject;
+    document.getElementById('emailDraftBody').value = draft.body;
+    fields.hidden = false;
+    flashEmailDraftNote('Draft generated — review and edit below');
+  });
+  document.getElementById('emailDraftCopyBtn').addEventListener('click', function(){
+    var subject = document.getElementById('emailDraftSubject').value;
+    var body = document.getElementById('emailDraftBody').value;
+    var text = 'Subject: ' + subject + '\n\n' + body;
+    var done = function(){ flashEmailDraftNote('Copied to clipboard'); };
+    var fail = function(){ flashEmailDraftNote('Couldn’t copy — select the text and copy manually'); };
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(fail);
+    } else {
+      try {
+        var ta = document.getElementById('emailDraftBody');
+        ta.focus(); ta.select();
+        document.execCommand('copy');
+        done();
+      } catch (e) { fail(); }
+    }
+  });
+  document.getElementById('emailDraftMailtoBtn').addEventListener('click', function(){
+    var subject = document.getElementById('emailDraftSubject').value;
+    var body = document.getElementById('emailDraftBody').value;
+    var href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    window.location.href = href;
   });
 
   refreshDocLetterDefaults();
