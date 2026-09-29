@@ -610,6 +610,31 @@
                   <option value="75plus">75 and older</option>
                 </select>
               </div>
+              <div class="two-col">
+                <div class="field">
+                  <label for="ind_gender">Gender</label>
+                  <select id="ind_gender">
+                    <option value="" selected>Not specified</option>
+                    <option value="female">Female</option>
+                    <option value="male">Male</option>
+                    <option value="other">Other / prefer not to say</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="ind_title">Title</label>
+                  <select id="ind_title">
+                    <option value="" selected>Not specified</option>
+                    <option value="Mr">Mr</option>
+                    <option value="Mrs">Mrs</option>
+                    <option value="Ms">Ms</option>
+                    <option value="Miss">Miss</option>
+                    <option value="Dr">Dr</option>
+                    <option value="Prof">Prof</option>
+                    <option value="Mx">Mx</option>
+                  </select>
+                </div>
+              </div>
+              <p class="doc-note">Used to personalise the salutation on the cover letter and client email draft (e.g. "Dear Mr Smith").</p>
               <div class="qrow">
                 <div class="qtext">Do you, your spouse, or a dependant have a disability as defined by SARS?</div>
                 <div class="yn" id="ind_disabilityYN" role="group" aria-label="Disability">
@@ -1803,6 +1828,8 @@
 
   var ind = {
     ageBand: document.getElementById('ind_ageBand'),
+    gender: document.getElementById('ind_gender'),
+    title: document.getElementById('ind_title'),
     freqAnnual: document.getElementById('ind_freqAnnual'),
     freqMonthly: document.getElementById('ind_freqMonthly'),
     grossInput: document.getElementById('ind_grossInput'),
@@ -2041,7 +2068,7 @@
   function gatherIndividual(){
     return {
       taxYear: currentTaxYear,
-      ageBand: ind.ageBand.value, disability: indDisabilityYN.get(), freq: indFreq,
+      ageBand: ind.ageBand.value, gender: ind.gender.value, title: ind.title.value, disability: indDisabilityYN.get(), freq: indFreq,
       irp5: indIrp5YN.get(),
       gross: ind.grossInput.value,
       irp5Count: irp5Rows.length,
@@ -2070,6 +2097,8 @@
     if (!s) return;
     if (s.taxYear && TAX_TABLES[s.taxYear] && s.taxYear !== currentTaxYear) setTaxYear(s.taxYear, true);
     ind.ageBand.value = s.ageBand || 'under65';
+    ind.gender.value = s.gender || '';
+    ind.title.value = s.title || '';
     indDisabilityYN.set(!!s.disability, true);
     if (s.freq && s.freq !== indFreq) setIndFrequency(s.freq, true);
     if (s.gross !== undefined) ind.grossInput.value = s.gross;
@@ -2136,6 +2165,8 @@
   function calcIndividual(){
     var T = TAX_TABLES[currentTaxYear].ind;
     var ageBand = ind.ageBand.value;
+    var gender = ind.gender.value;
+    var title = ind.title.value;
     var hasDisability = indDisabilityYN.get();
     var freqMult = indFreq === 'annual' ? 1 : 12;
 
@@ -2346,7 +2377,7 @@
     var flaggedItems = renderFlagsSummary();
 
     ind.last = {
-      ageBand: ageBand, disability: hasDisability, freq: indFreq, irp5: indIrp5YN.get(),
+      ageBand: ageBand, gender: gender, title: title, disability: hasDisability, freq: indFreq, irp5: indIrp5YN.get(),
       grossAnnual: grossAnnual, retContribAnnual: retContribAnnual, retDeduction: retDeduction, retExcess: retExcess,
       hasInt: indIntYN.get(), totalInterestAnnual: totalInterestAnnual, interestExemption: interestExemption,
       interestExemptApplied: interestExemptApplied, taxableInterest: taxableInterest,
@@ -2903,7 +2934,7 @@
   }
   ind.freqAnnual.addEventListener('click', function(){ setIndFrequency('annual'); calcIndividual(); markDirty(); });
   ind.freqMonthly.addEventListener('click', function(){ setIndFrequency('monthly'); calcIndividual(); markDirty(); });
-  [ind.ageBand, ind.grossInput, ind.retInput, ind.medTotalContribInput, ind.expensesInput, ind.donationInput]
+  [ind.ageBand, ind.gender, ind.title, ind.grossInput, ind.retInput, ind.medTotalContribInput, ind.expensesInput, ind.donationInput]
     .forEach(function(input){ input.addEventListener('input', function(){ calcIndividual(); markDirty(); }); input.addEventListener('change', function(){ calcIndividual(); markDirty(); }); });
 
   // ================= COMPANY =================
@@ -4095,8 +4126,9 @@
   function refreshDocLetterDefaults(){
     if (!docLetter.date) return;
     var who = currentClientId ? clientName(currentClientId) : '';
+    var titlePrefix = (currentTaxType === 'individual' && ind.title && ind.title.value) ? (ind.title.value + ' ') : '';
     if (!docLetter.date.value) docLetter.date.value = new Date().toISOString().slice(0, 10);
-    if (!docLetter.salutation.dataset.touched) docLetter.salutation.value = who ? ('Dear ' + who) : 'Dear Sir/Madam';
+    if (!docLetter.salutation.dataset.touched) docLetter.salutation.value = who ? ('Dear ' + titlePrefix + who) : 'Dear Sir/Madam';
     if (!docLetter.heading.dataset.touched){
       var typeWord = currentTaxType === 'company' ? 'COMPANY ' : (currentTaxType === 'trust' ? 'TRUST ' : '');
       docLetter.heading.value = typeWord + 'TAX CALCULATION - ' + fmtDateLong(taxYearEndDate(currentTaxYear)).toUpperCase();
@@ -4401,7 +4433,8 @@
     if (!r) return null;
     var TY = TAX_TABLES[currentTaxYear];
     var who = currentClientId ? clientName(currentClientId) : 'Client';
-    var salutation = (docLetter.salutation && docLetter.salutation.value) || ('Dear ' + who);
+    var titlePrefix = (r.title) ? (r.title + ' ') : '';
+    var salutation = (docLetter.salutation && docLetter.salutation.value) || ('Dear ' + titlePrefix + who);
     var brand = getDocBrand();
     var yearEnd = fmtDateLong(taxYearEndDate(currentTaxYear));
     var owing = r.hasIrp5PayeFigures ? (r.taxBalance >= 0) : null;
