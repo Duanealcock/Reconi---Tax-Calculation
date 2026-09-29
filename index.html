@@ -862,6 +862,16 @@
                 <button type="button" class="card-btn doc-medical-btn">Generate Medical Aid Calculation PDF</button>
               </div>
             </div>
+
+            <div class="doc-card">
+              <div class="doc-card-head">
+                <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 1.8h5.5l2.5 2.5V13a.9.9 0 0 1-.9.9H4a.9.9 0 0 1-.9-.9V2.7A.9.9 0 0 1 4 1.8Z"/><path d="M9.3 1.8V4.5h2.7"/><path d="M4.3 9.2h7.4M4.3 11.4h7.4"/><path d="M5.6 6.2h4.8"/></svg></div>
+                <div><h3>Full Report</h3><p>One combined PDF: Cover Page, then the Calculation, then the Medical Aid Calculation, as sequential pages in a single document.</p></div>
+              </div>
+              <div class="doc-actions">
+                <button type="button" class="card-btn doc-full-btn">Generate Full Report PDF</button>
+              </div>
+            </div>
           </div>
 
           <p class="doc-note" style="margin:16px 0 0;">More documents will be added here over time.</p>
@@ -998,6 +1008,16 @@
                 <button type="button" class="card-btn doc-calc-btn">Generate Calculation PDF</button>
               </div>
             </div>
+
+            <div class="doc-card">
+              <div class="doc-card-head">
+                <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 1.8h5.5l2.5 2.5V13a.9.9 0 0 1-.9.9H4a.9.9 0 0 1-.9-.9V2.7A.9.9 0 0 1 4 1.8Z"/><path d="M9.3 1.8V4.5h2.7"/><path d="M4.3 9.2h7.4M4.3 11.4h7.4"/><path d="M5.6 6.2h4.8"/></svg></div>
+                <div><h3>Full Report</h3><p>One combined PDF: Cover Page, then the Calculation, as sequential pages in a single document.</p></div>
+              </div>
+              <div class="doc-actions">
+                <button type="button" class="card-btn doc-full-btn">Generate Full Report PDF</button>
+              </div>
+            </div>
           </div>
 
           <p class="doc-note" style="margin:16px 0 0;">More documents will be added here over time.</p>
@@ -1115,6 +1135,16 @@
               </div>
               <div class="doc-actions">
                 <button type="button" class="card-btn doc-calc-btn">Generate Calculation PDF</button>
+              </div>
+            </div>
+
+            <div class="doc-card">
+              <div class="doc-card-head">
+                <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 1.8h5.5l2.5 2.5V13a.9.9 0 0 1-.9.9H4a.9.9 0 0 1-.9-.9V2.7A.9.9 0 0 1 4 1.8Z"/><path d="M9.3 1.8V4.5h2.7"/><path d="M4.3 9.2h7.4M4.3 11.4h7.4"/><path d="M5.6 6.2h4.8"/></svg></div>
+                <div><h3>Full Report</h3><p>One combined PDF: Cover Page, then the Calculation, as sequential pages in a single document.</p></div>
+              </div>
+              <div class="doc-actions">
+                <button type="button" class="card-btn doc-full-btn">Generate Full Report PDF</button>
               </div>
             </div>
           </div>
@@ -3700,9 +3730,10 @@
     return y + 8;
   }
 
-  function buildPdfDoc(type){
+  function buildPdfDoc(type, injectDoc){
     var JsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
-    var doc = new JsPDFCtor({ unit: 'pt', format: 'a4' });
+    var doc = injectDoc || new JsPDFCtor({ unit: 'pt', format: 'a4' });
+    var sectionStartPage = doc.internal.getNumberOfPages();
     var title = TAX_LABEL[type];
     var y = pdfBrandHeader(doc);
 
@@ -3917,16 +3948,17 @@
       doc.text('Under the conduit principle, this estimates tax on income retained in the trust; income vested in beneficiaries during the year is taxed in their hands instead, at their own rates. Trusts get no rebates or tax-free threshold. Capital gains (trusts include 80% versus 40% for individuals) and donations tax are excluded.', MARGIN, y, { maxWidth: CONTENT_W, lineHeightFactor: 1.4 });
     }
 
-    // footer on every page
+    // footer on every page this call added (leaves any earlier sections
+    // in a combined report, e.g. the Cover Page, untouched)
     var pageCount = doc.internal.getNumberOfPages();
-    for (var p = 1; p <= pageCount; p++){
+    for (var p = sectionStartPage; p <= pageCount; p++){
       doc.setPage(p);
       doc.setDrawColor.apply(doc, C_HAIR); doc.setLineWidth(0.5);
       doc.line(MARGIN, PAGE_H - 54, PAGE_W - MARGIN, PAGE_H - 54);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(7);
       doc.setTextColor.apply(doc, C_MUTED);
       doc.text('Estimate for planning purposes only — not a substitute for a SARS assessment or professional advice.', MARGIN, PAGE_H - 40, { maxWidth: CONTENT_W - 70 });
-      doc.text('Page ' + p + ' of ' + pageCount, PAGE_W - MARGIN, PAGE_H - 40, { align: 'right' });
+      doc.text('Page ' + (p - sectionStartPage + 1) + ' of ' + (pageCount - sectionStartPage + 1), PAGE_W - MARGIN, PAGE_H - 40, { align: 'right' });
     }
     return doc;
   }
@@ -4091,9 +4123,9 @@
     } catch (e) { restore(); }
   }
 
-  function buildCoverPagePdf(){
+  function buildCoverPagePdf(injectDoc){
     var JsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
-    var doc = new JsPDFCtor({ unit: 'pt', format: 'a4' });
+    var doc = injectDoc || new JsPDFCtor({ unit: 'pt', format: 'a4' });
     var brand = getDocBrand();
 
     // ---- header band: angular navy shape with a gold accent, top-right ----
@@ -4168,9 +4200,10 @@
     return doc;
   }
 
-  function buildMedicalPdf(){
+  function buildMedicalPdf(injectDoc){
     var JsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
-    var doc = new JsPDFCtor({ unit: 'pt', format: 'a4' });
+    var doc = injectDoc || new JsPDFCtor({ unit: 'pt', format: 'a4' });
+    var sectionStartPage = doc.internal.getNumberOfPages();
     var y = pdfBrandHeader(doc);
     var r = ind.last || {};
     var clientLabel = currentClientId ? clientName(currentClientId) : 'Not specified';
@@ -4229,14 +4262,14 @@
     y = pdfKvRow(doc, y, 'Total medical tax credit, per year', fmtR(r.totalMedicalCredit || 0), { bold: true, totalRule: true });
 
     var pageCount = doc.internal.getNumberOfPages();
-    for (var p = 1; p <= pageCount; p++){
+    for (var p = sectionStartPage; p <= pageCount; p++){
       doc.setPage(p);
       doc.setDrawColor.apply(doc, C_HAIR); doc.setLineWidth(0.5);
       doc.line(MARGIN, PAGE_H - 54, PAGE_W - MARGIN, PAGE_H - 54);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(7);
       doc.setTextColor.apply(doc, C_MUTED);
       doc.text('Estimate for planning purposes only — not a substitute for a SARS assessment or professional advice.', MARGIN, PAGE_H - 40, { maxWidth: CONTENT_W - 70 });
-      doc.text('Page ' + p + ' of ' + pageCount, PAGE_W - MARGIN, PAGE_H - 40, { align: 'right' });
+      doc.text('Page ' + (p - sectionStartPage + 1) + ' of ' + (pageCount - sectionStartPage + 1), PAGE_W - MARGIN, PAGE_H - 40, { align: 'right' });
     }
     return doc;
   }
@@ -4267,6 +4300,45 @@
       } catch (e) { if (btn){ btn.disabled = false; btn.textContent = prevLabel; } }
     }, 20);
   }
+
+  // One combined, client-ready PDF: Cover Page, then the Calculation, then
+  // (individual only) the Medical Aid Calculation -- each section drawn
+  // into the SAME jsPDF document, one after another, rather than as three
+  // separate files. The individual section builders (buildCoverPagePdf,
+  // buildPdfDoc, buildMedicalPdf) are unchanged for their own standalone
+  // buttons above; passing them a doc just tells them to keep drawing into
+  // it instead of starting a fresh one, and each one's own footer loop
+  // only stamps the pages it just added.
+  function buildCombinedReportPdf(){
+    var JsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    var doc = new JsPDFCtor({ unit: 'pt', format: 'a4' });
+
+    buildCoverPagePdf(doc);
+
+    doc.addPage();
+    buildPdfDoc(currentTaxType, doc);
+
+    if (currentTaxType === 'individual'){
+      doc.addPage();
+      buildMedicalPdf(doc);
+    }
+
+    return doc;
+  }
+  function exportCombinedPdf(btn){
+    var prevLabel = btn ? btn.textContent : '';
+    if (btn){ btn.disabled = true; btn.textContent = 'Preparing…'; }
+    setTimeout(function(){
+      try {
+        var doc = buildCombinedReportPdf();
+        var dateStr = new Date().toISOString().slice(0, 10);
+        var clientPart = currentClientId ? slug(clientName(currentClientId)) + ' - ' : '';
+        var typePart = currentTaxType === 'individual' ? 'Individual Tax' : (currentTaxType === 'company' ? 'Company Tax' : 'Trust Tax');
+        var filename = clientPart + typePart + ' Full Report - ' + dateStr + '.pdf';
+        downloadGeneratedPdf(doc, filename, btn, prevLabel);
+      } catch (e) { if (btn){ btn.disabled = false; btn.textContent = prevLabel; } }
+    }, 20);
+  }
   document.addEventListener('click', function(ev){
     var coverBtn = ev.target && ev.target.closest && ev.target.closest('.doc-cover-btn');
     if (coverBtn){ exportCoverPagePdf(coverBtn); return; }
@@ -4274,6 +4346,8 @@
     if (calcBtn){ exportPdf(); return; }
     var medBtn = ev.target && ev.target.closest && ev.target.closest('.doc-medical-btn');
     if (medBtn){ exportMedicalPdf(medBtn); return; }
+    var fullBtn = ev.target && ev.target.closest && ev.target.closest('.doc-full-btn');
+    if (fullBtn){ exportCombinedPdf(fullBtn); return; }
   });
 
   refreshDocLetterDefaults();
