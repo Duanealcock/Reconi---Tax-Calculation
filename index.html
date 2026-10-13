@@ -136,10 +136,82 @@
   .content{ padding: 28px 32px 60px; min-width: 0; }
   @media (max-width: 640px){ .content{ padding: 20px 16px 48px; } }
 
+  .compliance-view{ display: none; }
+  .content.compliance-mode .compliance-view{ display: block; }
+  .content.compliance-mode > .page-head,
+  .content.compliance-mode > .ribbon,
+  .content.compliance-mode > .tab-panel{ display: none !important; }
   .page-head{ margin-bottom: 18px; }
   .page-head h1{ font-size: 26px; font-weight: 800; letter-spacing: -0.01em; margin: 0 0 4px; color: var(--ink); }
   .page-head .sub{ color: var(--blue); font-size: 14.5px; font-weight: 500; }
   .page-head .desc{ color: var(--ink-2); font-size: 13.5px; margin-top: 6px; max-width: 68ch; }
+
+  /* ---------------- compliance ---------------- */
+  .compliance-view .card{ margin-bottom: 16px; }
+  .comp-tools-row{ display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
+  .comp-year{ margin: 0; width: 150px; }
+  .comp-seg{ display: inline-flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 3px; gap: 2px; }
+  .comp-seg button{ border: 0; background: transparent; color: var(--ink-2); font-size: 13px; font-weight: 600; padding: 7px 14px; border-radius: 7px; cursor: pointer; }
+  .comp-seg button.active{ background: var(--navy-800); color: #fff; }
+  .comp-actions{ margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  .comp-save{ border: 0; background: none; font: inherit; font-size: 12px; font-weight: 600; color: var(--ink-muted); padding: 0 2px 9px; align-self: flex-end; cursor: default; }
+  .comp-save.is-busy{ color: var(--gold-ink); }
+  .comp-save.is-error{ color: var(--red); cursor: pointer; text-decoration: underline; }
+  .comp-toolbar .import-status{ margin: 14px 0 0; }
+  .comp-import-panel{ display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 14px; padding: 11px 14px; background: var(--gold-soft); border-radius: 9px; font-size: 12.5px; color: var(--gold-ink); }
+  .comp-import-panel[hidden]{ display: none !important; }
+  .comp-import-actions{ display: flex; gap: 8px; }
+  .card-btn.comp-ghost{ background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--border); }
+  .comp-sql{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; line-height: 1.5; white-space: pre; overflow: auto; }
+  .comp-setup-actions{ display: flex; gap: 8px; margin-top: 12px; }
+  .comp-tiles{ display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .comp-tile{ background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 14px 16px; }
+  .comp-tile-n{ font-size: 22px; font-weight: 800; color: var(--ink); letter-spacing: -0.01em; }
+  .comp-tile-l{ font-size: 11.5px; font-weight: 600; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+  .comp-tile.bad .comp-tile-n{ color: var(--red); }
+  .comp-tile.warn .comp-tile-n{ color: var(--gold-ink); }
+  .comp-scroll{ overflow-x: auto; }
+  .comp-matrix{ width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .comp-matrix th{ text-align: center; font-size: 11px; font-weight: 700; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .comp-matrix tbody th{ text-align: left; text-transform: none; letter-spacing: 0; font-size: 12.5px; color: var(--ink); }
+  .comp-matrix td{ text-align: center; padding: 5px 6px; border-bottom: 1px solid var(--hairline); }
+  .comp-chip{ min-width: 38px; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink-muted); font: inherit; font-size: 12.5px; font-weight: 700; border-radius: 7px; padding: 3px 9px; cursor: pointer; }
+  .comp-chip:not([data-zero]):hover{ border-color: var(--blue); }
+  .comp-chip[aria-pressed="true"]{ outline: 2px solid var(--blue); outline-offset: 1px; }
+  .comp-chip[data-s="Up to date"]:not([data-zero]){ background: #e5f6ea; color: #157a3a; border-color: #bfe5cb; }
+  .comp-chip[data-s="Due"]:not([data-zero]){ background: #fff4d6; color: #8a5a00; border-color: #f0d9a0; }
+  .comp-chip[data-s="Overdue"]:not([data-zero]){ background: #fde8e8; color: #b42318; border-color: #f5b5b0; }
+  .comp-chip[data-s="Not registered"]:not([data-zero]){ background: #eef0f4; color: #5a6272; }
+  .comp-filters{ display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+  .comp-filters input[type=text]{ width: 230px; }
+  .comp-filters select{ width: auto; min-width: 150px; }
+  .comp-check{ display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
+  .comp-count{ margin-left: auto; font-size: 12px; color: var(--ink-muted); font-weight: 600; }
+  .comp-table-wrap{ overflow: auto; max-height: 72vh; border: 1px solid var(--border); border-radius: 10px; }
+  .comp-table{ border-collapse: separate; border-spacing: 0; width: 100%; min-width: 1240px; font-size: 12.5px; }
+  .comp-table thead th{ position: sticky; top: 0; z-index: 2; background: var(--navy-800); color: #fff; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; text-align: left; padding: 9px 8px; white-space: nowrap; }
+  .comp-table td, .comp-table tbody th{ padding: 5px 6px; border-bottom: 1px solid var(--hairline); background: var(--surface); vertical-align: middle; text-align: left; }
+  .comp-table tbody tr:hover td, .comp-table tbody tr:hover th{ background: #f7f9fd; }
+  .comp-table tr.comp-current td, .comp-table tr.comp-current th{ background: #fff8e6; }
+  .comp-sticky{ position: sticky; left: 0; z-index: 1; min-width: 200px; max-width: 240px; }
+  .comp-table thead th.comp-sticky{ z-index: 3; }
+  .comp-link{ border: 0; background: none; padding: 0; font: inherit; font-weight: 700; color: var(--ink); cursor: pointer; text-align: left; }
+  .comp-link:hover{ color: var(--blue); text-decoration: underline; }
+  .comp-sub{ display: block; font-size: 11px; font-weight: 500; color: var(--ink-muted); margin-top: 1px; }
+  .comp-table select.comp-status{ min-width: 118px; font-size: 12px; font-weight: 600; padding: 5px 6px; border-radius: 7px; }
+  .comp-status[data-s="Up to date"]{ background: #e5f6ea; color: #157a3a; border-color: #bfe5cb; }
+  .comp-status[data-s="Due"]{ background: #fff4d6; color: #8a5a00; border-color: #f0d9a0; }
+  .comp-status[data-s="Overdue"]{ background: #fde8e8; color: #b42318; border-color: #f5b5b0; font-weight: 800; }
+  .comp-status[data-s="Not registered"]{ background: #eef0f4; color: #5a6272; }
+  .comp-status[data-s="N/A"]{ color: var(--ink-muted); }
+  .comp-in{ font-size: 12px; padding: 5px 7px; border-radius: 7px; min-width: 92px; }
+  .comp-in.comp-num{ min-width: 100px; text-align: right; }
+  .comp-in.comp-notes{ min-width: 220px; }
+  .comp-empty{ text-align: center !important; color: var(--ink-muted); padding: 26px 12px !important; }
+  .comp-client-pick{ max-width: 380px; }
+  .comp-details{ display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-top: 16px; }
+  .comp-details .field{ margin: 0; }
+  @media (max-width: 860px){ .comp-actions{ margin-left: 0; } .comp-count{ margin-left: 0; } }
 
   /* ---------------- ribbon ---------------- */
   .ribbon{
@@ -429,6 +501,7 @@
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800&family=Questrial&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -509,6 +582,10 @@
               <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.5" y="1.5" width="6" height="6" rx="1"/><rect x="8.5" y="1.5" width="6" height="6" rx="1"/><rect x="1.5" y="8.5" width="6" height="6" rx="1"/><rect x="8.5" y="8.5" width="6" height="6" rx="1"/></svg>
               Calculator
             </button>
+            <button type="button" class="navitem" data-role="compliance">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="2" width="11" height="12.5" rx="1.5"/><path d="M5.5 8.4l1.8 1.8 3.2-3.7"/></svg>
+              Compliance
+            </button>
           </div>
         </div>
         <div class="navgroup">
@@ -543,7 +620,7 @@
           </div>
         </div>
         <div class="navgroup">
-          <div class="label">Compliance</div>
+          <div class="label">Legal</div>
           <div class="items">
             <button type="button" class="navitem" data-role="disclaimer">
               <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.5 13.5 3.4V7.4C13.5 10.9 11.2 13.6 8 14.5C4.8 13.6 2.5 10.9 2.5 7.4V3.4L8 1.5Z"/></svg>
@@ -581,6 +658,7 @@
           <button type="button" id="addYearBtn" class="rbtn" title="Add a new tax year">+ Year</button>
           <button type="button" id="saveCalcBtn" class="rbtn primary" disabled>Save now</button>
           <button type="button" id="reportBtn" class="rbtn">Download PDF</button>
+          <button type="button" id="questionnaireBtn" class="rbtn" title="Download a fillable questionnaire for this client, pre-filled with their details">Questionnaire</button>
         </div>
       </div>
 
@@ -595,7 +673,7 @@
                 <span class="card-sub">Based on the SARS standard income tax return questions</span>
               </div>
               <button type="button" class="card-btn" id="ind_importBtn">&#8593; Import client answers</button>
-              <input type="file" id="ind_importFile" accept="application/json,.json" hidden>
+              <input type="file" id="ind_importFile" accept="application/json,.json,application/pdf,.pdf" hidden>
             </div>
             <div class="import-status" id="ind_importStatus" hidden></div>
             <p class="doc-note">Need a signed cover letter or other supporting documents for this client? See the <a href="javascript:void(0)" data-goto-role="documents">Documents</a> tab.</p>
@@ -1262,6 +1340,126 @@
               <p><strong>Not included.</strong> Capital gains (trusts include 80% of gains in taxable income, versus 40% for individuals), donations tax, and distributions to non-resident beneficiaries.</p>
             </div>
           </details>
+        </div>
+      </section>
+
+      <section class="compliance-view" id="complianceView">
+        <div class="page-head">
+          <h1>Compliance</h1>
+          <div class="sub">Client compliance tracking</div>
+          <p class="desc">Track each client's Income Tax, Provisional Tax, VAT, PAYE / SDL / UIF and CIPC status by tax year, and report on all clients at once.</p>
+        </div>
+
+        <div class="card comp-toolbar">
+          <div class="comp-tools-row">
+            <div class="field comp-year">
+              <label for="compYear">Tax year</label>
+              <select id="compYear"></select>
+            </div>
+            <div class="comp-seg" id="compSeg" role="group" aria-label="View">
+              <button type="button" data-view="all" class="active">All clients</button>
+              <button type="button" data-view="client">Single client</button>
+            </div>
+            <button type="button" class="comp-save" id="compSaveStatus" aria-live="polite"></button>
+            <div class="comp-actions">
+              <button type="button" class="card-btn" id="compImportBtn">&#8593; Import clients</button>
+              <input type="file" id="compImportFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+              <button type="button" class="card-btn" id="compExcelBtn">&#8595; Excel</button>
+              <button type="button" class="card-btn" id="compPdfBtn">&#8595; PDF report</button>
+            </div>
+          </div>
+          <div class="import-status" id="compStatus" hidden></div>
+          <div class="comp-import-panel" id="compImportPanel" hidden></div>
+        </div>
+
+        <div class="card" id="compSetup" hidden>
+          <div class="card-head">
+            <div class="card-head-text">
+              <h2>One-time setup needed</h2>
+              <span class="card-sub">The compliance tables don't exist in Supabase yet</span>
+            </div>
+          </div>
+          <p class="doc-note" style="margin-top:0">In Supabase, open <strong>SQL Editor</strong>, paste the script below, click <strong>Run</strong>, then come back and press <strong>Check again</strong>. It only needs doing once.</p>
+          <textarea id="compSetupSql" class="comp-sql" rows="12" readonly spellcheck="false"></textarea>
+          <div class="comp-setup-actions">
+            <button type="button" class="card-btn" id="compSetupCopy">Copy SQL</button>
+            <button type="button" class="card-btn" id="compSetupCheck">Check again</button>
+          </div>
+        </div>
+
+        <div id="compAllView">
+          <div class="comp-tiles" id="compTiles"></div>
+          <div class="card">
+            <div class="card-head">
+              <div class="card-head-text">
+                <h2>Summary by obligation</h2>
+                <span class="card-sub">Click a number to filter the list below</span>
+              </div>
+            </div>
+            <div class="comp-scroll" id="compMatrix"></div>
+          </div>
+          <div class="card comp-listcard">
+            <div class="comp-filters">
+              <input type="text" id="compSearch" placeholder="Search name, tax ref or ID&hellip;" aria-label="Search clients">
+              <select id="compEntityFilter" aria-label="Entity type"></select>
+              <select id="compObFilter" aria-label="Obligation"></select>
+              <select id="compStFilter" aria-label="Status"></select>
+              <label class="comp-check"><input type="checkbox" id="compAttention"> Needs attention</label>
+              <button type="button" class="card-btn comp-ghost" id="compClearFilters" hidden>Clear filters</button>
+              <span class="comp-count" id="compCount"></span>
+            </div>
+            <div class="comp-table-wrap">
+              <table class="comp-table">
+                <thead>
+                  <tr>
+                    <th class="comp-sticky">Client</th>
+                    <th>Income Tax</th><th>Provisional Tax</th><th>VAT</th><th>PAYE / SDL / UIF</th><th>CIPC Annual Return</th>
+                    <th>Year-end</th><th>Next due</th><th>SOA balance (R)</th><th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody id="compTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="compClientView" hidden>
+          <div class="card">
+            <div class="comp-client-pick">
+              <div class="field">
+                <label for="compClientSel">Client</label>
+                <select id="compClientSel"></select>
+              </div>
+            </div>
+            <p class="doc-note" id="compClientEmpty" style="margin:0">Choose a client to see and update their compliance history across all tax years.</p>
+            <div id="compClientBody" hidden>
+              <div class="comp-details">
+                <div class="field"><label for="compEntity">Entity type</label><select id="compEntity"></select></div>
+                <div class="field"><label for="compIdNo">ID / Registration no.</label><input type="text" id="compIdNo" autocomplete="off"></div>
+                <div class="field"><label for="compTaxRef">Tax ref no.</label><input type="text" id="compTaxRef" autocomplete="off"></div>
+              </div>
+            </div>
+          </div>
+          <div class="card comp-listcard" id="compClientHistory">
+            <div class="card-head">
+              <div class="card-head-text">
+                <h2>Compliance history</h2>
+                <span class="card-sub">Every tax year from 2020/2021 &mdash; the selected year is highlighted</span>
+              </div>
+            </div>
+            <div class="comp-table-wrap">
+              <table class="comp-table">
+                <thead>
+                  <tr>
+                    <th class="comp-sticky">Tax year</th>
+                    <th>Income Tax</th><th>Provisional Tax</th><th>VAT</th><th>PAYE / SDL / UIF</th><th>CIPC Annual Return</th>
+                    <th>Year-end</th><th>Next due</th><th>SOA balance (R)</th><th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody id="compClientTbody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -2037,6 +2235,7 @@
   ind.importFile.addEventListener('change', function(){
     var file = ind.importFile.files && ind.importFile.files[0];
     if (!file) return;
+    if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf'){ importQuestionnairePdf(file); return; }
     var reader = new FileReader();
     reader.onload = function(){
       var parsed;
@@ -3142,13 +3341,38 @@
     targets.forEach(function(t){ scrollspyIO.observe(t); });
   }
 
+  // The Compliance item swaps the whole calculator view for its own page;
+  // every other item is a scroll-to within the calculator view.
+  var contentEl = document.querySelector('main.content');
+  var complianceOn = false;
+  function setComplianceView(on){
+    complianceOn = on;
+    contentEl.classList.toggle('compliance-mode', on);
+    if (on){
+      if (scrollspyIO) scrollspyIO.disconnect();
+      navItems.forEach(function(a){ a.classList.toggle('active', a.dataset.role === 'compliance'); });
+      window.scrollTo(0, 0);
+      compOnShow();
+    } else {
+      setupScrollspy();
+    }
+  }
   navItems.forEach(function(a){
     a.addEventListener('click', function(){
       var role = a.dataset.role;
-      var target = role === 'disclaimer'
-        ? document.querySelector('footer[data-role="disclaimer"]')
-        : panelFor(currentTaxType).querySelector('[data-role="' + role + '"]');
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (role === 'compliance'){ setComplianceView(true); return; }
+      var wasCompliance = complianceOn;
+      if (wasCompliance){
+        setComplianceView(false);
+        navItems.forEach(function(n){ n.classList.toggle('active', n === a); });
+      }
+      var go = function(){
+        var target = role === 'disclaimer'
+          ? document.querySelector('footer[data-role="disclaimer"]')
+          : panelFor(currentTaxType).querySelector('[data-role="' + role + '"]');
+        if (target) target.scrollIntoView({ behavior: wasCompliance ? 'auto' : 'smooth', block: 'start' });
+      };
+      if (wasCompliance) setTimeout(go, 0); else go();
     });
   });
 
@@ -3158,6 +3382,7 @@
       currentTaxType = type;
       rtabs.forEach(function(t){ t.classList.toggle('active', t.dataset.type === type); });
       panels.forEach(function(p){ p.hidden = p.dataset.panel !== type; });
+      document.getElementById('questionnaireBtn').hidden = type !== 'individual';
       setupScrollspy();
       loadSavedCalcForCurrentType();
     });
@@ -3334,6 +3559,7 @@
       currentClientId = id;
       updateSidebarClientLabel();
       loadSavedCalcForCurrentType();
+      compOnClientChanged();
     });
   }
 
@@ -4579,6 +4805,1197 @@
     var href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
     window.location.href = href;
   });
+
+  // ================= CLIENT QUESTIONNAIRE (fillable PDF) =================
+  // "Questionnaire" button in the top bar: builds a branded, fillable PDF for
+  // the client, pre-filled with what is already captured for them. The client
+  // fills it in (type into the boxes, save, email back) and the accountant
+  // loads it with "Import client answers", which also accepts these PDFs.
+  // Built and read with pdf-lib (jsPDF cannot read form values back).
+  var QPDF_META_PREFIX = 'RECONI-IND-Q1';
+  var QPDF_MIN_IRP5 = 4, QPDF_MIN_RET = 3, QPDF_MIN_INT = 3, QPDF_MAX_ROWS = 12;
+  var QPDF_TITLES = ['Mr', 'Mrs', 'Ms', 'Miss', 'Dr', 'Prof', 'Mx'];
+  var QPDF_GENDERS = [['female', 'Female'], ['male', 'Male'], ['other', 'Other / prefer not to say']];
+  var QPDF_AGES = [['under65', 'Under 65'], ['65to74', '65 to 74'], ['75plus', '75 and older']];
+
+  // pdf-lib's standard fonts only cover WinAnsi: fold accents and drop the rest.
+  function qpdfClean(s){
+    return String(s == null ? '' : s)
+      .replace(/[–—]/g, '-').replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\x20-\x7E]/g, '');
+  }
+  // "12 500,50", "R 12,500.50", "12500" -> 12500.5 (South African typing styles).
+  function qpdfParseMoney(v){
+    var s = String(v == null ? '' : v).replace(/[^\d.,\-]/g, '');
+    if (!s) return 0;
+    if (s.indexOf(',') >= 0 && s.indexOf('.') < 0 && /,\d{1,2}$/.test(s)) s = s.replace(',', '.');
+    s = s.replace(/,/g, '');
+    var n = parseFloat(s);
+    return isFinite(n) ? n : 0;
+  }
+
+  // What goes on the form. Starting values the app ships with (an unnamed
+  // R450,000 certificate, R27,000 retirement fund, R29,400 medical contribution)
+  // are placeholders rather than the client's details, so they're left blank.
+  function questionnairePrefill(){
+    var s = gatherIndividual();
+    function num(v){ var n = parseFloat(v); return isFinite(n) ? n : 0; }
+    function money(v){ var n = num(v); return n ? String(round2(n)) : ''; }
+    var d = {
+      name: currentClientId ? clientName(currentClientId) : '',
+      title: s.title || '', gender: s.gender || '', ageBand: s.ageBand || 'under65',
+      disability: !!s.disability, irp5: [], ret: [], int: [],
+      medScheme: '', medNo: '', medContrib: '', medDeps: null, expenses: '', donation: '',
+      flags: s.flags || {}
+    };
+    if (s.irp5){
+      (s.irp5Rows || []).forEach(function(r){
+        var allZero = !num(r.paye) && !num(r.uif) && !num(r.sdl) && !num(r.medCredit);
+        if (!r.employer && num(r.gross) === 450000 && allZero) return;
+        d.irp5.push({ employer: r.employer || '', gross: money(r.gross), paye: money(r.paye), uif: money(r.uif), sdl: money(r.sdl), medcredit: money(r.medCredit) });
+      });
+    }
+    if (s.hasRet){
+      (s.retRows || []).forEach(function(r){
+        if (!r.name && num(r.amount) === 27000) return;
+        d.ret.push({ name: r.name || '', amount: money(r.amount) });
+      });
+    }
+    if (s.hasInt){
+      (s.intRows || []).forEach(function(r){ if (r.name || num(r.amount)) d.int.push({ name: r.name || '', amount: money(r.amount) }); });
+    }
+    if (s.hasMed){
+      d.medScheme = s.medSchemeName || ''; d.medNo = s.medMembershipNo || '';
+      var pristine = !d.medScheme && !d.medNo;
+      if (!(pristine && num(s.medTotalContrib) === 29400)) d.medContrib = money(s.medTotalContrib);
+      if (!pristine) d.medDeps = (s.medDependants || []).map(function(n){ return String(n); });
+    }
+    if (s.hasOtherMed) d.expenses = money(s.expenses);
+    if (s.hasDonation) d.donation = money(s.donation);
+    return d;
+  }
+
+  async function buildQuestionnairePdfBytes(){
+    var PL = window.PDFLib;
+    var d = questionnairePrefill();
+    var brand = getDocBrand();
+    var TY = TAX_TABLES[currentTaxYear];
+    var pdfDoc = await PL.PDFDocument.create();
+    var font = await pdfDoc.embedFont(PL.StandardFonts.Helvetica);
+    var bold = await pdfDoc.embedFont(PL.StandardFonts.HelveticaBold);
+    var logo = await pdfDoc.embedPng(ALCOCK_LOGO_IMG);
+    var form = pdfDoc.getForm();
+    var W = 595.28, H = 841.89, M = 50, CW = W - 2 * M, GAP = 8, BOTTOM = 62;
+    var C = {
+      navy: PL.rgb(0.063, 0.106, 0.2), gold: PL.rgb(0.769, 0.596, 0.235), ink: PL.rgb(0.1, 0.12, 0.18),
+      grey: PL.rgb(0.42, 0.45, 0.52), line: PL.rgb(0.78, 0.8, 0.85), bg: PL.rgb(0.965, 0.972, 0.99), white: PL.rgb(1, 1, 1)
+    };
+    var page, top;
+
+    function text(str, x, base, size, f, color){
+      page.drawText(qpdfClean(str), { x: x, y: H - base, size: size, font: f, color: color });
+    }
+    function wrapLines(str, f, size, maxW){
+      var words = qpdfClean(str).split(/\s+/), lines = [], cur = '';
+      words.forEach(function(w){
+        var t = cur ? cur + ' ' + w : w;
+        if (f.widthOfTextAtSize(t, size) <= maxW) cur = t; else { if (cur) lines.push(cur); cur = w; }
+      });
+      if (cur) lines.push(cur);
+      return lines;
+    }
+    function newPage(first){
+      page = pdfDoc.addPage([W, H]);
+      page.drawRectangle({ x: 0, y: 0, width: W, height: 40, color: C.navy });
+      page.drawSvgPath('M 0 0 L 110 0 L 0 40 Z', { x: 0, y: 40, color: C.gold, borderWidth: 0 });
+      text(brand.phone, 130, H - 25, 8, bold, C.white);
+      text(brand.email, 130, H - 13, 8, bold, C.white);
+      if (first){
+        page.drawSvgPath('M 330 0 L 595.28 0 L 595.28 20 L 442 58 Z', { x: 0, y: H, color: C.navy, borderWidth: 0 });
+        page.drawSvgPath('M 330 0 L 442 58 L 366 28 Z', { x: 0, y: H, color: C.gold, borderWidth: 0 });
+        page.drawImage(logo, { x: M, y: H - 22 - 38, width: 44, height: 38 });
+        text(brand.firm, M + 54, 40, 13, bold, C.navy);
+        text(brand.tagline, M + 54, 52, 7.5, bold, C.gold);
+        text('Individual Income Tax Questionnaire', M, 104, 18, bold, C.navy);
+        text(TY.label + ' year of assessment (' + TY.range + ')', M, 120, 9.5, font, C.grey);
+        top = 138;
+      } else {
+        page.drawRectangle({ x: 0, y: H - 8, width: W, height: 8, color: C.navy });
+        text(brand.firm, M, 34, 9, bold, C.navy);
+        text('Individual Income Tax Questionnaire - ' + TY.label + ' (continued)', M, 46, 8, font, C.grey);
+        top = 64;
+      }
+    }
+    function need(h){ if (top + h > H - BOTTOM) newPage(false); }
+    function section(title, keepRows, perRow){
+      need(52 + (keepRows || 0) * (perRow || 32)); top += 8;
+      page.drawRectangle({ x: M, y: H - top - 14, width: 3, height: 14, color: C.gold });
+      text(title, M + 9, top + 11, 11, bold, C.navy);
+      top += 20;
+      page.drawLine({ start: { x: M, y: H - top }, end: { x: W - M, y: H - top }, thickness: 0.6, color: C.line });
+      top += 8;
+    }
+    function note(str, f, color){
+      wrapLines(str, f || font, 8, CW).forEach(function(l){ need(12); text(l, M, top + 8, 8, f || font, color || C.grey); top += 11; });
+      top += 3;
+    }
+    function label(str, x, t){ text(str, x, t + 7, 7, font, C.grey); }
+    var boxOpts = function(x, t, w, h){
+      return { x: x, y: H - t - h, width: w, height: h, font: font, borderColor: C.line, borderWidth: 0.8, backgroundColor: C.bg, textColor: C.ink };
+    };
+    function tfield(name, x, t, w, h, value, right){
+      var f = form.createTextField(name);
+      if (value) f.setText(qpdfClean(value));
+      f.addToPage(page, boxOpts(x, t, w, h));
+      if (right) f.setAlignment(PL.TextAlignment.Right);
+      f.setFontSize(9);
+      return f;
+    }
+    function dfield(name, x, t, w, h, options, selected){
+      var f = form.createDropdown(name);
+      f.addOptions(options);
+      if (selected){ try { f.select(selected); } catch (e) {} }
+      f.addToPage(page, boxOpts(x, t, w, h));
+      f.setFontSize(9);
+    }
+    function cfield(name, x, t, size, checked){
+      var f = form.createCheckBox(name);
+      f.addToPage(page, { x: x, y: H - t - size, width: size, height: size, borderColor: C.line, borderWidth: 0.8, backgroundColor: C.bg });
+      if (checked) f.check();
+    }
+    // A row of labelled boxes: cols = [{ key, label, w, right }]; get(key) = value.
+    function row(prefix, cols, get, header){
+      need(32);
+      if (header) header();
+      var x = M;
+      cols.forEach(function(c){ label(c.label, x, top); x += c.w + GAP; });
+      top += 9; x = M;
+      cols.forEach(function(c){ tfield(prefix + c.key, x, top, c.w, 18, get(c.key), c.right); x += c.w + GAP; });
+      top += 18 + 5;
+    }
+
+    newPage(true);
+    note('Please complete the details below for the year of assessment shown above. You can type straight into the shaded boxes, save the PDF and email it back to ' + brand.email + ' - or print it and fill it in by hand. Use full-year (annual) amounts from your IRP5 / IT3 certificates and statements, in Rand.');
+
+    // ---- 1. About you ----
+    section('1. About you');
+    need(40);
+    label('Title', M, top); label('Full name', M + 78, top); label('Gender', M + 78 + 270 + GAP, top);
+    top += 10;
+    dfield('title', M, top, 70, 19, QPDF_TITLES, d.title);
+    tfield('name', M + 78, top, 270, 19, d.name);
+    dfield('gender', M + 78 + 270 + GAP, top, CW - (78 + 270 + GAP), 19, QPDF_GENDERS.map(function(g){ return g[1]; }),
+      (QPDF_GENDERS.filter(function(g){ return g[0] === d.gender; })[0] || [])[1]);
+    top += 19 + 8;
+    label('Age', M, top); top += 10;
+    dfield('age', M, top, 120, 19, QPDF_AGES.map(function(a){ return a[1]; }),
+      (QPDF_AGES.filter(function(a){ return a[0] === d.ageBand; })[0] || [])[1]);
+    cfield('disability', M + 134, top + 4, 11, d.disability);
+    text('I, my spouse or a dependant have a disability as defined by SARS', M + 152, top + 13, 8.5, font, C.ink);
+    top += 19 + 6;
+
+    // ---- 2. Employment income ----
+    section('2. Employment income (IRP5 certificates)', Math.min(QPDF_MAX_ROWS, Math.max(QPDF_MIN_IRP5, d.irp5.length)), 32);
+    note('One line per IRP5 / IT3(a) for the year. Gross remuneration is the total remuneration on the certificate.');
+    var irp5Cols = [
+      { key: 'employer', label: 'Employer', w: 135 }, { key: 'gross', label: 'Gross remuneration', w: 74, right: true },
+      { key: 'paye', label: 'PAYE deducted', w: 66, right: true }, { key: 'uif', label: 'UIF', w: 56, right: true },
+      { key: 'sdl', label: 'SDL', w: 56, right: true }, { key: 'medcredit', label: 'Med. scheme credit', w: 66, right: true }
+    ];
+    var nIrp5 = Math.min(QPDF_MAX_ROWS, Math.max(QPDF_MIN_IRP5, d.irp5.length));
+    for (var i = 0; i < nIrp5; i++){
+      (function(i){ row('irp5_' + (i + 1) + '_', irp5Cols, function(k){ return (d.irp5[i] || {})[k] || ''; }); })(i);
+    }
+
+    // ---- 3. Retirement ----
+    section('3. Retirement fund contributions', Math.min(QPDF_MAX_ROWS, Math.max(QPDF_MIN_RET, d.ret.length)), 32);
+    note('Contributions you paid yourself to a pension, provident or retirement annuity fund during the year (full-year total per fund).');
+    var nRet = Math.min(QPDF_MAX_ROWS, Math.max(QPDF_MIN_RET, d.ret.length));
+    for (var r = 0; r < nRet; r++){
+      (function(r){
+        row('ret_' + (r + 1) + '_', [{ key: 'name', label: 'Fund name', w: 335 }, { key: 'amount', label: 'Contributions for the year', w: 152, right: true }],
+          function(k){ return (d.ret[r] || {})[k] || ''; });
+      })(r);
+    }
+
+    // ---- 4. Interest ----
+    section('4. Interest received', Math.min(QPDF_MAX_ROWS, Math.max(QPDF_MIN_INT, d.int.length)), 32);
+    note('Interest earned from banks and other institutions (full-year total per account).');
+    var nInt = Math.min(QPDF_MAX_ROWS, Math.max(QPDF_MIN_INT, d.int.length));
+    for (var n = 0; n < nInt; n++){
+      (function(n){
+        row('int_' + (n + 1) + '_', [{ key: 'name', label: 'Bank / institution', w: 335 }, { key: 'amount', label: 'Interest for the year', w: 152, right: true }],
+          function(k){ return (d.int[n] || {})[k] || ''; });
+      })(n);
+    }
+
+    // ---- 5. Medical aid & other ----
+    section('5. Medical aid, medical expenses and donations');
+    need(60);
+    label('Medical scheme name', M, top); label('Membership number', M + 250 + GAP, top); label('Contributions you paid for the year', M + 250 + GAP + 110 + GAP, top);
+    top += 10;
+    tfield('med_scheme', M, top, 250, 19, d.medScheme);
+    tfield('med_member', M + 250 + GAP, top, 110, 19, d.medNo);
+    tfield('med_contrib', M + 250 + GAP + 110 + GAP, top, CW - (250 + GAP + 110 + GAP), 19, d.medContrib, true);
+    top += 19 + 8;
+    need(50);
+    text('Number of members covered each month (you plus dependants)', M, top + 8, 8, font, C.grey); top += 14;
+    var mw = 36, mgap = (CW - 12 * mw) / 11;
+    MED_MONTHS.forEach(function(m, idx){
+      var x = M + idx * (mw + mgap);
+      label(MED_MONTH_LABELS[m], x + 6, top);
+      tfield('med_dep_' + m, x, top + 10, mw, 19, d.medDeps ? d.medDeps[idx] : '', true);
+    });
+    top += 10 + 19 + 8;
+    need(40);
+    label('Medical expenses you paid that the scheme did not cover', M, top); label('Donations to approved public benefit organisations (s18A)', M + 247 + GAP, top);
+    top += 10;
+    tfield('expenses', M, top, 247, 19, d.expenses, true);
+    tfield('donation', M + 247 + GAP, top, CW - (247 + GAP), 19, d.donation, true);
+    top += 19 + 6;
+
+    // ---- 6. Other items ----
+    section('6. Other items');
+    note('Tick anything that applies to you for this year. We will contact you for the extra information these need.');
+    FLAG_DEFS.forEach(function(def){
+      var lines = wrapLines(def.label, font, 8.5, CW - 20);
+      var h = Math.max(14, lines.length * 11 + 3);
+      need(h);
+      cfield('flag_' + def.id, M, top + 1, 10, !!d.flags[def.id]);
+      lines.forEach(function(l, li){ text(l, M + 18, top + 9 + li * 11, 8.5, font, C.ink); });
+      top += h + 2;
+    });
+
+    // ---- 7. Declaration ----
+    section('7. Declaration');
+    need(110);
+    note('I confirm that the information I have given is true and complete to the best of my knowledge.', font, C.ink);
+    label('Signature (type your full name, or sign after printing)', M, top); label('Date', M + 330 + GAP, top);
+    top += 10;
+    tfield('sign_name', M, top, 330, 26, '');
+    tfield('sign_date', M + 330 + GAP, top, CW - (330 + GAP), 26, '');
+    top += 26 + 14;
+    note('Please return the completed form to ' + brand.accountant + ' at ' + brand.email + ' (' + brand.phone + ').', bold, C.navy);
+
+    // ---- page numbers + form reference ----
+    var pages = pdfDoc.getPages();
+    pages.forEach(function(p, idx){
+      var pageLabel = 'Page ' + (idx + 1) + ' of ' + pages.length;
+      p.drawText(pageLabel, { x: W - M - font.widthOfTextAtSize(pageLabel, 8), y: 25, size: 8, font: font, color: C.white });
+    });
+    var meta = form.createTextField('reconi_meta');
+    meta.setText(QPDF_META_PREFIX + '|' + currentTaxYear);
+    meta.enableReadOnly();
+    meta.addToPage(pages[0], { x: W - M - 170, y: 6, width: 170, height: 10, font: font, borderWidth: 0, backgroundColor: C.navy, textColor: PL.rgb(0.75, 0.78, 0.85) });
+    meta.setFontSize(6.5);
+    meta.setAlignment(PL.TextAlignment.Right);
+
+    pdfDoc.setTitle('Individual Income Tax Questionnaire ' + TY.label);
+    pdfDoc.setAuthor(qpdfClean(brand.firm));
+    pdfDoc.setSubject('RECONI Tax client questionnaire');
+    pdfDoc.setCreator('RECONI Tax');
+    form.updateFieldAppearances(font);
+    return await pdfDoc.save();
+  }
+
+  // Reads a filled-in questionnaire PDF back into the same snapshot shape the
+  // JSON import uses, then applies it.
+  async function importQuestionnairePdf(file){
+    var PL = window.PDFLib;
+    if (!PL){ showImportStatus(false, 'The PDF reader didn\'t load — please check your internet connection, refresh the page and try again.'); return; }
+    var pdfDoc;
+    try { pdfDoc = await PL.PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption: true, updateMetadata: false }); }
+    catch (e) { showImportStatus(false, 'Couldn\'t read that file — it doesn\'t look like a valid PDF.'); return; }
+    var form = pdfDoc.getForm();
+    var all = form.getFields();
+    var fields = {};
+    all.forEach(function(f){ fields[f.getName()] = f; });
+    if (!all.length){
+      showImportStatus(false, 'That PDF has no form fields — it may have been printed or flattened before it was saved. Please ask the client to fill in and save the original questionnaire, or enter the answers manually.');
+      return;
+    }
+    function val(name){
+      var f = fields[name];
+      if (!f) return '';
+      try {
+        if (f instanceof PL.PDFTextField) return f.getText() || '';
+        if (f instanceof PL.PDFDropdown || f instanceof PL.PDFOptionList) return (f.getSelected() || [])[0] || '';
+        if (f instanceof PL.PDFCheckBox) return f.isChecked();
+      } catch (e) {}
+      return '';
+    }
+    var meta = String(val('reconi_meta'));
+    if (meta.indexOf(QPDF_META_PREFIX + '|') !== 0){
+      showImportStatus(false, 'This PDF doesn\'t look like a RECONI Tax client questionnaire. Please check the file and try again.');
+      return;
+    }
+    var taxYear = meta.split('|')[1];
+    var money = function(name){ return qpdfParseMoney(val(name)); };
+    var lookup = function(list, label){ var hit = list.filter(function(x){ return x[1] === label; })[0]; return hit ? hit[0] : ''; };
+
+    var s = {
+      title: QPDF_TITLES.indexOf(val('title')) >= 0 ? val('title') : '',
+      gender: lookup(QPDF_GENDERS, val('gender')),
+      ageBand: lookup(QPDF_AGES, val('age')) || 'under65',
+      disability: val('disability') === true,
+      freq: 'annual'
+    };
+    if (taxYear && TAX_TABLES[taxYear]) s.taxYear = taxYear;
+
+    s.irp5Rows = [];
+    for (var i = 1; i <= QPDF_MAX_ROWS && fields['irp5_' + i + '_gross']; i++){
+      var p = 'irp5_' + i + '_';
+      var row = { employer: String(val(p + 'employer')).trim(), gross: money(p + 'gross'), uif: money(p + 'uif'), paye: money(p + 'paye'), sdl: money(p + 'sdl'), medCredit: money(p + 'medcredit'), sourceCode: '3601' };
+      if (row.employer || row.gross || row.uif || row.paye || row.sdl || row.medCredit){
+        ['gross', 'uif', 'paye', 'sdl', 'medCredit'].forEach(function(k){ row[k] = String(row[k]); });
+        s.irp5Rows.push(row);
+      }
+    }
+    s.irp5 = s.irp5Rows.length > 0;
+    s.irp5Count = s.irp5Rows.length;
+    s.gross = String(s.irp5Rows.reduce(function(t, r){ return t + (parseFloat(r.gross) || 0); }, 0));
+
+    function simpleRows(prefix){
+      var out = [];
+      for (var k = 1; k <= QPDF_MAX_ROWS && fields[prefix + k + '_amount']; k++){
+        var nm = String(val(prefix + k + '_name')).trim(), amt = money(prefix + k + '_amount');
+        if (nm || amt) out.push({ name: nm, amount: String(amt) });
+      }
+      return out;
+    }
+    s.retRows = simpleRows('ret_');
+    s.hasRet = s.retRows.length > 0; s.retCount = s.retRows.length;
+    s.ret = String(s.retRows.reduce(function(t, r){ return t + (parseFloat(r.amount) || 0); }, 0));
+    s.intRows = simpleRows('int_');
+    s.hasInt = s.intRows.length > 0; s.intCount = s.intRows.length;
+    s.interest = String(s.intRows.reduce(function(t, r){ return t + (parseFloat(r.amount) || 0); }, 0));
+
+    s.medSchemeName = String(val('med_scheme')).trim();
+    s.medMembershipNo = String(val('med_member')).trim();
+    s.medTotalContrib = String(money('med_contrib'));
+    s.hasMed = !!(s.medSchemeName || s.medMembershipNo || parseFloat(s.medTotalContrib) > 0);
+    var depRaw = MED_MONTHS.map(function(m){ return String(val('med_dep_' + m)).trim(); });
+    s.medDependants = depRaw.every(function(x){ return x === ''; })
+      ? MED_MONTHS.map(function(){ return 1; })
+      : depRaw.map(function(x){ return Math.max(0, Math.round(qpdfParseMoney(x))); });
+    s.expenses = String(money('expenses'));
+    s.hasOtherMed = parseFloat(s.expenses) > 0;
+    s.donation = String(money('donation'));
+    s.hasDonation = parseFloat(s.donation) > 0;
+    s.flags = {};
+    FLAG_DEFS.forEach(function(def){ s.flags[def.id] = val('flag_' + def.id) === true; });
+
+    applyIndividual(s);
+    markDirty();
+    var name = String(val('name')).trim();
+    var msg = '✓ Imported ' + (name ? name + '\'s' : 'the client\'s') + ' answers from the PDF questionnaire. Review the fields below, then click Save.';
+    var selected = currentClientId ? clientName(currentClientId) : '';
+    if (name && selected && name.toLowerCase() !== selected.toLowerCase()){
+      msg += ' Note: the form is in the name of “' + name + '” but the selected client is “' + selected + '”.';
+    }
+    showImportStatus(true, msg);
+  }
+
+  var questionnaireBtn = document.getElementById('questionnaireBtn');
+  questionnaireBtn.addEventListener('click', function(){
+    var prev = questionnaireBtn.textContent;
+    var flash = function(t){ questionnaireBtn.textContent = t; setTimeout(function(){ questionnaireBtn.textContent = prev; }, 2400); };
+    if (!window.PDFLib){ flash('PDF tools not loaded'); return; }
+    questionnaireBtn.disabled = true; questionnaireBtn.textContent = 'Preparing…';
+    buildQuestionnairePdfBytes().then(function(bytes){
+      var blob = new Blob([bytes], { type: 'application/pdf' });
+      var who = currentClientId ? clientName(currentClientId).replace(/[\\\/:*?"<>|]/g, '').trim() : '';
+      var fname = 'Tax Questionnaire' + (who ? ' - ' + who : '') + ' - ' + TAX_TABLES[currentTaxYear].label.replace('/', '-') + '.pdf';
+      downloadGeneratedPdf({ output: function(){ return blob; } }, fname, questionnaireBtn, prev);
+    }).catch(function(e){
+      console.error(e);
+      questionnaireBtn.disabled = false; flash('Could not create PDF');
+    });
+  });
+
+  // ================= COMPLIANCE TRACKER =================
+  // Per-client, per-tax-year compliance statuses (Income Tax, Provisional Tax,
+  // VAT, PAYE/SDL/UIF, CIPC) in two tables: `compliance` (one row per client
+  // per tax year, statuses in a jsonb column) and `client_details` (entity type,
+  // ID / registration no., tax ref -- these belong to the client, not the year).
+  // COMP_SQL below is shown in the app if those tables don't exist yet.
+  var COMP_START_YEAR = 2020;
+  var COMP_OBS = [
+    { k: 'it', label: 'Income Tax' }, { k: 'pt', label: 'Provisional Tax' }, { k: 'vat', label: 'VAT' },
+    { k: 'paye', label: 'PAYE / SDL / UIF' }, { k: 'cipc', label: 'CIPC Annual Return' }
+  ];
+  var COMP_STATUSES = ['Up to date', 'Due', 'Overdue', 'Not registered', 'N/A'];
+  var COMP_ENTITY_TYPES = ['Individual', 'Company (Pty) Ltd', 'Close Corporation', 'Non-Profit Company', 'Trust', 'Other'];
+  var COMP_SQL = [
+    '-- RECONI Tax: compliance tracker tables (run once in Supabase > SQL Editor)',
+    'do $$',
+    'declare idtype text;',
+    'begin',
+    "  select format_type(atttypid, atttypmod) into idtype from pg_attribute where attrelid = 'public.clients'::regclass and attname = 'id';",
+    "  execute format('create table if not exists public.client_details (client_id %s primary key references public.clients(id) on delete cascade, entity_type text, id_number text, tax_ref text, updated_at timestamptz not null default now())', idtype);",
+    "  execute format('create table if not exists public.compliance (client_id %s not null references public.clients(id) on delete cascade, tax_year text not null, data jsonb not null default ''{}''::jsonb, updated_at timestamptz not null default now(), primary key (client_id, tax_year))', idtype);",
+    'end $$;',
+    '',
+    'alter table public.client_details enable row level security;',
+    'alter table public.compliance enable row level security;',
+    '',
+    'drop policy if exists "approved staff" on public.client_details;',
+    'create policy "approved staff" on public.client_details for all to authenticated',
+    '  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.approved))',
+    '  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.approved));',
+    '',
+    'drop policy if exists "approved staff" on public.compliance;',
+    'create policy "approved staff" on public.compliance for all to authenticated',
+    '  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.approved))',
+    '  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.approved));',
+    '',
+    "notify pgrst, 'reload schema';"
+  ].join('\n');
+
+  function compById(id){ return document.getElementById(id); }
+  var compEl = {
+    year: compById('compYear'), seg: compById('compSeg'), save: compById('compSaveStatus'), status: compById('compStatus'),
+    importBtn: compById('compImportBtn'), importFile: compById('compImportFile'), importPanel: compById('compImportPanel'),
+    excelBtn: compById('compExcelBtn'), pdfBtn: compById('compPdfBtn'),
+    setup: compById('compSetup'), setupSql: compById('compSetupSql'), setupCopy: compById('compSetupCopy'), setupCheck: compById('compSetupCheck'),
+    allView: compById('compAllView'), clientView: compById('compClientView'), tiles: compById('compTiles'), matrix: compById('compMatrix'),
+    search: compById('compSearch'), entityF: compById('compEntityFilter'), obF: compById('compObFilter'), stF: compById('compStFilter'),
+    attention: compById('compAttention'), clearF: compById('compClearFilters'), count: compById('compCount'), tbody: compById('compTbody'),
+    clientSel: compById('compClientSel'), entity: compById('compEntity'), idNo: compById('compIdNo'), taxRef: compById('compTaxRef'),
+    cTbody: compById('compClientTbody'), cEmpty: compById('compClientEmpty'), cBody: compById('compClientBody')
+  };
+  var comp = {
+    year: '', view: 'all', clientId: '', store: {}, details: {}, tok: 0,
+    filter: { q: '', entity: '', ob: '', st: '', attention: false },
+    timers: {}, detailTimers: {}, failed: {}, inflight: 0, wired: false
+  };
+
+  function compEsc(s){ return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function compYears(){
+    var now = new Date(), start = now.getMonth() >= 2 ? now.getFullYear() : now.getFullYear() - 1, out = [];
+    for (var y = start; y >= COMP_START_YEAR; y--) out.push({ key: y + '-' + (y + 1), label: y + '/' + (y + 1) });
+    return out;
+  }
+  function compYearLabel(key){ return String(key).replace('-', '/'); }
+  function compKey(clientId, year){ return clientId + '|' + year; }
+  function compData(clientId, year){
+    var k = compKey(clientId, year);
+    if (!comp.store[k]) comp.store[k] = {};
+    return comp.store[k];
+  }
+  function compDetails(clientId){ return comp.details[clientId] || {}; }
+  function compMissingTable(err){
+    var m = String((err && (err.message || err.details)) || '');
+    return !!err && (err.code === '42P01' || err.code === 'PGRST205' || /schema cache|does not exist|relation .* not exist/i.test(m));
+  }
+  function compShowStatus(ok, msg){
+    compEl.status.hidden = !msg;
+    compEl.status.className = 'import-status ' + (ok ? 'ok' : 'err');
+    compEl.status.textContent = msg || '';
+  }
+  function compShowSetup(on){
+    compEl.setup.hidden = !on;
+    compEl.allView.hidden = on || comp.view !== 'all';
+    compEl.clientView.hidden = on || comp.view !== 'client';
+    if (on && !compEl.setupSql.value) compEl.setupSql.value = COMP_SQL;
+  }
+  function compReady(){ return !!(sb && dbApi); }
+
+  // ---------------- loading ----------------
+  function compLoadDetails(){
+    return Promise.resolve(sb.from('client_details').select('client_id,entity_type,id_number,tax_ref')).then(function(res){
+      if (res.error) throw res.error;
+      comp.details = {};
+      (res.data || []).forEach(function(r){ comp.details[r.client_id] = { entity_type: r.entity_type || '', id_number: r.id_number || '', tax_ref: r.tax_ref || '' }; });
+    });
+  }
+  function compLoadRows(query){
+    return Promise.resolve(query).then(function(res){
+      if (res.error) throw res.error;
+      (res.data || []).forEach(function(r){ comp.store[compKey(r.client_id, r.tax_year)] = r.data || {}; });
+    });
+  }
+  function compReload(){
+    if (!compReady()){ compShowStatus(false, 'Sign in to use compliance tracking.'); return Promise.resolve(); }
+    var tok = ++comp.tok;
+    compShowStatus(true, '');
+    var work = [compLoadDetails()];
+    if (comp.view === 'all') work.push(compLoadRows(sb.from('compliance').select('client_id,tax_year,data').eq('tax_year', comp.year)));
+    else if (comp.clientId) work.push(compLoadRows(sb.from('compliance').select('client_id,tax_year,data').eq('client_id', comp.clientId)));
+    return Promise.all(work).then(function(){
+      if (tok !== comp.tok) return;
+      compShowSetup(false);
+      compRender();
+    }).catch(function(err){
+      if (tok !== comp.tok) return;
+      if (compMissingTable(err)){ compShowSetup(true); return; }
+      compShowStatus(false, 'Could not load compliance data — check your connection and try again.');
+    });
+  }
+  function compOnShow(){
+    if (!comp.year){
+      var years = compYears();
+      comp.year = years[0].key;
+      compEl.year.innerHTML = years.map(function(y){ return '<option value="' + y.key + '">' + y.label + '</option>'; }).join('');
+      compEl.entityF.innerHTML = '<option value="">All entity types</option>' + COMP_ENTITY_TYPES.map(function(t){ return '<option>' + compEsc(t) + '</option>'; }).join('');
+      compEl.entity.innerHTML = '<option value="">Select…</option>' + COMP_ENTITY_TYPES.map(function(t){ return '<option>' + compEsc(t) + '</option>'; }).join('');
+      compEl.obF.innerHTML = '<option value="">Any obligation</option>' + COMP_OBS.map(function(o){ return '<option value="' + o.k + '">' + compEsc(o.label) + '</option>'; }).join('');
+      compEl.stF.innerHTML = '<option value="">Any status</option>' + COMP_STATUSES.map(function(s){ return '<option>' + compEsc(s) + '</option>'; }).join('') + '<option value="__none">Not captured</option>';
+    }
+    compEl.year.value = comp.year;
+    if (!comp.clientId && currentClientId) comp.clientId = currentClientId;
+    compWire();
+    compReload();
+  }
+  function compOnClientChanged(){
+    if (!complianceOn || comp.view !== 'client') return;
+    comp.clientId = currentClientId || '';
+    compReload();
+  }
+
+  // ---------------- saving ----------------
+  function compSetSaveState(){
+    var failed = Object.keys(comp.failed).length;
+    var pending = Object.keys(comp.timers).length;
+    var t = '', cls = '';
+    if (failed){ t = 'Couldn’t save — click to retry'; cls = 'is-error'; }
+    else if (comp.inflight || pending){ t = 'Saving…'; cls = 'is-busy'; }
+    else if (comp.savedOnce){ t = 'All changes saved'; }
+    compEl.save.textContent = t;
+    compEl.save.className = 'comp-save ' + cls;
+  }
+  function compCleanData(d){
+    var out = {};
+    Object.keys(d).forEach(function(k){ if (d[k] !== '' && d[k] != null) out[k] = d[k]; });
+    return out;
+  }
+  function compQueueSave(clientId, year){
+    var k = compKey(clientId, year);
+    clearTimeout(comp.timers[k]);
+    comp.timers[k] = setTimeout(function(){ delete comp.timers[k]; compFlush(clientId, year); }, 700);
+    compSetSaveState();
+  }
+  function compFlush(clientId, year){
+    var k = compKey(clientId, year);
+    if (!compReady()) return Promise.resolve();
+    comp.inflight++;
+    compSetSaveState();
+    return Promise.resolve(sb.from('compliance').upsert(
+      { client_id: clientId, tax_year: year, data: compCleanData(compData(clientId, year)), updated_at: new Date().toISOString() },
+      { onConflict: 'client_id,tax_year' }
+    )).then(function(res){
+      if (res.error) throw res.error;
+      delete comp.failed[k]; comp.savedOnce = true;
+    }).catch(function(err){
+      if (compMissingTable(err)){ compShowSetup(true); }
+      comp.failed[k] = true;
+    }).then(function(){ comp.inflight--; compSetSaveState(); });
+  }
+  function compQueueDetailsSave(clientId){
+    clearTimeout(comp.detailTimers[clientId]);
+    comp.timers['d|' + clientId] = comp.detailTimers[clientId] = setTimeout(function(){
+      delete comp.timers['d|' + clientId];
+      compFlushDetails(clientId);
+    }, 700);
+    compSetSaveState();
+  }
+  function compFlushDetails(clientId){
+    if (!compReady()) return Promise.resolve();
+    var d = compDetails(clientId);
+    comp.inflight++;
+    compSetSaveState();
+    return Promise.resolve(sb.from('client_details').upsert(
+      { client_id: clientId, entity_type: d.entity_type || null, id_number: d.id_number || null, tax_ref: d.tax_ref || null, updated_at: new Date().toISOString() },
+      { onConflict: 'client_id' }
+    )).then(function(res){
+      if (res.error) throw res.error;
+      delete comp.failed['d|' + clientId]; comp.savedOnce = true;
+    }).catch(function(err){
+      if (compMissingTable(err)){ compShowSetup(true); }
+      comp.failed['d|' + clientId] = true;
+    }).then(function(){ comp.inflight--; compSetSaveState(); });
+  }
+  function compRetryFailed(){
+    Object.keys(comp.failed).forEach(function(k){
+      delete comp.failed[k];
+      var parts = k.split('|');
+      if (parts[0] === 'd') compFlushDetails(parts[1]); else compFlush(parts[0], parts[1]);
+    });
+    compSetSaveState();
+  }
+
+  // ---------------- summary & filtering ----------------
+  function compStats(){
+    var stats = { clients: clients.length, overdue: 0, due: 0, soa: 0, byOb: {} };
+    COMP_OBS.forEach(function(o){ stats.byOb[o.k] = { none: 0 }; COMP_STATUSES.forEach(function(s){ stats.byOb[o.k][s] = 0; }); });
+    clients.forEach(function(c){
+      var d = comp.store[compKey(c.id, comp.year)] || {};
+      COMP_OBS.forEach(function(o){
+        var s = d[o.k];
+        if (s && stats.byOb[o.k][s] !== undefined){
+          stats.byOb[o.k][s]++;
+          if (s === 'Overdue') stats.overdue++;
+          if (s === 'Due') stats.due++;
+        } else stats.byOb[o.k].none++;
+      });
+      stats.soa += parseFloat(d.soa) || 0;
+    });
+    return stats;
+  }
+  function compMatches(c){
+    var f = comp.filter, d = comp.store[compKey(c.id, comp.year)] || {}, det = compDetails(c.id);
+    if (f.q){
+      var hay = (c.name + ' ' + (det.tax_ref || '') + ' ' + (det.id_number || '')).toLowerCase();
+      if (hay.indexOf(f.q.toLowerCase()) === -1) return false;
+    }
+    if (f.entity && det.entity_type !== f.entity) return false;
+    if (f.ob || f.st){
+      var obs = f.ob ? [f.ob] : COMP_OBS.map(function(o){ return o.k; });
+      var hit = obs.some(function(k){
+        var s = d[k] || '';
+        if (!f.st) return true;
+        return f.st === '__none' ? !s : s === f.st;
+      });
+      if (!hit) return false;
+    }
+    if (f.attention){
+      if (!COMP_OBS.some(function(o){ return d[o.k] === 'Overdue' || d[o.k] === 'Due'; })) return false;
+    }
+    return true;
+  }
+  function compFiltered(){ return clients.filter(compMatches); }
+  function compFilterNote(){
+    var f = comp.filter, parts = [];
+    if (f.q) parts.push('search “' + f.q + '”');
+    if (f.entity) parts.push(f.entity);
+    if (f.ob || f.st){
+      var ob = f.ob ? COMP_OBS.filter(function(o){ return o.k === f.ob; })[0].label : 'any obligation';
+      parts.push(ob + ': ' + (f.st === '__none' ? 'not captured' : (f.st || 'any status')));
+    }
+    if (f.attention) parts.push('needs attention (Due or Overdue)');
+    return parts.join(' · ');
+  }
+
+  // ---------------- rendering ----------------
+  function compStatusSelect(field, val){
+    return '<select class="comp-status" data-f="' + field + '" data-s="' + compEsc(val || '') + '" aria-label="' + field + '"><option value=""></option>' +
+      COMP_STATUSES.map(function(s){ return '<option' + (s === val ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select>';
+  }
+  function compEditCells(d){
+    return COMP_OBS.map(function(o){ return '<td>' + compStatusSelect(o.k, d[o.k]) + '</td>'; }).join('') +
+      '<td><input type="text" class="comp-in" data-f="yearEnd" value="' + compEsc(d.yearEnd) + '" placeholder="e.g. 28 Feb"></td>' +
+      '<td><input type="date" class="comp-in" data-f="nextDue" value="' + compEsc(d.nextDue) + '"></td>' +
+      '<td><input type="number" step="0.01" class="comp-in comp-num" data-f="soa" value="' + compEsc(d.soa) + '"></td>' +
+      '<td><input type="text" class="comp-in comp-notes" data-f="notes" value="' + compEsc(d.notes) + '"></td>';
+  }
+  function compRenderTiles(){
+    var s = compStats();
+    var tiles = [
+      ['Clients', String(s.clients), ''], ['Overdue items', String(s.overdue), s.overdue ? 'bad' : ''],
+      ['Due items', String(s.due), s.due ? 'warn' : ''], ['Outstanding SOA', fmtR(s.soa, 2), '']
+    ];
+    compEl.tiles.innerHTML = tiles.map(function(t){
+      return '<div class="comp-tile ' + t[2] + '"><div class="comp-tile-n">' + compEsc(t[1]) + '</div><div class="comp-tile-l">' + t[0] + '</div></div>';
+    }).join('');
+    var f = comp.filter;
+    compEl.matrix.innerHTML = '<table class="comp-matrix"><thead><tr><th>Obligation</th>' +
+      COMP_STATUSES.map(function(st){ return '<th>' + st + '</th>'; }).join('') + '<th>Not captured</th></tr></thead><tbody>' +
+      COMP_OBS.map(function(o){
+        var row = s.byOb[o.k];
+        function chip(st, label){
+          var n = st === '__none' ? row.none : row[st];
+          var on = f.ob === o.k && f.st === st;
+          return '<td><button type="button" class="comp-chip" data-ob="' + o.k + '" data-st="' + st + '" data-s="' + (st === '__none' ? '' : st) + '" aria-pressed="' + on + '"' + (n ? '' : ' data-zero="1"') + '>' + n + '</button></td>';
+        }
+        return '<tr><th>' + compEsc(o.label) + '</th>' + COMP_STATUSES.map(function(st){ return chip(st); }).join('') + chip('__none') + '</tr>';
+      }).join('') + '</tbody></table>';
+  }
+  function compRenderAll(){
+    compRenderTiles();
+    var list = compFiltered();
+    compEl.count.textContent = 'Showing ' + list.length + ' of ' + clients.length + ' clients';
+    compEl.clearF.hidden = !(comp.filter.q || comp.filter.entity || comp.filter.ob || comp.filter.st || comp.filter.attention);
+    if (!clients.length){
+      compEl.tbody.innerHTML = '<tr><td colspan="12" class="comp-empty">No clients yet. Add a client in the sidebar, or use “Import clients” to load your register.</td></tr>';
+      return;
+    }
+    if (!list.length){
+      compEl.tbody.innerHTML = '<tr><td colspan="12" class="comp-empty">No clients match these filters.</td></tr>';
+      return;
+    }
+    compEl.tbody.innerHTML = list.map(function(c){
+      var d = comp.store[compKey(c.id, comp.year)] || {}, det = compDetails(c.id);
+      return '<tr data-client="' + compEsc(c.id) + '" data-year="' + compEsc(comp.year) + '">' +
+        '<th class="comp-sticky"><button type="button" class="comp-link" data-open-client="' + compEsc(c.id) + '" title="Open this client’s history">' + compEsc(c.name) + '</button>' +
+        '<span class="comp-sub">' + compEsc(det.entity_type || '') + (det.entity_type && det.tax_ref ? ' · ' : '') + compEsc(det.tax_ref || '') + '</span></th>' +
+        compEditCells(d) + '</tr>';
+    }).join('');
+  }
+  function compRenderClient(){
+    var opts = '<option value="">Select a client…</option>' + clients.map(function(c){
+      return '<option value="' + compEsc(c.id) + '"' + (c.id === comp.clientId ? ' selected' : '') + '>' + compEsc(c.name) + '</option>';
+    }).join('');
+    compEl.clientSel.innerHTML = opts;
+    var has = !!comp.clientId && !!compClientName(comp.clientId);
+    compEl.cEmpty.hidden = has;
+    compEl.cBody.hidden = !has;
+    compById('compClientHistory').hidden = !has;
+    if (!has) return;
+    var det = compDetails(comp.clientId);
+    compEl.entity.value = det.entity_type || '';
+    compEl.idNo.value = det.id_number || '';
+    compEl.taxRef.value = det.tax_ref || '';
+    compEl.cTbody.innerHTML = compYears().map(function(y){
+      var d = comp.store[compKey(comp.clientId, y.key)] || {};
+      return '<tr data-client="' + compEsc(comp.clientId) + '" data-year="' + y.key + '"' + (y.key === comp.year ? ' class="comp-current"' : '') + '>' +
+        '<th class="comp-sticky">' + y.label + '</th>' + compEditCells(d) + '</tr>';
+    }).join('');
+  }
+  function compClientName(id){ return clientName(id); }
+  function compRender(){
+    compEl.seg.querySelectorAll('button').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-view') === comp.view); });
+    compEl.allView.hidden = comp.view !== 'all';
+    compEl.clientView.hidden = comp.view !== 'client';
+    compEl.excelBtn.disabled = compEl.pdfBtn.disabled = comp.view !== 'all';
+    compEl.year.disabled = false;
+    compEl.obF.value = comp.filter.ob; compEl.stF.value = comp.filter.st;
+    if (comp.view === 'all') compRenderAll(); else compRenderClient();
+    compSetSaveState();
+  }
+
+  // ---------------- wiring ----------------
+  function compWire(){
+    if (comp.wired) return;
+    comp.wired = true;
+    compEl.year.addEventListener('change', function(){ comp.year = compEl.year.value; compReload(); });
+    compEl.seg.addEventListener('click', function(ev){
+      var b = ev.target.closest('button[data-view]');
+      if (!b) return;
+      comp.view = b.getAttribute('data-view');
+      if (comp.view === 'client' && !comp.clientId && currentClientId) comp.clientId = currentClientId;
+      compReload();
+    });
+    function onEdit(ev){
+      var el = ev.target, f = el.getAttribute && el.getAttribute('data-f');
+      if (!f) return;
+      var tr = el.closest('tr');
+      var cid = tr.getAttribute('data-client'), yr = tr.getAttribute('data-year');
+      var d = compData(cid, yr), v = el.value;
+      // 'input' is followed by 'change' on blur with the same value; skip it so the
+      // summary isn't re-drawn (which would swallow a click on one of its chips).
+      if ((d[f] || '') === v) return;
+      if (v === '') delete d[f]; else d[f] = v;
+      if (el.tagName === 'SELECT') el.setAttribute('data-s', v);
+      compQueueSave(cid, yr);
+      if (comp.view === 'all') compRenderTiles();
+    }
+    [compEl.tbody, compEl.cTbody].forEach(function(tb){ tb.addEventListener('input', onEdit); tb.addEventListener('change', onEdit); });
+    compEl.tbody.addEventListener('click', function(ev){
+      var b = ev.target.closest('button[data-open-client]');
+      if (!b) return;
+      comp.view = 'client'; comp.clientId = b.getAttribute('data-open-client');
+      compReload();
+      window.scrollTo(0, 0);
+    });
+    compEl.clientSel.addEventListener('change', function(){ comp.clientId = compEl.clientSel.value; compReload(); });
+    [['entity', 'entity_type'], ['idNo', 'id_number'], ['taxRef', 'tax_ref']].forEach(function(p){
+      var ev = compEl[p[0]].tagName === 'SELECT' ? 'change' : 'input';
+      compEl[p[0]].addEventListener(ev, function(){
+        if (!comp.clientId) return;
+        var d = comp.details[comp.clientId] || (comp.details[comp.clientId] = {});
+        d[p[1]] = compEl[p[0]].value.trim();
+        compQueueDetailsSave(comp.clientId);
+      });
+    });
+    compEl.search.addEventListener('input', function(){ comp.filter.q = compEl.search.value.trim(); compRenderAll(); });
+    compEl.entityF.addEventListener('change', function(){ comp.filter.entity = compEl.entityF.value; compRenderAll(); });
+    compEl.obF.addEventListener('change', function(){ comp.filter.ob = compEl.obF.value; compRenderAll(); });
+    compEl.stF.addEventListener('change', function(){ comp.filter.st = compEl.stF.value; compRenderAll(); });
+    compEl.attention.addEventListener('change', function(){ comp.filter.attention = compEl.attention.checked; compRenderAll(); });
+    compEl.clearF.addEventListener('click', function(){
+      comp.filter = { q: '', entity: '', ob: '', st: '', attention: false };
+      compEl.search.value = ''; compEl.entityF.value = ''; compEl.obF.value = ''; compEl.stF.value = ''; compEl.attention.checked = false;
+      compRenderAll();
+    });
+    compEl.matrix.addEventListener('click', function(ev){
+      var b = ev.target.closest('button[data-ob]');
+      if (!b) return;
+      var ob = b.getAttribute('data-ob'), st = b.getAttribute('data-st');
+      var same = comp.filter.ob === ob && comp.filter.st === st;
+      comp.filter.ob = same ? '' : ob; comp.filter.st = same ? '' : st;
+      compEl.obF.value = comp.filter.ob; compEl.stF.value = comp.filter.st;
+      compRenderAll();
+    });
+    compEl.save.addEventListener('click', function(){ if (Object.keys(comp.failed).length) compRetryFailed(); });
+    compEl.setupCopy.addEventListener('click', function(){
+      var done = function(){ compEl.setupCopy.textContent = 'Copied'; setTimeout(function(){ compEl.setupCopy.textContent = 'Copy SQL'; }, 1800); };
+      if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(COMP_SQL).then(done, function(){ compEl.setupSql.select(); document.execCommand('copy'); done(); }); }
+      else { compEl.setupSql.select(); document.execCommand('copy'); done(); }
+    });
+    compEl.setupCheck.addEventListener('click', function(){ compReload(); });
+    compEl.importBtn.addEventListener('click', function(){ compEl.importFile.value = ''; compEl.importFile.click(); });
+    compEl.importFile.addEventListener('change', function(){
+      var f = compEl.importFile.files && compEl.importFile.files[0];
+      if (f) compPrepareImport(f);
+    });
+    compEl.excelBtn.addEventListener('click', compExportExcel);
+    compEl.pdfBtn.addEventListener('click', compExportPdf);
+    window.addEventListener('beforeunload', function(ev){
+      if (comp.inflight || Object.keys(comp.timers).length || Object.keys(comp.failed).length){ ev.preventDefault(); ev.returnValue = ''; }
+    });
+  }
+
+  // ---------------- lazy-loaded Excel library ----------------
+  var compExcelPromise = null;
+  function compLoadExcelJS(){
+    if (window.ExcelJS) return Promise.resolve(window.ExcelJS);
+    if (compExcelPromise) return compExcelPromise;
+    var urls = ['https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'];
+    function tryLoad(i){
+      return new Promise(function(resolve, reject){
+        if (i >= urls.length){ reject(new Error('Excel library did not load')); return; }
+        var s = document.createElement('script');
+        s.src = urls[i];
+        s.onload = function(){ window.ExcelJS ? resolve(window.ExcelJS) : tryLoad(i + 1).then(resolve, reject); };
+        s.onerror = function(){ tryLoad(i + 1).then(resolve, reject); };
+        document.head.appendChild(s);
+      });
+    }
+    compExcelPromise = tryLoad(0).catch(function(e){ compExcelPromise = null; throw e; });
+    return compExcelPromise;
+  }
+
+  // ---------------- import the client register (.xlsx) ----------------
+  var compPendingImport = null;
+  function compCellText(cell){
+    var v = cell && cell.value;
+    if (v == null) return '';
+    if (typeof v === 'object'){
+      if (v.richText) v = v.richText.map(function(r){ return r.text; }).join('');
+      else if (v.result !== undefined) v = v.result;
+      else if (v.text !== undefined) v = v.text;
+      else if (v instanceof Date) v = '';
+    }
+    v = String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
+    return v === '-' ? '' : v;
+  }
+  function compNormEntity(t){
+    var hit = COMP_ENTITY_TYPES.filter(function(e){ return e.toLowerCase() === String(t || '').toLowerCase(); })[0];
+    return hit || (t ? 'Other' : '');
+  }
+  function compParseRegister(wb){
+    var ws = wb.getWorksheet('Clients') || wb.worksheets[0];
+    if (!ws) return null;
+    var headerRow = 0, cols = {};
+    for (var r = 1; r <= Math.min(ws.rowCount, 20) && !headerRow; r++){
+      var row = ws.getRow(r), found = {};
+      row.eachCell(function(cell, c){
+        var t = compCellText(cell).toLowerCase();
+        if (t === 'client name' || t === 'name') found.name = c;
+        else if (t === 'entity type') found.entity = c;
+        else if (t.indexOf('id') === 0 && /id( |\/|$)/.test(t)) found.id = c;
+        else if (t.indexOf('tax ref') === 0) found.tax = c;
+      });
+      if (found.name){ headerRow = r; cols = found; }
+    }
+    if (!headerRow) return null;
+    var rows = [];
+    for (var i = headerRow + 1; i <= ws.rowCount; i++){
+      var rw = ws.getRow(i);
+      var name = compCellText(rw.getCell(cols.name));
+      if (!name) continue;
+      rows.push({
+        name: name,
+        entity: cols.entity ? compNormEntity(compCellText(rw.getCell(cols.entity))) : '',
+        id: cols.id ? compCellText(rw.getCell(cols.id)) : '',
+        tax: cols.tax ? compCellText(rw.getCell(cols.tax)) : ''
+      });
+    }
+    return rows;
+  }
+  function compPrepareImport(file){
+    compEl.importPanel.hidden = true; compPendingImport = null;
+    if (!compReady()){ compShowStatus(false, 'Sign in to import clients.'); return; }
+    compShowStatus(true, 'Reading ' + file.name + '…');
+    compLoadExcelJS().then(function(X){
+      return file.arrayBuffer().then(function(buf){ var wb = new X.Workbook(); return wb.xlsx.load(buf).then(function(){ return wb; }); });
+    }).then(function(wb){
+      var rows = compParseRegister(wb);
+      if (!rows){ compShowStatus(false, 'Couldn’t find a “Client Name” column in that file. Use the client register layout (Client Name, Entity Type, ID / Registration No., Tax Ref No.).'); return; }
+      var existing = {};
+      clients.forEach(function(c){ existing[c.name.toLowerCase()] = c.id; });
+      var seen = {}, fresh = [], known = [], dupes = 0;
+      rows.forEach(function(r){
+        var k = r.name.toLowerCase();
+        if (seen[k]){ dupes++; return; }
+        seen[k] = true;
+        (existing[k] ? known : fresh).push(r);
+      });
+      compPendingImport = { fresh: fresh, known: known, existing: existing };
+      compShowStatus(true, '');
+      compEl.importPanel.hidden = false;
+      compEl.importPanel.innerHTML = '<div class="comp-import-text"><strong>' + rows.length + ' rows read from ' + compEsc(file.name) + '.</strong> ' +
+        fresh.length + ' new client' + (fresh.length === 1 ? '' : 's') + ' will be added; ' + known.length + ' already in the app will have their details filled in' +
+        (dupes ? '; ' + dupes + ' repeated name' + (dupes === 1 ? '' : 's') + ' skipped' : '') + '.</div>' +
+        '<div class="comp-import-actions"><button type="button" class="card-btn" id="compImportGo">Import</button><button type="button" class="card-btn comp-ghost" id="compImportCancel">Cancel</button></div>';
+      compById('compImportCancel').addEventListener('click', function(){ compEl.importPanel.hidden = true; compPendingImport = null; });
+      compById('compImportGo').addEventListener('click', compRunImport);
+    }).catch(function(err){
+      compShowStatus(false, /did not load/.test(String(err && err.message)) ? 'The Excel reader didn’t load — check your internet connection and try again.' : 'Couldn’t read that file — please check it is an .xlsx client register.');
+    });
+  }
+  function compChunks(arr, n){ var out = []; for (var i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out; }
+  function compRunImport(){
+    var job = compPendingImport;
+    if (!job) return;
+    var go = compById('compImportGo');
+    go.disabled = true; go.textContent = 'Importing…';
+    var idByName = {};
+    Object.keys(job.existing).forEach(function(k){ idByName[k] = job.existing[k]; });
+    var added = [];
+    Promise.resolve(sb.from('client_details').select('client_id').limit(1)).then(function(res){
+      if (res.error) throw res.error;
+      return compChunks(job.fresh, 100).reduce(function(p, chunk){
+        return p.then(function(){
+          return Promise.resolve(sb.from('clients').insert(chunk.map(function(r){ return { name: r.name }; })).select('id,name')).then(function(res2){
+            if (res2.error) throw res2.error;
+            (res2.data || []).forEach(function(c){ idByName[c.name.toLowerCase()] = c.id; added.push({ id: c.id, name: c.name }); });
+          });
+        });
+      }, Promise.resolve());
+    }).then(function(){
+      return compLoadDetails();
+    }).then(function(){
+      var rows = job.fresh.concat(job.known).map(function(r){
+        var id = idByName[r.name.toLowerCase()];
+        if (!id) return null;
+        var cur = compDetails(id);
+        return {
+          client_id: id, entity_type: r.entity || cur.entity_type || null, id_number: r.id || cur.id_number || null,
+          tax_ref: r.tax || cur.tax_ref || null, updated_at: new Date().toISOString()
+        };
+      }).filter(Boolean);
+      return compChunks(rows, 100).reduce(function(p, chunk){
+        return p.then(function(){
+          return Promise.resolve(sb.from('client_details').upsert(chunk, { onConflict: 'client_id' })).then(function(res){ if (res.error) throw res.error; });
+        });
+      }, Promise.resolve()).then(function(){ return rows.length; });
+    }).then(function(updated){
+      added.forEach(function(c){ clients.push(c); });
+      clients.sort(function(a, b){ return a.name.localeCompare(b.name); });
+      updateSidebarClientLabel();
+      if (!clientPanel.hidden) renderClientPanelList();
+      compEl.importPanel.hidden = true; compPendingImport = null;
+      compShowStatus(true, '✓ Imported ' + added.length + ' new client' + (added.length === 1 ? '' : 's') + ' and saved details for ' + updated + '.');
+      return compReload().then(function(){ compShowStatus(true, '✓ Imported ' + added.length + ' new client' + (added.length === 1 ? '' : 's') + ' and saved details for ' + updated + '.'); });
+    }).catch(function(err){
+      if (compMissingTable(err)){ compEl.importPanel.hidden = true; compShowSetup(true); return; }
+      go.disabled = false; go.textContent = 'Import';
+      if (added.length){
+        added.forEach(function(c){ clients.push(c); });
+        clients.sort(function(a, b){ return a.name.localeCompare(b.name); });
+        updateSidebarClientLabel();
+      }
+      compShowStatus(false, 'The import stopped part-way' + (added.length ? ' (' + added.length + ' clients were already added — running it again will skip them)' : '') + '. ' + ((err && err.message) || 'Please try again.'));
+    });
+  }
+
+  // ---------------- Excel export ----------------
+  function compReportRows(){
+    return compFiltered().map(function(c){
+      var d = comp.store[compKey(c.id, comp.year)] || {}, det = compDetails(c.id);
+      return { c: c, d: d, det: det };
+    });
+  }
+  function compStatusFill(s){
+    return { 'Up to date': ['FFE5F6EA', 'FF157A3A'], 'Due': ['FFFFF4D6', 'FF8A5A00'], 'Overdue': ['FFFDE8E8', 'FFB42318'], 'Not registered': ['FFEEF0F4', 'FF5A6272'], 'N/A': ['FFF6F8FB', 'FF8A93A6'] }[s];
+  }
+  function compExportExcel(){
+    var btn = compEl.excelBtn, prev = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Preparing…';
+    var rows = compReportRows(), yl = compYearLabel(comp.year), note = compFilterNote();
+    compLoadExcelJS().then(function(X){
+      var wb = new X.Workbook();
+      wb.creator = 'RECONI Tax';
+      var NAVY = 'FF0E1526';
+      function head(ws, rowNo){
+        var r = ws.getRow(rowNo);
+        r.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        r.eachCell(function(c){ c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: NAVY } }; c.alignment = { vertical: 'middle', wrapText: true }; });
+      }
+      // Compliance Tracker
+      var ws = wb.addWorksheet('Compliance Tracker', { views: [{ state: 'frozen', xSplit: 1, ySplit: 4 }] });
+      ws.getCell('A1').value = 'Compliance Tracker – ' + yl + ' tax year'; ws.getCell('A1').font = { bold: true, size: 14, color: { argb: NAVY } };
+      ws.getCell('A2').value = 'Alcock Consulting · exported ' + fmtDateLong(new Date()) + ' · ' + rows.length + ' client' + (rows.length === 1 ? '' : 's') + (note ? ' · filtered: ' + note : '');
+      ws.getCell('A2').font = { italic: true, color: { argb: 'FF545B68' } };
+      var heads = ['Client Name', 'Entity Type', 'ID / Registration No.', 'Tax Ref No.'].concat(COMP_OBS.map(function(o){ return o.label; }), ['Year-end', 'Next Due Date', 'SOA Balance (R)', 'Notes']);
+      ws.getRow(4).values = heads; head(ws, 4);
+      rows.forEach(function(r, i){
+        var vals = [r.c.name, r.det.entity_type || '', r.det.id_number || '', r.det.tax_ref || ''];
+        COMP_OBS.forEach(function(o){ vals.push(r.d[o.k] || ''); });
+        vals.push(r.d.yearEnd || '', r.d.nextDue ? new Date(r.d.nextDue + 'T00:00:00') : null, r.d.soa !== undefined && r.d.soa !== '' ? parseFloat(r.d.soa) : null, r.d.notes || '');
+        var row = ws.getRow(5 + i); row.values = vals;
+        for (var k = 0; k < COMP_OBS.length; k++){
+          var cell = row.getCell(5 + k), fill = compStatusFill(cell.value);
+          cell.dataValidation = { type: 'list', allowBlank: true, formulae: ['"' + COMP_STATUSES.join(',') + '"'] };
+          if (fill){ cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fill[0] } }; cell.font = { color: { argb: fill[1] }, bold: cell.value === 'Overdue' }; }
+        }
+        row.getCell(11).numFmt = 'yyyy-mm-dd';
+        row.getCell(12).numFmt = '#,##0.00;(#,##0.00);-';
+        row.getCell(3).numFmt = '@'; row.getCell(4).numFmt = '@';
+      });
+      [34, 20, 20, 14, 14, 16, 12, 17, 19, 12, 14, 16, 36].forEach(function(w, i){ ws.getColumn(i + 1).width = w; });
+      ws.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4, column: heads.length } };
+      // Summary
+      var sm = wb.addWorksheet('Summary');
+      var counts = {}; COMP_OBS.forEach(function(o){ counts[o.k] = { none: 0 }; COMP_STATUSES.forEach(function(s){ counts[o.k][s] = 0; }); });
+      var soa = 0;
+      rows.forEach(function(r){
+        COMP_OBS.forEach(function(o){ var s = r.d[o.k]; if (s && counts[o.k][s] !== undefined) counts[o.k][s]++; else counts[o.k].none++; });
+        soa += parseFloat(r.d.soa) || 0;
+      });
+      sm.getCell('A1').value = 'Compliance Summary – ' + yl + ' tax year'; sm.getCell('A1').font = { bold: true, size: 14, color: { argb: NAVY } };
+      sm.getCell('A2').value = rows.length + ' client' + (rows.length === 1 ? '' : 's') + (note ? ' (filtered: ' + note + ')' : '') + ' · outstanding SOA R ' + soa.toFixed(2);
+      sm.getRow(4).values = ['Obligation'].concat(COMP_STATUSES, ['Not captured']); head(sm, 4);
+      COMP_OBS.forEach(function(o, i){ sm.getRow(5 + i).values = [o.label].concat(COMP_STATUSES.map(function(s){ return counts[o.k][s]; }), [counts[o.k].none]); });
+      sm.getColumn(1).width = 24; for (var c2 = 2; c2 <= 7; c2++) sm.getColumn(c2).width = 15;
+      // Clients register
+      var cl = wb.addWorksheet('Clients', { views: [{ state: 'frozen', ySplit: 4 }] });
+      cl.getCell('A1').value = 'Alcock Consulting – Client Register'; cl.getCell('A1').font = { bold: true, size: 14, color: { argb: NAVY } };
+      cl.getRow(4).values = ['#', 'Client Name', 'Entity Type', 'ID / Registration No.', 'Tax Ref No.']; head(cl, 4);
+      clients.forEach(function(c, i){
+        var det = compDetails(c.id), row = cl.getRow(5 + i);
+        row.values = [i + 1, c.name, det.entity_type || '', det.id_number || '', det.tax_ref || ''];
+        row.getCell(4).numFmt = '@'; row.getCell(5).numFmt = '@';
+      });
+      [6, 36, 20, 22, 14].forEach(function(w, i){ cl.getColumn(i + 1).width = w; });
+      return wb.xlsx.writeBuffer();
+    }).then(function(buf){
+      var blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      downloadGeneratedPdf({ output: function(){ return blob; } }, 'Compliance Tracker - ' + comp.year + '.xlsx', btn, prev);
+    }).catch(function(err){
+      btn.disabled = false;
+      btn.textContent = /did not load/.test(String(err && err.message)) ? 'Excel tools not loaded' : 'Could not create file';
+      setTimeout(function(){ btn.textContent = prev; }, 2600);
+    });
+  }
+
+  // ---------------- PDF report ----------------
+  function compPdfColors(s){
+    return { 'Up to date': [[229, 246, 234], [21, 122, 58]], 'Due': [[255, 244, 214], [138, 90, 0]], 'Overdue': [[253, 232, 232], [180, 35, 24]],
+      'Not registered': [[238, 240, 244], [90, 98, 114]], 'N/A': [[246, 248, 251], [138, 147, 166]] }[s];
+  }
+  function compBuildPdf(rows){
+    var Ctor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    var doc = new Ctor({ unit: 'pt', format: 'a4', orientation: 'landscape' });
+    var W = 841.89, H = 595.28, M = 36, brand = getDocBrand(), yl = compYearLabel(comp.year), note = compFilterNote();
+    var stats = { overdue: 0, due: 0, soa: 0, byOb: {} };
+    COMP_OBS.forEach(function(o){ stats.byOb[o.k] = { none: 0 }; COMP_STATUSES.forEach(function(s){ stats.byOb[o.k][s] = 0; }); });
+    rows.forEach(function(r){
+      COMP_OBS.forEach(function(o){
+        var s = r.d[o.k];
+        if (s && stats.byOb[o.k][s] !== undefined){ stats.byOb[o.k][s]++; if (s === 'Overdue') stats.overdue++; if (s === 'Due') stats.due++; }
+        else stats.byOb[o.k].none++;
+      });
+      stats.soa += parseFloat(r.d.soa) || 0;
+    });
+    function header(){
+      pdfAlcockLogoImg(doc, M, 16, 28);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(12.5); doc.setTextColor.apply(doc, C_ALCNAVY);
+      doc.text(brand.firm, M + 38, 33);
+      doc.setFontSize(7); doc.setTextColor.apply(doc, C_ALCGOLD); doc.text(brand.tagline, M + 38, 43);
+      doc.setFontSize(15); doc.setTextColor.apply(doc, C_ALCNAVY); doc.text('Compliance Report', W - M, 33, { align: 'right' });
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_INK2);
+      doc.text(yl + ' tax year', W - M, 45, { align: 'right' });
+      doc.setDrawColor.apply(doc, C_ALCGOLD); doc.setLineWidth(1.25); doc.line(M, 54, W - M, 54);
+      return 70;
+    }
+    var colDefs = [['Client', 175, 'l'], ['Entity type', 82, 'l'], ['Tax ref', 62, 'l']]
+      .concat(COMP_OBS.map(function(o){ return [o.label.replace(' Annual Return', ''), 66, 'c']; }), [['Next due', 58, 'c'], ['SOA (R)', 63, 'r']]);
+    function tableHeader(y){
+      doc.setFillColor.apply(doc, C_ALCNAVY); doc.rect(M, y, W - 2 * M, 18, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(255, 255, 255);
+      var x = M;
+      colDefs.forEach(function(c){
+        var tx = c[2] === 'c' ? x + c[1] / 2 : (c[2] === 'r' ? x + c[1] - 5 : x + 5);
+        doc.text(c[0], tx, y + 12, { align: c[2] === 'c' ? 'center' : (c[2] === 'r' ? 'right' : 'left') });
+        x += c[1];
+      });
+      return y + 18;
+    }
+    var y = header();
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_INK2);
+    doc.text(rows.length + ' client' + (rows.length === 1 ? '' : 's') + ' · generated ' + fmtDateLong(new Date()) + (note ? ' · filtered: ' + note : ''), M, y); y += 14;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_INK);
+    doc.text('Overdue items: ' + stats.overdue + '     Due items: ' + stats.due + '     Outstanding SOA: ' + fmtR(stats.soa, 2), M, y); y += 14;
+    // summary matrix
+    var mx = [['Obligation', 120]].concat(COMP_STATUSES.map(function(s){ return [s, 78]; }), [['Not captured', 78]]);
+    doc.setFillColor.apply(doc, C_ALCNAVY); doc.rect(M, y, 120 + 78 * 6, 16, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(255, 255, 255);
+    var mxX = M;
+    mx.forEach(function(c, i){ doc.text(c[0], i ? mxX + c[1] / 2 : mxX + 5, y + 11, { align: i ? 'center' : 'left' }); mxX += c[1]; });
+    y += 16;
+    COMP_OBS.forEach(function(o){
+      doc.setDrawColor.apply(doc, C_HAIR); doc.setLineWidth(0.5); doc.line(M, y + 15, M + 120 + 78 * 6, y + 15);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor.apply(doc, C_INK); doc.text(o.label, M + 5, y + 11);
+      var xx = M + 120;
+      COMP_STATUSES.concat(['none']).forEach(function(s){
+        var n = stats.byOb[o.k][s], col = s === 'none' ? null : compPdfColors(s);
+        doc.setFont('helvetica', n ? 'bold' : 'normal'); doc.setFontSize(8.5);
+        doc.setTextColor.apply(doc, n && col ? col[1] : C_MUTED);
+        doc.text(String(n), xx + 39, y + 11, { align: 'center' });
+        xx += 78;
+      });
+      y += 15;
+    });
+    y += 16;
+    y = tableHeader(y);
+    var rowH = 16;
+    rows.forEach(function(r, i){
+      if (y + rowH > H - 36){ doc.addPage(); y = tableHeader(header()); }
+      if (i % 2) { doc.setFillColor.apply(doc, C_SOFT); doc.rect(M, y, W - 2 * M, rowH, 'F'); }
+      var x = M;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor.apply(doc, C_INK);
+      doc.text(doc.splitTextToSize(r.c.name, colDefs[0][1] - 8)[0], x + 5, y + 11); x += colDefs[0][1];
+      doc.setFont('helvetica', 'normal'); doc.setTextColor.apply(doc, C_INK2);
+      doc.text(r.det.entity_type || '', x + 5, y + 11); x += colDefs[1][1];
+      doc.text(r.det.tax_ref || '', x + 5, y + 11); x += colDefs[2][1];
+      COMP_OBS.forEach(function(o){
+        var s = r.d[o.k], col = s ? compPdfColors(s) : null, w = 66;
+        if (col){
+          doc.setFillColor.apply(doc, col[0]); doc.roundedRect(x + 4, y + 2.5, w - 8, 11, 2, 2, 'F');
+          doc.setFont('helvetica', s === 'Overdue' ? 'bold' : 'normal'); doc.setFontSize(6.8); doc.setTextColor.apply(doc, col[1]);
+          doc.text(s, x + w / 2, y + 10.2, { align: 'center' });
+        } else { doc.setTextColor.apply(doc, C_MUTED); doc.setFontSize(7.5); doc.text('-', x + w / 2, y + 11, { align: 'center' }); }
+        x += w;
+      });
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor.apply(doc, C_INK2);
+      doc.text(r.d.nextDue || '', x + 29, y + 11, { align: 'center' }); x += 58;
+      var soaN = parseFloat(r.d.soa);
+      doc.text(isFinite(soaN) ? fmtR(soaN, 2).replace('R', '') : '', x + 58, y + 11, { align: 'right' });
+      y += rowH;
+    });
+    if (!rows.length){ doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_MUTED); doc.text('No clients match the current filters.', M + 5, y + 14); }
+    var pages = doc.internal.getNumberOfPages();
+    for (var p = 1; p <= pages; p++){
+      doc.setPage(p);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor.apply(doc, C_MUTED);
+      doc.text(brand.firm + ' · Compliance Report ' + yl, M, H - 18);
+      doc.text('Page ' + p + ' of ' + pages, W - M, H - 18, { align: 'right' });
+    }
+    return doc;
+  }
+  function compExportPdf(){
+    var btn = compEl.pdfBtn, prev = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Preparing…';
+    try {
+      var doc = compBuildPdf(compReportRows());
+      downloadGeneratedPdf(doc, 'Compliance Report - ' + comp.year + '.pdf', btn, prev);
+    } catch (e) {
+      btn.disabled = false; btn.textContent = 'Could not create PDF';
+      setTimeout(function(){ btn.textContent = prev; }, 2600);
+    }
+  }
 
   refreshDocLetterDefaults();
 
