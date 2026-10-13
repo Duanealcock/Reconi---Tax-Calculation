@@ -204,6 +204,10 @@
   .comp-status[data-s="Overdue"]{ background: #fde8e8; color: #b42318; border-color: #f5b5b0; font-weight: 800; }
   .comp-status[data-s="Not registered"]{ background: #eef0f4; color: #5a6272; }
   .comp-status[data-s="N/A"]{ color: var(--ink-muted); }
+  .comp-status[data-s="Active"]{ background: #e5f6ea; color: #157a3a; border-color: #bfe5cb; }
+  .comp-status[data-s="Inactive"]{ background: #fff4d6; color: #8a5a00; border-color: #f0d9a0; }
+  .comp-status[data-s="Deceased"]{ background: #e3e6ec; color: #3b4252; border-color: #c9ced8; }
+  tr.comp-dim .comp-link{ color: var(--ink-muted); font-weight: 600; }
   .comp-in{ font-size: 12px; padding: 5px 7px; border-radius: 7px; min-width: 92px; }
   .comp-in.comp-num{ min-width: 100px; text-align: right; }
   .comp-in.comp-notes{ min-width: 220px; }
@@ -1376,7 +1380,7 @@
           <div class="card-head">
             <div class="card-head-text">
               <h2>One-time setup needed</h2>
-              <span class="card-sub">The compliance tables don't exist in Supabase yet</span>
+              <span class="card-sub">The compliance tables need to be set up or updated in Supabase</span>
             </div>
           </div>
           <p class="doc-note" style="margin-top:0">In Supabase, open <strong>SQL Editor</strong>, paste the script below, click <strong>Run</strong>, then come back and press <strong>Check again</strong>. It only needs doing once.</p>
@@ -1402,6 +1406,7 @@
             <div class="comp-filters">
               <input type="text" id="compSearch" placeholder="Search name, tax ref or ID&hellip;" aria-label="Search clients">
               <select id="compEntityFilter" aria-label="Entity type"></select>
+              <select id="compCStatusFilter" aria-label="Client status"></select>
               <select id="compObFilter" aria-label="Obligation"></select>
               <select id="compStFilter" aria-label="Status"></select>
               <label class="comp-check"><input type="checkbox" id="compAttention"> Needs attention</label>
@@ -1413,6 +1418,7 @@
                 <thead>
                   <tr>
                     <th class="comp-sticky">Client</th>
+                    <th>Status</th><th>Last ITR12</th>
                     <th>Income Tax</th><th>Provisional Tax</th><th>VAT</th><th>PAYE / SDL / UIF</th><th>CIPC Annual Return</th>
                     <th>Year-end</th><th>Next due</th><th>SOA balance (R)</th><th>Notes</th>
                   </tr>
@@ -1437,6 +1443,8 @@
                 <div class="field"><label for="compEntity">Entity type</label><select id="compEntity"></select></div>
                 <div class="field"><label for="compIdNo">ID / Registration no.</label><input type="text" id="compIdNo" autocomplete="off"></div>
                 <div class="field"><label for="compTaxRef">Tax ref no.</label><input type="text" id="compTaxRef" autocomplete="off"></div>
+                <div class="field"><label for="compCStatus">Client status</label><select id="compCStatus"></select></div>
+                <div class="field"><label for="compItr12">Last ITR12 submitted</label><input type="date" id="compItr12"></div>
               </div>
             </div>
           </div>
@@ -4456,7 +4464,7 @@
     doc.text(brand.tagline, MARGIN, 107);
 
     var y = 158;
-    var letterDate = docLetter.date && docLetter.date.value ? new Date(docLetter.date.value + 'T00:00:00') : new Date();
+    var letterDate = docLetter.date && docLetter.date.value ? new Date(docLetter.date.value + 'T00:00:00Z') : new Date();
     doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor.apply(doc, C_INK);
     doc.text(fmtDateLong(letterDate), MARGIN, y); y += 30;
 
@@ -5225,6 +5233,7 @@
     { k: 'paye', label: 'PAYE / SDL / UIF' }, { k: 'cipc', label: 'CIPC Annual Return' }
   ];
   var COMP_STATUSES = ['Up to date', 'Due', 'Overdue', 'Not registered', 'N/A'];
+  var COMP_CLIENT_STATUSES = ['Active', 'Inactive', 'Deceased'];
   var COMP_ENTITY_TYPES = ['Individual', 'Company (Pty) Ltd', 'Close Corporation', 'Non-Profit Company', 'Trust', 'Other'];
   var COMP_SQL = [
     '-- RECONI Tax: compliance tracker tables (run once in Supabase > SQL Editor)',
@@ -5232,10 +5241,12 @@
     'declare idtype text;',
     'begin',
     "  select format_type(atttypid, atttypmod) into idtype from pg_attribute where attrelid = 'public.clients'::regclass and attname = 'id';",
-    "  execute format('create table if not exists public.client_details (client_id %s primary key references public.clients(id) on delete cascade, entity_type text, id_number text, tax_ref text, updated_at timestamptz not null default now())', idtype);",
+    "  execute format('create table if not exists public.client_details (client_id %s primary key references public.clients(id) on delete cascade, entity_type text, id_number text, tax_ref text, client_status text, last_itr12 date, updated_at timestamptz not null default now())', idtype);",
     "  execute format('create table if not exists public.compliance (client_id %s not null references public.clients(id) on delete cascade, tax_year text not null, data jsonb not null default ''{}''::jsonb, updated_at timestamptz not null default now(), primary key (client_id, tax_year))', idtype);",
     'end $$;',
     '',
+    'alter table public.client_details add column if not exists client_status text;',
+    'alter table public.client_details add column if not exists last_itr12 date;',
     'alter table public.client_details enable row level security;',
     'alter table public.compliance enable row level security;',
     '',
@@ -5261,12 +5272,12 @@
     allView: compById('compAllView'), clientView: compById('compClientView'), tiles: compById('compTiles'), matrix: compById('compMatrix'),
     search: compById('compSearch'), entityF: compById('compEntityFilter'), obF: compById('compObFilter'), stF: compById('compStFilter'),
     attention: compById('compAttention'), clearF: compById('compClearFilters'), count: compById('compCount'), tbody: compById('compTbody'),
-    clientSel: compById('compClientSel'), entity: compById('compEntity'), idNo: compById('compIdNo'), taxRef: compById('compTaxRef'),
+    clientSel: compById('compClientSel'), entity: compById('compEntity'), idNo: compById('compIdNo'), taxRef: compById('compTaxRef'), cStatusF: compById('compCStatusFilter'), cStatus: compById('compCStatus'), itr12: compById('compItr12'),
     cTbody: compById('compClientTbody'), cEmpty: compById('compClientEmpty'), cBody: compById('compClientBody')
   };
   var comp = {
     year: '', view: 'all', clientId: '', store: {}, details: {}, tok: 0,
-    filter: { q: '', entity: '', ob: '', st: '', attention: false },
+    filter: { q: '', entity: '', cstatus: '', ob: '', st: '', attention: false },
     timers: {}, detailTimers: {}, failed: {}, inflight: 0, wired: false
   };
 
@@ -5284,6 +5295,7 @@
     return comp.store[k];
   }
   function compDetails(clientId){ return comp.details[clientId] || {}; }
+  function compIsActive(det){ return !det || !det.client_status || det.client_status === 'Active'; }
   function compMissingTable(err){
     var m = String((err && (err.message || err.details)) || '');
     return !!err && (err.code === '42P01' || err.code === 'PGRST205' || /schema cache|does not exist|relation .* not exist/i.test(m));
@@ -5303,10 +5315,10 @@
 
   // ---------------- loading ----------------
   function compLoadDetails(){
-    return Promise.resolve(sb.from('client_details').select('client_id,entity_type,id_number,tax_ref')).then(function(res){
+    return Promise.resolve(sb.from('client_details').select('client_id,entity_type,id_number,tax_ref,client_status,last_itr12')).then(function(res){
       if (res.error) throw res.error;
       comp.details = {};
-      (res.data || []).forEach(function(r){ comp.details[r.client_id] = { entity_type: r.entity_type || '', id_number: r.id_number || '', tax_ref: r.tax_ref || '' }; });
+      (res.data || []).forEach(function(r){ comp.details[r.client_id] = { entity_type: r.entity_type || '', id_number: r.id_number || '', tax_ref: r.tax_ref || '', client_status: r.client_status || '', last_itr12: r.last_itr12 || '' }; });
     });
   }
   function compLoadRows(query){
@@ -5339,6 +5351,8 @@
       compEl.year.innerHTML = years.map(function(y){ return '<option value="' + y.key + '">' + y.label + '</option>'; }).join('');
       compEl.entityF.innerHTML = '<option value="">All entity types</option>' + COMP_ENTITY_TYPES.map(function(t){ return '<option>' + compEsc(t) + '</option>'; }).join('');
       compEl.entity.innerHTML = '<option value="">Select…</option>' + COMP_ENTITY_TYPES.map(function(t){ return '<option>' + compEsc(t) + '</option>'; }).join('');
+      compEl.cStatusF.innerHTML = '<option value="">All client statuses</option>' + COMP_CLIENT_STATUSES.map(function(t){ return '<option>' + t + '</option>'; }).join('');
+      compEl.cStatus.innerHTML = COMP_CLIENT_STATUSES.map(function(t){ return '<option>' + t + '</option>'; }).join('');
       compEl.obF.innerHTML = '<option value="">Any obligation</option>' + COMP_OBS.map(function(o){ return '<option value="' + o.k + '">' + compEsc(o.label) + '</option>'; }).join('');
       compEl.stF.innerHTML = '<option value="">Any status</option>' + COMP_STATUSES.map(function(s){ return '<option>' + compEsc(s) + '</option>'; }).join('') + '<option value="__none">Not captured</option>';
     }
@@ -5405,7 +5419,7 @@
     comp.inflight++;
     compSetSaveState();
     return Promise.resolve(sb.from('client_details').upsert(
-      { client_id: clientId, entity_type: d.entity_type || null, id_number: d.id_number || null, tax_ref: d.tax_ref || null, updated_at: new Date().toISOString() },
+      { client_id: clientId, entity_type: d.entity_type || null, id_number: d.id_number || null, tax_ref: d.tax_ref || null, client_status: d.client_status || null, last_itr12: d.last_itr12 || null, updated_at: new Date().toISOString() },
       { onConflict: 'client_id' }
     )).then(function(res){
       if (res.error) throw res.error;
@@ -5426,9 +5440,11 @@
 
   // ---------------- summary & filtering ----------------
   function compStats(){
-    var stats = { clients: clients.length, overdue: 0, due: 0, soa: 0, byOb: {} };
+    var stats = { clients: 0, overdue: 0, due: 0, soa: 0, byOb: {} };
     COMP_OBS.forEach(function(o){ stats.byOb[o.k] = { none: 0 }; COMP_STATUSES.forEach(function(s){ stats.byOb[o.k][s] = 0; }); });
     clients.forEach(function(c){
+      if (!compIsActive(compDetails(c.id))) return;
+      stats.clients++;
       var d = comp.store[compKey(c.id, comp.year)] || {};
       COMP_OBS.forEach(function(o){
         var s = d[o.k];
@@ -5449,6 +5465,7 @@
       if (hay.indexOf(f.q.toLowerCase()) === -1) return false;
     }
     if (f.entity && det.entity_type !== f.entity) return false;
+    if (f.cstatus && (det.client_status || 'Active') !== f.cstatus) return false;
     if (f.ob || f.st){
       var obs = f.ob ? [f.ob] : COMP_OBS.map(function(o){ return o.k; });
       var hit = obs.some(function(k){
@@ -5468,6 +5485,7 @@
     var f = comp.filter, parts = [];
     if (f.q) parts.push('search “' + f.q + '”');
     if (f.entity) parts.push(f.entity);
+    if (f.cstatus) parts.push(f.cstatus + ' clients');
     if (f.ob || f.st){
       var ob = f.ob ? COMP_OBS.filter(function(o){ return o.k === f.ob; })[0].label : 'any obligation';
       parts.push(ob + ': ' + (f.st === '__none' ? 'not captured' : (f.st || 'any status')));
@@ -5491,7 +5509,7 @@
   function compRenderTiles(){
     var s = compStats();
     var tiles = [
-      ['Clients', String(s.clients), ''], ['Overdue items', String(s.overdue), s.overdue ? 'bad' : ''],
+      ['Active clients', String(s.clients), ''], ['Overdue items', String(s.overdue), s.overdue ? 'bad' : ''],
       ['Due items', String(s.due), s.due ? 'warn' : ''], ['Outstanding SOA', fmtR(s.soa, 2), '']
     ];
     compEl.tiles.innerHTML = tiles.map(function(t){
@@ -5514,20 +5532,23 @@
     compRenderTiles();
     var list = compFiltered();
     compEl.count.textContent = 'Showing ' + list.length + ' of ' + clients.length + ' clients';
-    compEl.clearF.hidden = !(comp.filter.q || comp.filter.entity || comp.filter.ob || comp.filter.st || comp.filter.attention);
+    compEl.clearF.hidden = !(comp.filter.q || comp.filter.entity || comp.filter.cstatus || comp.filter.ob || comp.filter.st || comp.filter.attention);
     if (!clients.length){
-      compEl.tbody.innerHTML = '<tr><td colspan="12" class="comp-empty">No clients yet. Add a client in the sidebar, or use “Import clients” to load your register.</td></tr>';
+      compEl.tbody.innerHTML = '<tr><td colspan="14" class="comp-empty">No clients yet. Add a client in the sidebar, or use “Import clients” to load your register.</td></tr>';
       return;
     }
     if (!list.length){
-      compEl.tbody.innerHTML = '<tr><td colspan="12" class="comp-empty">No clients match these filters.</td></tr>';
+      compEl.tbody.innerHTML = '<tr><td colspan="14" class="comp-empty">No clients match these filters.</td></tr>';
       return;
     }
     compEl.tbody.innerHTML = list.map(function(c){
       var d = comp.store[compKey(c.id, comp.year)] || {}, det = compDetails(c.id);
-      return '<tr data-client="' + compEsc(c.id) + '" data-year="' + compEsc(comp.year) + '">' +
+      var cst = det.client_status || 'Active';
+      return '<tr data-client="' + compEsc(c.id) + '" data-year="' + compEsc(comp.year) + '"' + (cst !== 'Active' ? ' class="comp-dim"' : '') + '>' +
         '<th class="comp-sticky"><button type="button" class="comp-link" data-open-client="' + compEsc(c.id) + '" title="Open this client’s history">' + compEsc(c.name) + '</button>' +
         '<span class="comp-sub">' + compEsc(det.entity_type || '') + (det.entity_type && det.tax_ref ? ' · ' : '') + compEsc(det.tax_ref || '') + '</span></th>' +
+        '<td><select class="comp-status" data-cf="client_status" data-s="' + compEsc(cst) + '" aria-label="Client status">' + COMP_CLIENT_STATUSES.map(function(t){ return '<option' + (t === cst ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></td>' +
+        '<td><input type="date" class="comp-in" data-cf="last_itr12" value="' + compEsc(det.last_itr12 || '') + '" aria-label="Last ITR12 submitted"></td>' +
         compEditCells(d) + '</tr>';
     }).join('');
   }
@@ -5545,6 +5566,8 @@
     compEl.entity.value = det.entity_type || '';
     compEl.idNo.value = det.id_number || '';
     compEl.taxRef.value = det.tax_ref || '';
+    compEl.cStatus.value = det.client_status || 'Active';
+    compEl.itr12.value = det.last_itr12 || '';
     compEl.cTbody.innerHTML = compYears().map(function(y){
       var d = comp.store[compKey(comp.clientId, y.key)] || {};
       return '<tr data-client="' + compEsc(comp.clientId) + '" data-year="' + y.key + '"' + (y.key === comp.year ? ' class="comp-current"' : '') + '>' +
@@ -5590,6 +5613,21 @@
       if (comp.view === 'all') compRenderTiles();
     }
     [compEl.tbody, compEl.cTbody].forEach(function(tb){ tb.addEventListener('input', onEdit); tb.addEventListener('change', onEdit); });
+    function onClientField(ev){
+      var el = ev.target, f = el.getAttribute && el.getAttribute('data-cf');
+      if (!f) return;
+      var cid = el.closest('tr').getAttribute('data-client');
+      var d = comp.details[cid] || (comp.details[cid] = {});
+      if ((d[f] || '') === el.value) return;
+      d[f] = el.value;
+      if (el.tagName === 'SELECT'){
+        el.setAttribute('data-s', el.value);
+        el.closest('tr').classList.toggle('comp-dim', el.value !== 'Active');
+      }
+      compQueueDetailsSave(cid);
+      compRenderTiles();
+    }
+    compEl.tbody.addEventListener('input', onClientField); compEl.tbody.addEventListener('change', onClientField);
     compEl.tbody.addEventListener('click', function(ev){
       var b = ev.target.closest('button[data-open-client]');
       if (!b) return;
@@ -5598,7 +5636,7 @@
       window.scrollTo(0, 0);
     });
     compEl.clientSel.addEventListener('change', function(){ comp.clientId = compEl.clientSel.value; compReload(); });
-    [['entity', 'entity_type'], ['idNo', 'id_number'], ['taxRef', 'tax_ref']].forEach(function(p){
+    [['entity', 'entity_type'], ['idNo', 'id_number'], ['taxRef', 'tax_ref'], ['cStatus', 'client_status'], ['itr12', 'last_itr12']].forEach(function(p){
       var ev = compEl[p[0]].tagName === 'SELECT' ? 'change' : 'input';
       compEl[p[0]].addEventListener(ev, function(){
         if (!comp.clientId) return;
@@ -5609,12 +5647,13 @@
     });
     compEl.search.addEventListener('input', function(){ comp.filter.q = compEl.search.value.trim(); compRenderAll(); });
     compEl.entityF.addEventListener('change', function(){ comp.filter.entity = compEl.entityF.value; compRenderAll(); });
+    compEl.cStatusF.addEventListener('change', function(){ comp.filter.cstatus = compEl.cStatusF.value; compRenderAll(); });
     compEl.obF.addEventListener('change', function(){ comp.filter.ob = compEl.obF.value; compRenderAll(); });
     compEl.stF.addEventListener('change', function(){ comp.filter.st = compEl.stF.value; compRenderAll(); });
     compEl.attention.addEventListener('change', function(){ comp.filter.attention = compEl.attention.checked; compRenderAll(); });
     compEl.clearF.addEventListener('click', function(){
-      comp.filter = { q: '', entity: '', ob: '', st: '', attention: false };
-      compEl.search.value = ''; compEl.entityF.value = ''; compEl.obF.value = ''; compEl.stF.value = ''; compEl.attention.checked = false;
+      comp.filter = { q: '', entity: '', cstatus: '', ob: '', st: '', attention: false };
+      compEl.search.value = ''; compEl.entityF.value = ''; compEl.cStatusF.value = ''; compEl.obF.value = ''; compEl.stF.value = ''; compEl.attention.checked = false;
       compRenderAll();
     });
     compEl.matrix.addEventListener('click', function(ev){
@@ -5683,6 +5722,22 @@
     var hit = COMP_ENTITY_TYPES.filter(function(e){ return e.toLowerCase() === String(t || '').toLowerCase(); })[0];
     return hit || (t ? 'Other' : '');
   }
+  function compNormStatus(t){
+    var l = String(t || '').trim().toLowerCase();
+    return COMP_CLIENT_STATUSES.filter(function(x){ return x.toLowerCase() === l; })[0] || '';
+  }
+  function compCellDate(cell){
+    var v = cell && cell.value;
+    if (v == null || v === '') return '';
+    if (v instanceof Date) return isNaN(v) ? '' : v.toISOString().slice(0, 10);
+    if (typeof v === 'object' && v.result !== undefined) v = v.result;
+    if (v instanceof Date) return isNaN(v) ? '' : v.toISOString().slice(0, 10);
+    var t = String(v).trim(), m;
+    if ((m = t.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/))) return m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
+    if ((m = t.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/))) return m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2);
+    var d = new Date(t + ' UTC');
+    return isNaN(d) ? '' : d.toISOString().slice(0, 10);
+  }
   function compParseRegister(wb){
     var ws = wb.getWorksheet('Clients') || wb.worksheets[0];
     if (!ws) return null;
@@ -5695,6 +5750,8 @@
         else if (t === 'entity type') found.entity = c;
         else if (t.indexOf('id') === 0 && /id( |\/|$)/.test(t)) found.id = c;
         else if (t.indexOf('tax ref') === 0) found.tax = c;
+        else if (t === 'status' || t === 'client status') found.status = c;
+        else if (t.indexOf('itr12') !== -1 || t.indexOf('itr 12') !== -1) found.itr = c;
       });
       if (found.name){ headerRow = r; cols = found; }
     }
@@ -5708,7 +5765,9 @@
         name: name,
         entity: cols.entity ? compNormEntity(compCellText(rw.getCell(cols.entity))) : '',
         id: cols.id ? compCellText(rw.getCell(cols.id)) : '',
-        tax: cols.tax ? compCellText(rw.getCell(cols.tax)) : ''
+        tax: cols.tax ? compCellText(rw.getCell(cols.tax)) : '',
+        status: cols.status ? compNormStatus(compCellText(rw.getCell(cols.status))) : '',
+        itr: cols.itr ? compCellDate(rw.getCell(cols.itr)) : ''
       });
     }
     return rows;
@@ -5721,7 +5780,7 @@
       return file.arrayBuffer().then(function(buf){ var wb = new X.Workbook(); return wb.xlsx.load(buf).then(function(){ return wb; }); });
     }).then(function(wb){
       var rows = compParseRegister(wb);
-      if (!rows){ compShowStatus(false, 'Couldn’t find a “Client Name” column in that file. Use the client register layout (Client Name, Entity Type, ID / Registration No., Tax Ref No.).'); return; }
+      if (!rows){ compShowStatus(false, 'Couldn’t find a “Client Name” column in that file. Use the client import layout (Client Name, Entity Type, ID / Registration No., Tax Ref No., Status, Last ITR12 Submitted).'); return; }
       var existing = {};
       clients.forEach(function(c){ existing[c.name.toLowerCase()] = c.id; });
       var seen = {}, fresh = [], known = [], dupes = 0;
@@ -5753,7 +5812,7 @@
     var idByName = {};
     Object.keys(job.existing).forEach(function(k){ idByName[k] = job.existing[k]; });
     var added = [];
-    Promise.resolve(sb.from('client_details').select('client_id').limit(1)).then(function(res){
+    Promise.resolve(sb.from('client_details').select('client_id,client_status,last_itr12').limit(1)).then(function(res){
       if (res.error) throw res.error;
       return compChunks(job.fresh, 100).reduce(function(p, chunk){
         return p.then(function(){
@@ -5772,7 +5831,8 @@
         var cur = compDetails(id);
         return {
           client_id: id, entity_type: r.entity || cur.entity_type || null, id_number: r.id || cur.id_number || null,
-          tax_ref: r.tax || cur.tax_ref || null, updated_at: new Date().toISOString()
+          tax_ref: r.tax || cur.tax_ref || null, client_status: r.status || cur.client_status || null, last_itr12: r.itr || cur.last_itr12 || null,
+          updated_at: new Date().toISOString()
         };
       }).filter(Boolean);
       return compChunks(rows, 100).reduce(function(p, chunk){
@@ -5828,47 +5888,52 @@
       ws.getCell('A1').value = 'Compliance Tracker – ' + yl + ' tax year'; ws.getCell('A1').font = { bold: true, size: 14, color: { argb: NAVY } };
       ws.getCell('A2').value = 'Alcock Consulting · exported ' + fmtDateLong(new Date()) + ' · ' + rows.length + ' client' + (rows.length === 1 ? '' : 's') + (note ? ' · filtered: ' + note : '');
       ws.getCell('A2').font = { italic: true, color: { argb: 'FF545B68' } };
-      var heads = ['Client Name', 'Entity Type', 'ID / Registration No.', 'Tax Ref No.'].concat(COMP_OBS.map(function(o){ return o.label; }), ['Year-end', 'Next Due Date', 'SOA Balance (R)', 'Notes']);
+      var heads = ['Client Name', 'Entity Type', 'ID / Registration No.', 'Tax Ref No.', 'Status', 'Last ITR12 Submitted'].concat(COMP_OBS.map(function(o){ return o.label; }), ['Year-end', 'Next Due Date', 'SOA Balance (R)', 'Notes']);
       ws.getRow(4).values = heads; head(ws, 4);
       rows.forEach(function(r, i){
-        var vals = [r.c.name, r.det.entity_type || '', r.det.id_number || '', r.det.tax_ref || ''];
+        var vals = [r.c.name, r.det.entity_type || '', r.det.id_number || '', r.det.tax_ref || '', r.det.client_status || 'Active', r.det.last_itr12 ? new Date(r.det.last_itr12 + 'T00:00:00Z') : null];
         COMP_OBS.forEach(function(o){ vals.push(r.d[o.k] || ''); });
-        vals.push(r.d.yearEnd || '', r.d.nextDue ? new Date(r.d.nextDue + 'T00:00:00') : null, r.d.soa !== undefined && r.d.soa !== '' ? parseFloat(r.d.soa) : null, r.d.notes || '');
+        vals.push(r.d.yearEnd || '', r.d.nextDue ? new Date(r.d.nextDue + 'T00:00:00Z') : null, r.d.soa !== undefined && r.d.soa !== '' ? parseFloat(r.d.soa) : null, r.d.notes || '');
         var row = ws.getRow(5 + i); row.values = vals;
         for (var k = 0; k < COMP_OBS.length; k++){
-          var cell = row.getCell(5 + k), fill = compStatusFill(cell.value);
+          var cell = row.getCell(7 + k), fill = compStatusFill(cell.value);
           cell.dataValidation = { type: 'list', allowBlank: true, formulae: ['"' + COMP_STATUSES.join(',') + '"'] };
           if (fill){ cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fill[0] } }; cell.font = { color: { argb: fill[1] }, bold: cell.value === 'Overdue' }; }
         }
-        row.getCell(11).numFmt = 'yyyy-mm-dd';
-        row.getCell(12).numFmt = '#,##0.00;(#,##0.00);-';
+        row.getCell(6).numFmt = 'yyyy-mm-dd';
+        row.getCell(5).dataValidation = { type: 'list', allowBlank: false, formulae: ['"' + COMP_CLIENT_STATUSES.join(',') + '"'] };
+        row.getCell(13).numFmt = 'yyyy-mm-dd';
+        row.getCell(14).numFmt = '#,##0.00;(#,##0.00);-';
         row.getCell(3).numFmt = '@'; row.getCell(4).numFmt = '@';
       });
-      [34, 20, 20, 14, 14, 16, 12, 17, 19, 12, 14, 16, 36].forEach(function(w, i){ ws.getColumn(i + 1).width = w; });
+      [34, 20, 20, 14, 11, 16, 14, 16, 12, 17, 19, 12, 14, 16, 36].forEach(function(w, i){ ws.getColumn(i + 1).width = w; });
       ws.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4, column: heads.length } };
       // Summary
       var sm = wb.addWorksheet('Summary');
       var counts = {}; COMP_OBS.forEach(function(o){ counts[o.k] = { none: 0 }; COMP_STATUSES.forEach(function(s){ counts[o.k][s] = 0; }); });
       var soa = 0;
+      var activeN = 0;
       rows.forEach(function(r){
+        if (!compIsActive(r.det)) return;
+        activeN++;
         COMP_OBS.forEach(function(o){ var s = r.d[o.k]; if (s && counts[o.k][s] !== undefined) counts[o.k][s]++; else counts[o.k].none++; });
         soa += parseFloat(r.d.soa) || 0;
       });
       sm.getCell('A1').value = 'Compliance Summary – ' + yl + ' tax year'; sm.getCell('A1').font = { bold: true, size: 14, color: { argb: NAVY } };
-      sm.getCell('A2').value = rows.length + ' client' + (rows.length === 1 ? '' : 's') + (note ? ' (filtered: ' + note + ')' : '') + ' · outstanding SOA R ' + soa.toFixed(2);
+      sm.getCell('A2').value = activeN + ' active client' + (activeN === 1 ? '' : 's') + ' (inactive and deceased clients are not counted)' + (note ? ' · filtered: ' + note : '') + ' · outstanding SOA R ' + soa.toFixed(2);
       sm.getRow(4).values = ['Obligation'].concat(COMP_STATUSES, ['Not captured']); head(sm, 4);
       COMP_OBS.forEach(function(o, i){ sm.getRow(5 + i).values = [o.label].concat(COMP_STATUSES.map(function(s){ return counts[o.k][s]; }), [counts[o.k].none]); });
       sm.getColumn(1).width = 24; for (var c2 = 2; c2 <= 7; c2++) sm.getColumn(c2).width = 15;
       // Clients register
       var cl = wb.addWorksheet('Clients', { views: [{ state: 'frozen', ySplit: 4 }] });
       cl.getCell('A1').value = 'Alcock Consulting – Client Register'; cl.getCell('A1').font = { bold: true, size: 14, color: { argb: NAVY } };
-      cl.getRow(4).values = ['#', 'Client Name', 'Entity Type', 'ID / Registration No.', 'Tax Ref No.']; head(cl, 4);
+      cl.getRow(4).values = ['#', 'Client Name', 'Entity Type', 'ID / Registration No.', 'Tax Ref No.', 'Status', 'Last ITR12 Submitted']; head(cl, 4);
       clients.forEach(function(c, i){
         var det = compDetails(c.id), row = cl.getRow(5 + i);
-        row.values = [i + 1, c.name, det.entity_type || '', det.id_number || '', det.tax_ref || ''];
-        row.getCell(4).numFmt = '@'; row.getCell(5).numFmt = '@';
+        row.values = [i + 1, c.name, det.entity_type || '', det.id_number || '', det.tax_ref || '', det.client_status || 'Active', det.last_itr12 ? new Date(det.last_itr12 + 'T00:00:00Z') : null];
+        row.getCell(4).numFmt = '@'; row.getCell(5).numFmt = '@'; row.getCell(7).numFmt = 'yyyy-mm-dd';
       });
-      [6, 36, 20, 22, 14].forEach(function(w, i){ cl.getColumn(i + 1).width = w; });
+      [6, 36, 20, 22, 14, 11, 20].forEach(function(w, i){ cl.getColumn(i + 1).width = w; });
       return wb.xlsx.writeBuffer();
     }).then(function(buf){
       var blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -5891,7 +5956,10 @@
     var W = 841.89, H = 595.28, M = 36, brand = getDocBrand(), yl = compYearLabel(comp.year), note = compFilterNote();
     var stats = { overdue: 0, due: 0, soa: 0, byOb: {} };
     COMP_OBS.forEach(function(o){ stats.byOb[o.k] = { none: 0 }; COMP_STATUSES.forEach(function(s){ stats.byOb[o.k][s] = 0; }); });
+    var activeN = 0;
     rows.forEach(function(r){
+      if (!compIsActive(r.det)) return;
+      activeN++;
       COMP_OBS.forEach(function(o){
         var s = r.d[o.k];
         if (s && stats.byOb[o.k][s] !== undefined){ stats.byOb[o.k][s]++; if (s === 'Overdue') stats.overdue++; if (s === 'Due') stats.due++; }
@@ -5910,8 +5978,8 @@
       doc.setDrawColor.apply(doc, C_ALCGOLD); doc.setLineWidth(1.25); doc.line(M, 54, W - M, 54);
       return 70;
     }
-    var colDefs = [['Client', 175, 'l'], ['Entity type', 82, 'l'], ['Tax ref', 62, 'l']]
-      .concat(COMP_OBS.map(function(o){ return [o.label.replace(' Annual Return', ''), 66, 'c']; }), [['Next due', 58, 'c'], ['SOA (R)', 63, 'r']]);
+    var colDefs = [['Client', 138, 'l'], ['Entity type', 72, 'l'], ['Tax ref', 56, 'l'], ['Status', 44, 'c'], ['Last ITR12', 54, 'c']]
+      .concat(COMP_OBS.map(function(o){ return [o.label.replace(' Annual Return', ''), 57, 'c']; }), [['Next due', 54, 'c'], ['SOA (R)', 56, 'r']]);
     function tableHeader(y){
       doc.setFillColor.apply(doc, C_ALCNAVY); doc.rect(M, y, W - 2 * M, 18, 'F');
       doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(255, 255, 255);
@@ -5925,7 +5993,7 @@
     }
     var y = header();
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_INK2);
-    doc.text(rows.length + ' client' + (rows.length === 1 ? '' : 's') + ' · generated ' + fmtDateLong(new Date()) + (note ? ' · filtered: ' + note : ''), M, y); y += 14;
+    doc.text(rows.length + ' client' + (rows.length === 1 ? '' : 's') + ' listed (' + activeN + ' active, counted below) · generated ' + fmtDateLong(new Date()) + (note ? ' · filtered: ' + note : ''), M, y); y += 14;
     doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_INK);
     doc.text('Overdue items: ' + stats.overdue + '     Due items: ' + stats.due + '     Outstanding SOA: ' + fmtR(stats.soa, 2), M, y); y += 14;
     // summary matrix
@@ -5958,10 +6026,16 @@
       doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor.apply(doc, C_INK);
       doc.text(doc.splitTextToSize(r.c.name, colDefs[0][1] - 8)[0], x + 5, y + 11); x += colDefs[0][1];
       doc.setFont('helvetica', 'normal'); doc.setTextColor.apply(doc, C_INK2);
-      doc.text(r.det.entity_type || '', x + 5, y + 11); x += colDefs[1][1];
+      doc.text(doc.splitTextToSize(r.det.entity_type || '', colDefs[1][1] - 6)[0] || '', x + 5, y + 11); x += colDefs[1][1];
       doc.text(r.det.tax_ref || '', x + 5, y + 11); x += colDefs[2][1];
+      var cst = r.det.client_status || 'Active';
+      doc.setTextColor.apply(doc, cst === 'Active' ? [21, 122, 58] : (cst === 'Inactive' ? [138, 90, 0] : [59, 66, 82]));
+      doc.setFont('helvetica', cst === 'Active' ? 'normal' : 'bold'); doc.setFontSize(7);
+      doc.text(cst, x + colDefs[3][1] / 2, y + 11, { align: 'center' }); x += colDefs[3][1];
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor.apply(doc, C_INK2);
+      doc.text(r.det.last_itr12 || '', x + colDefs[4][1] / 2, y + 11, { align: 'center' }); x += colDefs[4][1];
       COMP_OBS.forEach(function(o){
-        var s = r.d[o.k], col = s ? compPdfColors(s) : null, w = 66;
+        var s = r.d[o.k], col = s ? compPdfColors(s) : null, w = 57;
         if (col){
           doc.setFillColor.apply(doc, col[0]); doc.roundedRect(x + 4, y + 2.5, w - 8, 11, 2, 2, 'F');
           doc.setFont('helvetica', s === 'Overdue' ? 'bold' : 'normal'); doc.setFontSize(6.8); doc.setTextColor.apply(doc, col[1]);
@@ -5970,9 +6044,9 @@
         x += w;
       });
       doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor.apply(doc, C_INK2);
-      doc.text(r.d.nextDue || '', x + 29, y + 11, { align: 'center' }); x += 58;
+      doc.text(r.d.nextDue || '', x + 27, y + 11, { align: 'center' }); x += 54;
       var soaN = parseFloat(r.d.soa);
-      doc.text(isFinite(soaN) ? fmtR(soaN, 2).replace('R', '') : '', x + 58, y + 11, { align: 'right' });
+      doc.text(isFinite(soaN) ? fmtR(soaN, 2).replace('R', '') : '', x + 54, y + 11, { align: 'right' });
       y += rowH;
     });
     if (!rows.length){ doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_MUTED); doc.text('No clients match the current filters.', M + 5, y + 14); }
