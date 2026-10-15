@@ -208,6 +208,22 @@
   .comp-status[data-s="Inactive"]{ background: #fff4d6; color: #8a5a00; border-color: #f0d9a0; }
   .comp-status[data-s="Deceased"]{ background: #e3e6ec; color: #3b4252; border-color: #c9ced8; }
   tr.comp-dim .comp-link{ color: var(--ink-muted); font-weight: 600; }
+  .vat-table{ min-width: 1500px; }
+  .vat-table thead th.vat-mh{ text-align: center; }
+  .vat-table td{ padding: 5px 4px; }
+  .vat-sel{ min-width: 84px; font-size: 11.5px !important; padding: 4px 3px !important; }
+  .vat-catsel{ min-width: 50px; width: 56px; }
+  .vat-table td .comp-in[data-vnosel]{ min-width: 100px; width: 110px; }
+  .vat-off{ background: var(--surface-2) !important; color: var(--ink-muted); text-align: center !important; }
+  .vat-due{ white-space: nowrap; font-weight: 600; color: var(--ink-2); }
+  .comp-status[data-s="Not due"]{ background: #f3f5f9; color: #5a6272; border-color: #e1e5ec; }
+  .comp-status[data-s="Submitted"]{ background: #e3eeff; color: #1f4fa3; border-color: #bcd2f5; }
+  .comp-status[data-s="Paid"]{ background: #e5f6ea; color: #157a3a; border-color: #bfe5cb; }
+  .comp-status[data-s="Nil return"]{ background: #e0f4f2; color: #0e6b62; border-color: #b6e0db; }
+  .comp-chip[data-s="Not due"]:not([data-zero]){ background: #f3f5f9; color: #5a6272; }
+  .comp-chip[data-s="Submitted"]:not([data-zero]){ background: #e3eeff; color: #1f4fa3; border-color: #bcd2f5; }
+  .comp-chip[data-s="Paid"]:not([data-zero]){ background: #e5f6ea; color: #157a3a; border-color: #bfe5cb; }
+  .comp-chip[data-s="Nil return"]:not([data-zero]){ background: #e0f4f2; color: #0e6b62; border-color: #b6e0db; }
   .comp-in{ font-size: 12px; padding: 5px 7px; border-radius: 7px; min-width: 92px; }
   .comp-in.comp-num{ min-width: 100px; text-align: right; }
   .comp-in.comp-notes{ min-width: 220px; }
@@ -1363,6 +1379,7 @@
             <div class="comp-seg" id="compSeg" role="group" aria-label="View">
               <button type="button" data-view="all" class="active">All clients</button>
               <button type="button" data-view="client">Single client</button>
+              <button type="button" data-view="vat">VAT</button>
             </div>
             <button type="button" class="comp-save" id="compSaveStatus" aria-live="polite"></button>
             <div class="comp-actions">
@@ -1424,6 +1441,62 @@
                   </tr>
                 </thead>
                 <tbody id="compTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="compVatView" hidden>
+          <div class="comp-tiles" id="vatTiles"></div>
+          <div class="card">
+            <div class="card-head">
+              <div class="card-head-text">
+                <h2>VAT returns by category</h2>
+                <span class="card-sub">Category A and B are two-monthly, Category C is monthly &mdash; click a number to filter the list below</span>
+              </div>
+            </div>
+            <div class="comp-scroll" id="vatMatrix"></div>
+          </div>
+          <div class="card" id="vatDetail" hidden>
+            <div class="card-head">
+              <div class="card-head-text">
+                <h2 id="vatDTitle">VAT periods</h2>
+                <span class="card-sub">Status is worked out automatically from the due date until you set it &mdash; add the date submitted and the VAT amount (positive = payable, negative = refund)</span>
+              </div>
+              <button type="button" class="card-btn comp-ghost" id="vatDClose">Close</button>
+            </div>
+            <div class="comp-details">
+              <div class="field"><label for="vatDCat">VAT category</label><select id="vatDCat"></select></div>
+              <div class="field"><label for="vatDNo">VAT number</label><input type="text" id="vatDNo" autocomplete="off"></div>
+              <div class="field"><label for="vatDReg">VAT registered from</label><input type="date" id="vatDReg"></div>
+            </div>
+            <div class="comp-table-wrap" style="margin-top:14px">
+              <table class="comp-table" style="min-width:860px">
+                <thead><tr><th class="comp-sticky">Period</th><th>Due date</th><th>Status</th><th>Date submitted</th><th>Amount (R)</th><th>Notes</th></tr></thead>
+                <tbody id="vatDTbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card comp-listcard">
+            <div class="card-head">
+              <div class="card-head-text">
+                <h2>VAT periods</h2>
+                <span class="card-sub" id="vatYearSub"></span>
+              </div>
+            </div>
+            <div class="comp-filters">
+              <input type="text" id="vatSearch" placeholder="Search name, VAT no. or tax ref&hellip;" aria-label="Search VAT clients">
+              <select id="vatCatFilter" aria-label="VAT category"></select>
+              <select id="vatStFilter" aria-label="Period status"></select>
+              <label class="comp-check"><input type="checkbox" id="vatAttention"> Needs attention</label>
+              <label class="comp-check"><input type="checkbox" id="vatAll"> Include clients without a VAT category</label>
+              <button type="button" class="card-btn comp-ghost" id="vatClear" hidden>Clear filters</button>
+              <span class="comp-count" id="vatCount"></span>
+            </div>
+            <div class="comp-table-wrap">
+              <table class="comp-table vat-table">
+                <thead id="vatThead"></thead>
+                <tbody id="vatTbody"></tbody>
               </table>
             </div>
           </div>
@@ -5241,12 +5314,15 @@
     'declare idtype text;',
     'begin',
     "  select format_type(atttypid, atttypmod) into idtype from pg_attribute where attrelid = 'public.clients'::regclass and attname = 'id';",
-    "  execute format('create table if not exists public.client_details (client_id %s primary key references public.clients(id) on delete cascade, entity_type text, id_number text, tax_ref text, client_status text, last_itr12 date, updated_at timestamptz not null default now())', idtype);",
+    "  execute format('create table if not exists public.client_details (client_id %s primary key references public.clients(id) on delete cascade, entity_type text, id_number text, tax_ref text, client_status text, last_itr12 date, vat_category text, vat_number text, vat_reg_date date, updated_at timestamptz not null default now())', idtype);",
     "  execute format('create table if not exists public.compliance (client_id %s not null references public.clients(id) on delete cascade, tax_year text not null, data jsonb not null default ''{}''::jsonb, updated_at timestamptz not null default now(), primary key (client_id, tax_year))', idtype);",
     'end $$;',
     '',
     'alter table public.client_details add column if not exists client_status text;',
     'alter table public.client_details add column if not exists last_itr12 date;',
+    'alter table public.client_details add column if not exists vat_category text;',
+    'alter table public.client_details add column if not exists vat_number text;',
+    'alter table public.client_details add column if not exists vat_reg_date date;',
     'alter table public.client_details enable row level security;',
     'alter table public.compliance enable row level security;',
     '',
@@ -5309,16 +5385,17 @@
     compEl.setup.hidden = !on;
     compEl.allView.hidden = on || comp.view !== 'all';
     compEl.clientView.hidden = on || comp.view !== 'client';
+    compById('compVatView').hidden = on || comp.view !== 'vat';
     if (on && !compEl.setupSql.value) compEl.setupSql.value = COMP_SQL;
   }
   function compReady(){ return !!(sb && dbApi); }
 
   // ---------------- loading ----------------
   function compLoadDetails(){
-    return Promise.resolve(sb.from('client_details').select('client_id,entity_type,id_number,tax_ref,client_status,last_itr12')).then(function(res){
+    return Promise.resolve(sb.from('client_details').select('client_id,entity_type,id_number,tax_ref,client_status,last_itr12,vat_category,vat_number,vat_reg_date')).then(function(res){
       if (res.error) throw res.error;
       comp.details = {};
-      (res.data || []).forEach(function(r){ comp.details[r.client_id] = { entity_type: r.entity_type || '', id_number: r.id_number || '', tax_ref: r.tax_ref || '', client_status: r.client_status || '', last_itr12: r.last_itr12 || '' }; });
+      (res.data || []).forEach(function(r){ comp.details[r.client_id] = { entity_type: r.entity_type || '', id_number: r.id_number || '', tax_ref: r.tax_ref || '', client_status: r.client_status || '', last_itr12: r.last_itr12 || '', vat_category: r.vat_category || '', vat_number: r.vat_number || '', vat_reg_date: r.vat_reg_date || '' }; });
     });
   }
   function compLoadRows(query){
@@ -5332,7 +5409,7 @@
     var tok = ++comp.tok;
     compShowStatus(true, '');
     var work = [compLoadDetails()];
-    if (comp.view === 'all') work.push(compLoadRows(sb.from('compliance').select('client_id,tax_year,data').eq('tax_year', comp.year)));
+    if (comp.view === 'all' || comp.view === 'vat') work.push(compLoadRows(sb.from('compliance').select('client_id,tax_year,data').eq('tax_year', comp.year)));
     else if (comp.clientId) work.push(compLoadRows(sb.from('compliance').select('client_id,tax_year,data').eq('client_id', comp.clientId)));
     return Promise.all(work).then(function(){
       if (tok !== comp.tok) return;
@@ -5419,7 +5496,7 @@
     comp.inflight++;
     compSetSaveState();
     return Promise.resolve(sb.from('client_details').upsert(
-      { client_id: clientId, entity_type: d.entity_type || null, id_number: d.id_number || null, tax_ref: d.tax_ref || null, client_status: d.client_status || null, last_itr12: d.last_itr12 || null, updated_at: new Date().toISOString() },
+      { client_id: clientId, entity_type: d.entity_type || null, id_number: d.id_number || null, tax_ref: d.tax_ref || null, client_status: d.client_status || null, last_itr12: d.last_itr12 || null, vat_category: d.vat_category || null, vat_number: d.vat_number || null, vat_reg_date: d.vat_reg_date || null, updated_at: new Date().toISOString() },
       { onConflict: 'client_id' }
     )).then(function(res){
       if (res.error) throw res.error;
@@ -5579,10 +5656,11 @@
     compEl.seg.querySelectorAll('button').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-view') === comp.view); });
     compEl.allView.hidden = comp.view !== 'all';
     compEl.clientView.hidden = comp.view !== 'client';
-    compEl.excelBtn.disabled = compEl.pdfBtn.disabled = comp.view !== 'all';
+    compById('compVatView').hidden = comp.view !== 'vat';
+    compEl.excelBtn.disabled = compEl.pdfBtn.disabled = comp.view !== 'all' && comp.view !== 'vat';
     compEl.year.disabled = false;
     compEl.obF.value = comp.filter.ob; compEl.stF.value = comp.filter.st;
-    if (comp.view === 'all') compRenderAll(); else compRenderClient();
+    if (comp.view === 'all') compRenderAll(); else if (comp.view === 'vat') compRenderVat(); else compRenderClient();
     compSetSaveState();
   }
 
@@ -5750,6 +5828,9 @@
         else if (t === 'entity type') found.entity = c;
         else if (t.indexOf('id') === 0 && /id( |\/|$)/.test(t)) found.id = c;
         else if (t.indexOf('tax ref') === 0) found.tax = c;
+        else if (/^vat (cat|category)/.test(t)) found.vcat = c;
+        else if (/^vat (no|number|num)/.test(t)) found.vno = c;
+        else if (/^vat reg/.test(t)) found.vreg = c;
         else if (t === 'status' || t === 'client status') found.status = c;
         else if (t.indexOf('itr12') !== -1 || t.indexOf('itr 12') !== -1) found.itr = c;
       });
@@ -5767,7 +5848,10 @@
         id: cols.id ? compCellText(rw.getCell(cols.id)) : '',
         tax: cols.tax ? compCellText(rw.getCell(cols.tax)) : '',
         status: cols.status ? compNormStatus(compCellText(rw.getCell(cols.status))) : '',
-        itr: cols.itr ? compCellDate(rw.getCell(cols.itr)) : ''
+        itr: cols.itr ? compCellDate(rw.getCell(cols.itr)) : '',
+        vcat: cols.vcat ? (String(compCellText(rw.getCell(cols.vcat))).toUpperCase().replace(/[^ABC]/g, '').charAt(0) || '') : '',
+        vno: cols.vno ? compCellText(rw.getCell(cols.vno)) : '',
+        vreg: cols.vreg ? compCellDate(rw.getCell(cols.vreg)) : ''
       });
     }
     return rows;
@@ -5780,7 +5864,7 @@
       return file.arrayBuffer().then(function(buf){ var wb = new X.Workbook(); return wb.xlsx.load(buf).then(function(){ return wb; }); });
     }).then(function(wb){
       var rows = compParseRegister(wb);
-      if (!rows){ compShowStatus(false, 'Couldn’t find a “Client Name” column in that file. Use the client import layout (Client Name, Entity Type, ID / Registration No., Tax Ref No., Status, Last ITR12 Submitted).'); return; }
+      if (!rows){ compShowStatus(false, 'Couldn’t find a “Client Name” column in that file. Use the client import layout (Client Name, Entity Type, ID / Registration No., Tax Ref No., Status, Last ITR12 Submitted, and optionally VAT Category, VAT No., VAT Registered From).'); return; }
       var existing = {};
       clients.forEach(function(c){ existing[c.name.toLowerCase()] = c.id; });
       var seen = {}, fresh = [], known = [], dupes = 0;
@@ -5812,7 +5896,7 @@
     var idByName = {};
     Object.keys(job.existing).forEach(function(k){ idByName[k] = job.existing[k]; });
     var added = [];
-    Promise.resolve(sb.from('client_details').select('client_id,client_status,last_itr12').limit(1)).then(function(res){
+    Promise.resolve(sb.from('client_details').select('client_id,client_status,last_itr12,vat_category,vat_number,vat_reg_date').limit(1)).then(function(res){
       if (res.error) throw res.error;
       return compChunks(job.fresh, 100).reduce(function(p, chunk){
         return p.then(function(){
@@ -5832,6 +5916,7 @@
         return {
           client_id: id, entity_type: r.entity || cur.entity_type || null, id_number: r.id || cur.id_number || null,
           tax_ref: r.tax || cur.tax_ref || null, client_status: r.status || cur.client_status || null, last_itr12: r.itr || cur.last_itr12 || null,
+          vat_category: r.vcat || cur.vat_category || null, vat_number: r.vno || cur.vat_number || null, vat_reg_date: r.vreg || cur.vat_reg_date || null,
           updated_at: new Date().toISOString()
         };
       }).filter(Boolean);
@@ -5871,6 +5956,7 @@
     return { 'Up to date': ['FFE5F6EA', 'FF157A3A'], 'Due': ['FFFFF4D6', 'FF8A5A00'], 'Overdue': ['FFFDE8E8', 'FFB42318'], 'Not registered': ['FFEEF0F4', 'FF5A6272'], 'N/A': ['FFF6F8FB', 'FF8A93A6'] }[s];
   }
   function compExportExcel(){
+    if (comp.view === 'vat') return vatExportExcel();
     var btn = compEl.excelBtn, prev = btn.textContent;
     btn.disabled = true; btn.textContent = 'Preparing…';
     var rows = compReportRows(), yl = compYearLabel(comp.year), note = compFilterNote();
@@ -5927,13 +6013,13 @@
       // Clients register
       var cl = wb.addWorksheet('Clients', { views: [{ state: 'frozen', ySplit: 4 }] });
       cl.getCell('A1').value = 'Alcock Consulting – Client Register'; cl.getCell('A1').font = { bold: true, size: 14, color: { argb: NAVY } };
-      cl.getRow(4).values = ['#', 'Client Name', 'Entity Type', 'ID / Registration No.', 'Tax Ref No.', 'Status', 'Last ITR12 Submitted']; head(cl, 4);
+      cl.getRow(4).values = ['#', 'Client Name', 'Entity Type', 'ID / Registration No.', 'Tax Ref No.', 'Status', 'Last ITR12 Submitted', 'VAT Category', 'VAT No.', 'VAT Registered From']; head(cl, 4);
       clients.forEach(function(c, i){
         var det = compDetails(c.id), row = cl.getRow(5 + i);
-        row.values = [i + 1, c.name, det.entity_type || '', det.id_number || '', det.tax_ref || '', det.client_status || 'Active', det.last_itr12 ? new Date(det.last_itr12 + 'T00:00:00Z') : null];
-        row.getCell(4).numFmt = '@'; row.getCell(5).numFmt = '@'; row.getCell(7).numFmt = 'yyyy-mm-dd';
+        row.values = [i + 1, c.name, det.entity_type || '', det.id_number || '', det.tax_ref || '', det.client_status || 'Active', det.last_itr12 ? new Date(det.last_itr12 + 'T00:00:00Z') : null, det.vat_category || '', det.vat_number || '', det.vat_reg_date ? new Date(det.vat_reg_date + 'T00:00:00Z') : null];
+        row.getCell(4).numFmt = '@'; row.getCell(5).numFmt = '@'; row.getCell(7).numFmt = 'yyyy-mm-dd'; row.getCell(9).numFmt = '@'; row.getCell(10).numFmt = 'yyyy-mm-dd';
       });
-      [6, 36, 20, 22, 14, 11, 20].forEach(function(w, i){ cl.getColumn(i + 1).width = w; });
+      [6, 36, 20, 22, 14, 11, 20, 13, 16, 18].forEach(function(w, i){ cl.getColumn(i + 1).width = w; });
       return wb.xlsx.writeBuffer();
     }).then(function(buf){
       var blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -6060,6 +6146,7 @@
     return doc;
   }
   function compExportPdf(){
+    if (comp.view === 'vat') return vatExportPdf();
     var btn = compEl.pdfBtn, prev = btn.textContent;
     btn.disabled = true; btn.textContent = 'Preparing…';
     try {
@@ -6069,6 +6156,456 @@
       btn.disabled = false; btn.textContent = 'Could not create PDF';
       setTimeout(function(){ btn.textContent = prev; }, 2600);
     }
+  }
+
+  // ---------------- VAT (VAT201 periods) ----------------
+  // SARS vendor categories: A = two-monthly (periods end Jan/Mar/May/Jul/Sep/Nov),
+  // B = two-monthly (Feb/Apr/Jun/Aug/Oct/Dec), C = monthly. eFiling returns and payments are due
+  // on the last business day of the month after the period ends.
+  var VAT_CATS = [
+    { k: 'A', label: 'A', long: 'Category A – two-monthly (periods end Jan, Mar, May, Jul, Sep, Nov)', months: [1, 3, 5, 7, 9, 11] },
+    { k: 'B', label: 'B', long: 'Category B – two-monthly (periods end Feb, Apr, Jun, Aug, Oct, Dec)', months: [2, 4, 6, 8, 10, 12] },
+    { k: 'C', label: 'C', long: 'Category C – monthly', months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] }
+  ];
+  var VAT_STORED = ['Submitted', 'Paid', 'Nil return', 'N/A'];
+  var VAT_STATUSES = ['Not due', 'Due', 'Overdue', 'Submitted', 'Paid', 'Nil return', 'N/A'];
+  var VAT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  comp.vat = { clientId: '', filter: { q: '', cat: '', st: '', attention: false, all: false } };
+  var vatEl = {
+    view: compById('compVatView'), tiles: compById('vatTiles'), matrix: compById('vatMatrix'), sub: compById('vatYearSub'),
+    search: compById('vatSearch'), catF: compById('vatCatFilter'), stF: compById('vatStFilter'), attention: compById('vatAttention'),
+    all: compById('vatAll'), clearF: compById('vatClear'), count: compById('vatCount'), thead: compById('vatThead'), tbody: compById('vatTbody'),
+    dCard: compById('vatDetail'), dTitle: compById('vatDTitle'), dCat: compById('vatDCat'), dNo: compById('vatDNo'), dReg: compById('vatDReg'),
+    dTbody: compById('vatDTbody'), dClose: compById('vatDClose')
+  };
+  function vatCat(k){ return VAT_CATS.filter(function(c){ return c.k === k; })[0] || null; }
+  function vatPad(n){ return ('0' + n).slice(-2); }
+  function vatIso(dt){ return dt.getUTCFullYear() + '-' + vatPad(dt.getUTCMonth() + 1) + '-' + vatPad(dt.getUTCDate()); }
+  function vatToday(){ var n = new Date(); return n.getFullYear() + '-' + vatPad(n.getMonth() + 1) + '-' + vatPad(n.getDate()); }
+  function vatDueDate(y, m){
+    // last business day of the month after period-end month m (1-12) of year y
+    var d = new Date(Date.UTC(y, m + 1, 0));
+    while (d.getUTCDay() === 0 || d.getUTCDay() === 6) d.setUTCDate(d.getUTCDate() - 1);
+    return d;
+  }
+  function vatPrettyDate(iso){
+    var p = String(iso || '').split('-');
+    return p.length === 3 ? parseInt(p[2], 10) + ' ' + VAT_MONTHS[parseInt(p[1], 10) - 1] + ' ' + p[0] : '';
+  }
+  // The 12 months of an SA tax year (1 March to end Feb); each period is identified by its period-end month.
+  function vatYearMonths(yearKey){
+    var y = parseInt(String(yearKey).slice(0, 4), 10), out = [];
+    for (var i = 0; i < 12; i++){
+      var m = ((2 + i) % 12) + 1, yy = m >= 3 ? y : y + 1;
+      out.push({ pk: yy + '-' + vatPad(m), y: yy, m: m, label: VAT_MONTHS[m - 1] + ' ' + String(yy).slice(2), long: VAT_MONTHS[m - 1] + ' ' + yy,
+        end: vatIso(new Date(Date.UTC(yy, m, 0))), due: vatIso(vatDueDate(yy, m)) });
+    }
+    return out;
+  }
+  function vatPeriodsFor(cat, yearKey){
+    var c = vatCat(cat);
+    return c ? vatYearMonths(yearKey).filter(function(p){ return c.months.indexOf(p.m) !== -1; }) : [];
+  }
+  function vatRec(cid, pk){
+    var d = comp.store[compKey(cid, comp.year)];
+    return (d && d.vatp && d.vatp[pk]) || {};
+  }
+  function vatAuto(det, p, rec){
+    if (rec && rec.sub) return 'Submitted';
+    if (det.vat_reg_date && p.end < det.vat_reg_date) return 'N/A';
+    var t = vatToday();
+    if (t <= p.end) return 'Not due';
+    if (t <= p.due) return 'Due';
+    return 'Overdue';
+  }
+  function vatEffective(det, p, rec){
+    var st = rec && rec.st;
+    return st && VAT_STORED.indexOf(st) !== -1 ? st : vatAuto(det, p, rec);
+  }
+  function vatSet(cid, pk, field, val){
+    var d = compData(cid, comp.year);
+    d.vatp = d.vatp || {};
+    var r = d.vatp[pk] || (d.vatp[pk] = {});
+    if (val === '' || val == null) delete r[field]; else r[field] = val;
+    if (!Object.keys(r).length) delete d.vatp[pk];
+    if (!Object.keys(d.vatp).length) delete d.vatp;
+    compQueueSave(cid, comp.year);
+  }
+  function vatClientPeriods(c){
+    var det = compDetails(c.id);
+    return vatPeriodsFor(det.vat_category, comp.year).map(function(p){
+      var rec = vatRec(c.id, p.pk);
+      return { p: p, rec: rec, eff: vatEffective(det, p, rec) };
+    });
+  }
+  function vatClientsAll(){
+    var f = comp.vat.filter;
+    return clients.filter(function(c){
+      var det = compDetails(c.id);
+      if (!f.all && !det.vat_category) return false;
+      if (f.q){
+        var hay = (c.name + ' ' + (det.vat_number || '') + ' ' + (det.tax_ref || '')).toLowerCase();
+        if (hay.indexOf(f.q.toLowerCase()) === -1) return false;
+      }
+      if (f.cat && det.vat_category !== f.cat) return false;
+      if (f.st || f.attention){
+        var ps = vatClientPeriods(c);
+        if (f.st && !ps.some(function(x){ return x.eff === f.st; })) return false;
+        if (f.attention && !ps.some(function(x){ return x.eff === 'Due' || x.eff === 'Overdue'; })) return false;
+      }
+      return true;
+    });
+  }
+  function vatFilterNote(){
+    var f = comp.vat.filter, parts = [];
+    if (f.q) parts.push('search “' + f.q + '”');
+    if (f.cat) parts.push('Category ' + f.cat);
+    if (f.st) parts.push('has ' + f.st + ' period');
+    if (f.attention) parts.push('needs attention (Due or Overdue)');
+    if (f.all) parts.push('including clients without a VAT category');
+    return parts.join(' · ');
+  }
+  function vatStats(){
+    var s = { vendors: 0, overdue: 0, due: 0, net: 0, byCat: {} };
+    VAT_CATS.forEach(function(c){ s.byCat[c.k] = { vendors: 0 }; VAT_STATUSES.forEach(function(st){ s.byCat[c.k][st] = 0; }); });
+    clients.forEach(function(c){
+      var det = compDetails(c.id);
+      if (!det.vat_category || !compIsActive(det) || !s.byCat[det.vat_category]) return;
+      s.vendors++; s.byCat[det.vat_category].vendors++;
+      vatClientPeriods(c).forEach(function(x){
+        s.byCat[det.vat_category][x.eff]++;
+        if (x.eff === 'Overdue') s.overdue++;
+        if (x.eff === 'Due') s.due++;
+        var a = parseFloat(x.rec.amt); if (isFinite(a)) s.net += a;
+      });
+    });
+    return s;
+  }
+  function vatStatusSelect(attrs, det, p, rec){
+    var auto = vatAuto(det, p, rec), eff = vatEffective(det, p, rec), stored = rec.st && VAT_STORED.indexOf(rec.st) !== -1 ? rec.st : '';
+    return '<select class="comp-status vat-sel" ' + attrs + ' data-vf="st" data-s="' + compEsc(eff) + '" title="' + compEsc(p.long + ' · due ' + vatPrettyDate(p.due)) + '" aria-label="Status ' + compEsc(p.long) + '">' +
+      '<option value=""' + (stored ? '' : ' selected') + '>' + (stored ? 'Auto: ' : '') + auto + '</option>' +
+      VAT_STORED.map(function(s){ return '<option' + (s === stored ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select>';
+  }
+  function vatRenderTiles(){
+    var s = vatStats();
+    var tiles = [['VAT vendors', String(s.vendors), ''], ['Overdue returns', String(s.overdue), s.overdue ? 'bad' : ''],
+      ['Due returns', String(s.due), s.due ? 'warn' : ''], ['Net VAT recorded', fmtR(s.net, 2), '']];
+    vatEl.tiles.innerHTML = tiles.map(function(t){
+      return '<div class="comp-tile ' + t[2] + '"><div class="comp-tile-n">' + compEsc(t[1]) + '</div><div class="comp-tile-l">' + t[0] + '</div></div>';
+    }).join('');
+    var f = comp.vat.filter;
+    vatEl.matrix.innerHTML = '<table class="comp-matrix"><thead><tr><th>Category</th><th>Vendors</th>' + VAT_STATUSES.map(function(st){ return '<th>' + st + '</th>'; }).join('') +
+      '</tr></thead><tbody>' + VAT_CATS.map(function(c){
+        var row = s.byCat[c.k];
+        return '<tr><th title="' + compEsc(c.long) + '">' + compEsc(c.long.split(' (')[0]) + '</th><td><button type="button" class="comp-chip" data-vcat="' + c.k + '" data-vst="" aria-pressed="' + (f.cat === c.k && !f.st) + '"' + (row.vendors ? '' : ' data-zero="1"') + '>' + row.vendors + '</button></td>' +
+          VAT_STATUSES.map(function(st){
+            var n = row[st], on = f.cat === c.k && f.st === st;
+            return '<td><button type="button" class="comp-chip" data-vcat="' + c.k + '" data-vst="' + st + '" data-s="' + st + '" aria-pressed="' + on + '"' + (n ? '' : ' data-zero="1"') + '>' + n + '</button></td>';
+          }).join('') + '</tr>';
+      }).join('') + '</tbody></table>';
+  }
+  function vatRenderGrid(){
+    var months = vatYearMonths(comp.year);
+    vatEl.sub.textContent = 'Tax year ' + compYearLabel(comp.year) + ' · periods ending ' + months[0].long + ' to ' + months[11].long + ' · due on the last business day of the following month';
+    vatEl.thead.innerHTML = '<tr><th class="comp-sticky">Client</th><th>Cat.</th><th>VAT no.</th>' + months.map(function(m){ return '<th class="vat-mh">' + m.label + '</th>'; }).join('') + '</tr>';
+    var list = vatClientsAll();
+    var n = clients.filter(function(c){ return compDetails(c.id).vat_category; }).length;
+    vatEl.count.textContent = 'Showing ' + list.length + ' of ' + (comp.vat.filter.all ? clients.length : n) + ' client' + ((comp.vat.filter.all ? clients.length : n) === 1 ? '' : 's');
+    vatEl.clearF.hidden = !(comp.vat.filter.q || comp.vat.filter.cat || comp.vat.filter.st || comp.vat.filter.attention || comp.vat.filter.all);
+    if (!list.length){
+      vatEl.tbody.innerHTML = '<tr><td colspan="15" class="comp-empty">' + (n || comp.vat.filter.all
+        ? 'No clients match these filters.'
+        : 'No VAT vendors yet. Tick “Include clients without a VAT category”, then pick Category A, B or C for each VAT-registered client.') + '</td></tr>';
+      return;
+    }
+    vatEl.tbody.innerHTML = list.map(function(c){
+      var det = compDetails(c.id), cat = vatCat(det.vat_category), dim = !compIsActive(det);
+      var ent = compEsc(det.entity_type || '');
+      var cells = months.map(function(m){
+        if (!cat || cat.months.indexOf(m.m) === -1) return '<td class="vat-off">·</td>';
+        return '<td>' + vatStatusSelect('data-pk="' + m.pk + '"', det, m, vatRec(c.id, m.pk)) + '</td>';
+      }).join('');
+      return '<tr data-client="' + compEsc(c.id) + '"' + (dim ? ' class="comp-dim"' : '') + '>' +
+        '<th class="comp-sticky"><button type="button" class="comp-link" data-vat-open="' + compEsc(c.id) + '" title="Open the period details">' + compEsc(c.name) + '</button>' +
+        '<span class="comp-sub">' + ent + (dim ? (ent ? ' · ' : '') + compEsc(det.client_status) : '') + '</span></th>' +
+        '<td><select class="comp-in vat-catsel" data-vcatsel="1" aria-label="VAT category"><option value="">–</option>' + VAT_CATS.map(function(k){ return '<option' + (k.k === det.vat_category ? ' selected' : '') + ' title="' + compEsc(k.long) + '">' + k.k + '</option>'; }).join('') + '</select></td>' +
+        '<td><input type="text" class="comp-in" data-vnosel="1" value="' + compEsc(det.vat_number || '') + '" placeholder="VAT no." aria-label="VAT number"></td>' + cells + '</tr>';
+    }).join('');
+  }
+  function vatRenderDetail(){
+    var cid = comp.vat.clientId, name = cid && compClientName(cid);
+    vatEl.dCard.hidden = !name;
+    if (!name) return;
+    var det = compDetails(cid);
+    vatEl.dTitle.textContent = name + ' – VAT periods ' + compYearLabel(comp.year);
+    vatEl.dCat.value = det.vat_category || '';
+    vatEl.dNo.value = det.vat_number || '';
+    vatEl.dReg.value = det.vat_reg_date || '';
+    var ps = vatClientPeriods({ id: cid });
+    vatEl.dTbody.innerHTML = ps.length ? ps.map(function(x){
+      return '<tr data-client="' + compEsc(cid) + '" data-pk="' + x.p.pk + '"><th class="comp-sticky">' + x.p.long + '<span class="comp-sub">ends ' + vatPrettyDate(x.p.end) + '</span></th>' +
+        '<td class="vat-due">' + vatPrettyDate(x.p.due) + '</td>' +
+        '<td>' + vatStatusSelect('', det, x.p, x.rec) + '</td>' +
+        '<td><input type="date" class="comp-in" data-vf="sub" value="' + compEsc(x.rec.sub || '') + '" aria-label="Date submitted"></td>' +
+        '<td><input type="number" step="0.01" class="comp-in comp-num" data-vf="amt" value="' + compEsc(x.rec.amt) + '" placeholder="+ pay / − refund" aria-label="Amount"></td>' +
+        '<td><input type="text" class="comp-in comp-notes" data-vf="note" value="' + compEsc(x.rec.note || '') + '" aria-label="Notes"></td></tr>';
+    }).join('') : '<tr><td colspan="6" class="comp-empty">Choose a VAT category (A, B or C) above to see this client’s periods.</td></tr>';
+  }
+  function compRenderVat(){
+    vatEl.catF.value = comp.vat.filter.cat; vatEl.stF.value = comp.vat.filter.st;
+    vatRenderTiles(); vatRenderGrid(); vatRenderDetail();
+  }
+  function vatWire(){
+    vatEl.catF.innerHTML = '<option value="">All categories</option>' + VAT_CATS.map(function(c){ return '<option value="' + c.k + '">Category ' + c.k + '</option>'; }).join('');
+    vatEl.stF.innerHTML = '<option value="">Any period status</option>' + VAT_STATUSES.map(function(s){ return '<option>' + s + '</option>'; }).join('');
+    vatEl.dCat.innerHTML = '<option value="">Not a VAT vendor</option>' + VAT_CATS.map(function(c){ return '<option value="' + c.k + '">' + compEsc(c.long) + '</option>'; }).join('');
+    function setDet(cid, field, val){
+      var d = comp.details[cid] || (comp.details[cid] = {});
+      if ((d[field] || '') === val) return false;
+      d[field] = val; compQueueDetailsSave(cid); return true;
+    }
+    function onPeriodEdit(ev, fromGrid){
+      var el = ev.target, f = el.getAttribute && el.getAttribute('data-vf');
+      if (!f) return;
+      var tr = el.closest('tr'), cid = tr.getAttribute('data-client'), pk = fromGrid ? el.getAttribute('data-pk') : tr.getAttribute('data-pk');
+      var cur = vatRec(cid, pk)[f]; if (cur == null) cur = '';
+      if (String(cur) === el.value) return;
+      vatSet(cid, pk, f, el.value);
+      vatRenderTiles();
+      if (fromGrid){ if (comp.vat.clientId === cid) vatRenderDetail(); return; }
+      vatRenderGrid();
+      if (f === 'st') vatRenderDetail();
+      else if (f === 'sub'){
+        var x = vatClientPeriods({ id: cid }).filter(function(q){ return q.p.pk === pk; })[0];
+        if (x) tr.children[2].innerHTML = vatStatusSelect('', compDetails(cid), x.p, x.rec);
+      }
+    }
+    vatEl.tbody.addEventListener('change', function(ev){ onPeriodEdit(ev, true); });
+    vatEl.dTbody.addEventListener('input', function(ev){ if (ev.target.tagName !== 'SELECT') onPeriodEdit(ev, false); });
+    vatEl.dTbody.addEventListener('change', function(ev){ onPeriodEdit(ev, false); });
+    // client-level VAT details from the grid
+    vatEl.tbody.addEventListener('change', function(ev){
+      var el = ev.target, cid = el.closest('tr') && el.closest('tr').getAttribute('data-client');
+      if (el.hasAttribute('data-vcatsel')){ if (setDet(cid, 'vat_category', el.value)){ vatRenderTiles(); vatRenderGrid(); vatRenderDetail(); } }
+      else if (el.hasAttribute('data-vnosel')){ setDet(cid, 'vat_number', el.value.trim()); }
+    });
+    vatEl.tbody.addEventListener('input', function(ev){
+      var el = ev.target;
+      if (el.hasAttribute && el.hasAttribute('data-vnosel')) setDet(el.closest('tr').getAttribute('data-client'), 'vat_number', el.value.trim());
+    });
+    vatEl.tbody.addEventListener('click', function(ev){
+      var b = ev.target.closest('button[data-vat-open]');
+      if (!b) return;
+      comp.vat.clientId = b.getAttribute('data-vat-open');
+      vatRenderDetail();
+      vatEl.dCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    // client-level VAT details from the detail card
+    vatEl.dCat.addEventListener('change', function(){ if (setDet(comp.vat.clientId, 'vat_category', vatEl.dCat.value)){ vatRenderTiles(); vatRenderGrid(); vatRenderDetail(); } });
+    vatEl.dNo.addEventListener('input', function(){ if (setDet(comp.vat.clientId, 'vat_number', vatEl.dNo.value.trim())) vatRenderGrid(); });
+    vatEl.dReg.addEventListener('change', function(){ if (setDet(comp.vat.clientId, 'vat_reg_date', vatEl.dReg.value)){ vatRenderTiles(); vatRenderGrid(); vatRenderDetail(); } });
+    vatEl.dClose.addEventListener('click', function(){ comp.vat.clientId = ''; vatRenderDetail(); });
+    vatEl.search.addEventListener('input', function(){ comp.vat.filter.q = vatEl.search.value.trim(); vatRenderGrid(); });
+    vatEl.catF.addEventListener('change', function(){ comp.vat.filter.cat = vatEl.catF.value; vatRenderTiles(); vatRenderGrid(); });
+    vatEl.stF.addEventListener('change', function(){ comp.vat.filter.st = vatEl.stF.value; vatRenderTiles(); vatRenderGrid(); });
+    vatEl.attention.addEventListener('change', function(){ comp.vat.filter.attention = vatEl.attention.checked; vatRenderGrid(); });
+    vatEl.all.addEventListener('change', function(){ comp.vat.filter.all = vatEl.all.checked; vatRenderGrid(); });
+    vatEl.clearF.addEventListener('click', function(){
+      comp.vat.filter = { q: '', cat: '', st: '', attention: false, all: false };
+      vatEl.search.value = ''; vatEl.catF.value = ''; vatEl.stF.value = ''; vatEl.attention.checked = false; vatEl.all.checked = false;
+      vatRenderTiles(); vatRenderGrid();
+    });
+    vatEl.matrix.addEventListener('click', function(ev){
+      var b = ev.target.closest('button[data-vcat]');
+      if (!b) return;
+      var cat = b.getAttribute('data-vcat'), st = b.getAttribute('data-vst');
+      var same = comp.vat.filter.cat === cat && comp.vat.filter.st === st;
+      comp.vat.filter.cat = same ? '' : cat; comp.vat.filter.st = same ? '' : st;
+      vatEl.catF.value = comp.vat.filter.cat; vatEl.stF.value = comp.vat.filter.st;
+      vatRenderTiles(); vatRenderGrid();
+    });
+  }
+  vatWire();
+
+  // ---- VAT Excel export ----
+  function vatReportRows(){
+    return vatClientsAll().map(function(c){ return { c: c, det: compDetails(c.id), ps: vatClientPeriods(c) }; });
+  }
+  function vatExportExcel(){
+    var btn = compEl.excelBtn, prev = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Preparing…';
+    var rows = vatReportRows(), yl = compYearLabel(comp.year), note = vatFilterNote(), months = vatYearMonths(comp.year);
+    function utc(iso){ return iso ? new Date(iso + 'T00:00:00Z') : null; }
+    compLoadExcelJS().then(function(X){
+      var wb = new X.Workbook(); wb.creator = 'RECONI Tax';
+      var NAVY = 'FF0E1526';
+      function head(ws, rowNo){
+        var r = ws.getRow(rowNo); r.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        r.eachCell(function(c){ c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: NAVY } }; c.alignment = { vertical: 'middle', wrapText: true }; });
+      }
+      function paint(cell, st){
+        var f = vatFill(st); if (!f) return;
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: f[0] } }; cell.font = { color: { argb: f[1] }, bold: st === 'Overdue' };
+        cell.alignment = { horizontal: 'center' };
+      }
+      var ws = wb.addWorksheet('VAT Tracker', { views: [{ state: 'frozen', xSplit: 1, ySplit: 4 }] });
+      ws.getCell('A1').value = 'VAT Tracker – ' + yl + ' tax year'; ws.getCell('A1').font = { bold: true, size: 14, color: { argb: NAVY } };
+      ws.getCell('A2').value = 'Alcock Consulting · exported ' + fmtDateLong(new Date()) + ' · ' + rows.length + ' client' + (rows.length === 1 ? '' : 's') + (note ? ' · filtered: ' + note : '') + ' · due: last business day of the month after the period ends';
+      ws.getCell('A2').font = { italic: true, color: { argb: 'FF545B68' } };
+      var heads = ['Client Name', 'Entity Type', 'VAT No.', 'Category', 'Registered From'].concat(months.map(function(m){ return m.long; }), ['Net VAT (R)']);
+      ws.getRow(4).values = heads; head(ws, 4);
+      rows.forEach(function(r, i){
+        var byPk = {}; r.ps.forEach(function(x){ byPk[x.p.pk] = x; });
+        var net = 0; r.ps.forEach(function(x){ var a = parseFloat(x.rec.amt); if (isFinite(a)) net += a; });
+        var row = ws.getRow(5 + i);
+        row.values = [r.c.name, r.det.entity_type || '', r.det.vat_number || '', r.det.vat_category || '', utc(r.det.vat_reg_date)].concat(months.map(function(m){ return byPk[m.pk] ? byPk[m.pk].eff : ''; }), [r.ps.length ? net : null]);
+        row.getCell(3).numFmt = '@'; row.getCell(5).numFmt = 'yyyy-mm-dd'; row.getCell(18).numFmt = '#,##0.00;(#,##0.00);-';
+        months.forEach(function(m, k){
+          var cell = row.getCell(6 + k);
+          if (byPk[m.pk]) paint(cell, byPk[m.pk].eff);
+          else cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F4F7' } };
+        });
+      });
+      [34, 20, 16, 10, 14].concat(months.map(function(){ return 12; }), [14]).forEach(function(w, i){ ws.getColumn(i + 1).width = w; });
+      ws.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4, column: heads.length } };
+      // Periods (one row per client per period)
+      var pw = wb.addWorksheet('VAT Periods', { views: [{ state: 'frozen', ySplit: 4 }] });
+      pw.getCell('A1').value = 'VAT201 periods – ' + yl + ' tax year'; pw.getCell('A1').font = { bold: true, size: 14, color: { argb: NAVY } };
+      pw.getCell('A2').value = 'One row per client per period. Status is calculated automatically unless it was set by hand.'; pw.getCell('A2').font = { italic: true, color: { argb: 'FF545B68' } };
+      pw.getRow(4).values = ['Client Name', 'Entity Type', 'VAT No.', 'Category', 'Period Ends', 'Due Date', 'Status', 'Date Submitted', 'Amount (R) (+ pay / − refund)', 'Notes']; head(pw, 4);
+      var rn = 5;
+      rows.forEach(function(r){
+        r.ps.forEach(function(x){
+          var row = pw.getRow(rn++);
+          var a = parseFloat(x.rec.amt);
+          row.values = [r.c.name, r.det.entity_type || '', r.det.vat_number || '', r.det.vat_category || '', utc(x.p.end), utc(x.p.due), x.eff, utc(x.rec.sub), isFinite(a) ? a : null, x.rec.note || ''];
+          row.getCell(3).numFmt = '@'; row.getCell(5).numFmt = 'yyyy-mm-dd'; row.getCell(6).numFmt = 'yyyy-mm-dd'; row.getCell(8).numFmt = 'yyyy-mm-dd'; row.getCell(9).numFmt = '#,##0.00;(#,##0.00);-';
+          paint(row.getCell(7), x.eff);
+        });
+      });
+      [34, 20, 16, 10, 13, 13, 13, 15, 22, 36].forEach(function(w, i){ pw.getColumn(i + 1).width = w; });
+      pw.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4, column: 10 } };
+      // Summary
+      var sm = wb.addWorksheet('Summary');
+      var counts = {}, vendors = {}; VAT_CATS.forEach(function(c){ counts[c.k] = {}; vendors[c.k] = 0; VAT_STATUSES.forEach(function(s){ counts[c.k][s] = 0; }); });
+      var net = 0, nAct = 0;
+      rows.forEach(function(r){
+        if (!compIsActive(r.det) || !counts[r.det.vat_category]) return;
+        nAct++; vendors[r.det.vat_category]++;
+        r.ps.forEach(function(x){ counts[r.det.vat_category][x.eff]++; var a = parseFloat(x.rec.amt); if (isFinite(a)) net += a; });
+      });
+      sm.getCell('A1').value = 'VAT Summary – ' + yl + ' tax year'; sm.getCell('A1').font = { bold: true, size: 14, color: { argb: NAVY } };
+      sm.getCell('A2').value = nAct + ' active VAT vendor' + (nAct === 1 ? '' : 's') + ' (inactive and deceased clients are not counted)' + (note ? ' · filtered: ' + note : '') + ' · net VAT recorded R ' + net.toFixed(2);
+      sm.getRow(4).values = ['Category', 'Vendors'].concat(VAT_STATUSES); head(sm, 4);
+      VAT_CATS.forEach(function(c, i){ sm.getRow(5 + i).values = [c.long.split(' (')[0], vendors[c.k]].concat(VAT_STATUSES.map(function(s){ return counts[c.k][s]; })); });
+      sm.getColumn(1).width = 32; for (var c2 = 2; c2 <= 9; c2++) sm.getColumn(c2).width = 13;
+      return wb.xlsx.writeBuffer();
+    }).then(function(buf){
+      var blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      downloadGeneratedPdf({ output: function(){ return blob; } }, 'VAT Tracker - ' + comp.year + '.xlsx', btn, prev);
+    }).catch(function(err){
+      btn.disabled = false;
+      btn.textContent = /did not load/.test(String(err && err.message)) ? 'Excel tools not loaded' : 'Could not create file';
+      setTimeout(function(){ btn.textContent = prev; }, 2600);
+    });
+  }
+  function vatFill(s){
+    return { 'Not due': ['FFF3F4F7', 'FF5A6272'], 'Due': ['FFFFF4D6', 'FF8A5A00'], 'Overdue': ['FFFDE8E8', 'FFB42318'], 'Submitted': ['FFE3EEFF', 'FF1F4FA3'],
+      'Paid': ['FFE5F6EA', 'FF157A3A'], 'Nil return': ['FFE0F4F2', 'FF0E6B62'], 'N/A': ['FFF6F8FB', 'FF8A93A6'] }[s];
+  }
+  // ---- VAT PDF ----
+  function vatPdfColors(s){
+    var f = vatFill(s); if (!f) return null;
+    function rgb(h){ return [parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), parseInt(h.slice(6, 8), 16)]; }
+    return [rgb(f[0]), rgb(f[1])];
+  }
+  function vatBuildPdf(rows){
+    var Ctor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    var doc = new Ctor({ unit: 'pt', format: 'a4', orientation: 'landscape' });
+    var W = 841.89, H = 595.28, M = 36, brand = getDocBrand(), yl = compYearLabel(comp.year), note = vatFilterNote(), months = vatYearMonths(comp.year);
+    var counts = {}, vendors = {}; VAT_CATS.forEach(function(c){ counts[c.k] = {}; vendors[c.k] = 0; VAT_STATUSES.forEach(function(s){ counts[c.k][s] = 0; }); });
+    var overdue = 0, due = 0, net = 0;
+    rows.forEach(function(r){
+      if (!compIsActive(r.det) || !counts[r.det.vat_category]) return;
+      vendors[r.det.vat_category]++;
+      r.ps.forEach(function(x){ counts[r.det.vat_category][x.eff]++; if (x.eff === 'Overdue') overdue++; if (x.eff === 'Due') due++; var a = parseFloat(x.rec.amt); if (isFinite(a)) net += a; });
+    });
+    function header(){
+      pdfAlcockLogoImg(doc, M, 16, 28);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(12.5); doc.setTextColor.apply(doc, C_ALCNAVY); doc.text(brand.firm, M + 38, 33);
+      doc.setFontSize(7); doc.setTextColor.apply(doc, C_ALCGOLD); doc.text(brand.tagline, M + 38, 43);
+      doc.setFontSize(15); doc.setTextColor.apply(doc, C_ALCNAVY); doc.text('VAT Compliance Report', W - M, 33, { align: 'right' });
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_INK2); doc.text(yl + ' tax year', W - M, 45, { align: 'right' });
+      doc.setDrawColor.apply(doc, C_ALCGOLD); doc.setLineWidth(1.25); doc.line(M, 54, W - M, 54);
+      return 70;
+    }
+    var colW = [128, 24, 62], mw = (W - 2 * M - 214) / 12;
+    function tableHeader(y){
+      doc.setFillColor.apply(doc, C_ALCNAVY); doc.rect(M, y, W - 2 * M, 18, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(255, 255, 255);
+      doc.text('Client', M + 5, y + 12); doc.text('Cat.', M + colW[0] + colW[1] / 2, y + 12, { align: 'center' }); doc.text('VAT no.', M + colW[0] + colW[1] + 4, y + 12);
+      months.forEach(function(m, i){ doc.text(m.label, M + 214 + i * mw + mw / 2, y + 12, { align: 'center' }); });
+      return y + 18;
+    }
+    var y = header();
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_INK2);
+    doc.text(rows.length + ' client' + (rows.length === 1 ? '' : 's') + ' listed · generated ' + fmtDateLong(new Date()) + (note ? ' · filtered: ' + note : ''), M, y); y += 14;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_INK);
+    doc.text('Overdue returns: ' + overdue + '     Due returns: ' + due + '     Net VAT recorded: ' + fmtR(net, 2) + '     (active vendors only)', M, y); y += 14;
+    var mx = [['Category', 130], ['Vendors', 60]].concat(VAT_STATUSES.map(function(s){ return [s, 72]; }));
+    var mxW = mx.reduce(function(a, c){ return a + c[1]; }, 0);
+    doc.setFillColor.apply(doc, C_ALCNAVY); doc.rect(M, y, mxW, 16, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(255, 255, 255);
+    var mxX = M; mx.forEach(function(c, i){ doc.text(c[0], i ? mxX + c[1] / 2 : mxX + 5, y + 11, { align: i ? 'center' : 'left' }); mxX += c[1]; });
+    y += 16;
+    VAT_CATS.forEach(function(c){
+      doc.setDrawColor.apply(doc, C_HAIR); doc.setLineWidth(0.5); doc.line(M, y + 15, M + mxW, y + 15);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor.apply(doc, C_INK); doc.text(c.long.split(' (')[0], M + 5, y + 11);
+      var xx = M + 130;
+      [vendors[c.k]].concat(VAT_STATUSES.map(function(s){ return counts[c.k][s]; })).forEach(function(n, i){
+        var col = i ? vatPdfColors(VAT_STATUSES[i - 1]) : null, w = i ? 72 : 60;
+        doc.setFont('helvetica', n ? 'bold' : 'normal'); doc.setFontSize(8.5); doc.setTextColor.apply(doc, n && col ? col[1] : (n ? C_INK : C_MUTED));
+        doc.text(String(n), xx + w / 2, y + 11, { align: 'center' }); xx += w;
+      });
+      y += 15;
+    });
+    y += 16;
+    y = tableHeader(y);
+    var rowH = 17;
+    rows.forEach(function(r, i){
+      if (y + rowH > H - 36){ doc.addPage(); y = tableHeader(header()); }
+      if (i % 2){ doc.setFillColor.apply(doc, C_SOFT); doc.rect(M, y, W - 2 * M, rowH, 'F'); }
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor.apply(doc, C_INK);
+      doc.text(doc.splitTextToSize(r.c.name, colW[0] - 8)[0], M + 5, y + 11.5);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor.apply(doc, C_INK2);
+      doc.text(r.det.vat_category || '', M + colW[0] + colW[1] / 2, y + 11.5, { align: 'center' });
+      doc.setFontSize(7); doc.text(r.det.vat_number || '', M + colW[0] + colW[1] + 4, y + 11.5);
+      var byPk = {}; r.ps.forEach(function(x){ byPk[x.p.pk] = x; });
+      months.forEach(function(m, k){
+        var x = byPk[m.pk], cx = M + 214 + k * mw;
+        if (!x){ doc.setTextColor.apply(doc, C_MUTED); doc.setFontSize(7); doc.text('·', cx + mw / 2, y + 11.5, { align: 'center' }); return; }
+        var col = vatPdfColors(x.eff);
+        doc.setFillColor.apply(doc, col[0]); doc.roundedRect(cx + 2, y + 3, mw - 4, 11, 2, 2, 'F');
+        doc.setFont('helvetica', x.eff === 'Overdue' ? 'bold' : 'normal'); doc.setFontSize(5.8); doc.setTextColor.apply(doc, col[1]);
+        doc.text(x.eff === 'Nil return' ? 'Nil' : x.eff, cx + mw / 2, y + 10.6, { align: 'center' });
+      });
+      y += rowH;
+    });
+    if (!rows.length){ doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor.apply(doc, C_MUTED); doc.text('No clients match the current filters.', M + 5, y + 14); }
+    var pages = doc.internal.getNumberOfPages();
+    for (var p = 1; p <= pages; p++){
+      doc.setPage(p); doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor.apply(doc, C_MUTED);
+      doc.text(brand.firm + ' · VAT Compliance Report ' + yl, M, H - 18);
+      doc.text('Page ' + p + ' of ' + pages, W - M, H - 18, { align: 'right' });
+    }
+    return doc;
+  }
+  function vatExportPdf(){
+    var btn = compEl.pdfBtn, prev = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Preparing…';
+    try { downloadGeneratedPdf(vatBuildPdf(vatReportRows()), 'VAT Report - ' + comp.year + '.pdf', btn, prev); }
+    catch (e) { btn.disabled = false; btn.textContent = 'Could not create PDF'; setTimeout(function(){ btn.textContent = prev; }, 2600); }
   }
 
   refreshDocLetterDefaults();
