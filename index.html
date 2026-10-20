@@ -241,6 +241,11 @@
   .comp-chip[data-s="Submitted"]:not([data-zero]){ background: #e3eeff; color: #1f4fa3; border-color: #bcd2f5; }
   .comp-chip[data-s="Paid"]:not([data-zero]){ background: #e5f6ea; color: #157a3a; border-color: #bfe5cb; }
   .comp-chip[data-s="Nil return"]:not([data-zero]){ background: #e0f4f2; color: #0e6b62; border-color: #b6e0db; }
+  .comp-asat{ margin: 0; width: 210px; }
+  .comp-asat-hint{ font-weight: 500; color: var(--ink-muted); font-size: 11px; }
+  .comp-asat-row{ display: flex; gap: 6px; }
+  .comp-asat input[type="date"]{ flex: 1; min-width: 0; }
+  .comp-asat.is-preview input{ border-color: var(--gold); background: var(--gold-soft); }
   .comp-vsel{ min-width: 92px; }
   .comp-vlast{ min-width: 104px; }
   .comp-vsel[data-cf="vat_category"]{ min-width: 120px; }
@@ -1449,6 +1454,10 @@
               <button type="button" data-view="all" class="active">All clients</button>
               <button type="button" data-view="client">Single client</button>
               <button type="button" data-view="vat">VAT</button>
+            </div>
+            <div class="field comp-asat">
+              <label for="compAsAt">As at date <span class="comp-asat-hint">(blank = today)</span></label>
+              <div class="comp-asat-row"><input type="date" id="compAsAt"><button type="button" class="card-btn comp-ghost" id="compAsAtClear" hidden>Today</button></div>
             </div>
             <button type="button" class="comp-save" id="compSaveStatus" aria-live="polite"></button>
             <div class="comp-actions">
@@ -5410,18 +5419,19 @@
     allView: compById('compAllView'), clientView: compById('compClientView'), tiles: compById('compTiles'), matrix: compById('compMatrix'),
     search: compById('compSearch'), entityF: compById('compEntityFilter'), obF: compById('compObFilter'), stF: compById('compStFilter'),
     attention: compById('compAttention'), clearF: compById('compClearFilters'), count: compById('compCount'), tbody: compById('compTbody'),
-    clientSel: compById('compClientSel'), entity: compById('compEntity'), idNo: compById('compIdNo'), taxRef: compById('compTaxRef'), cStatusF: compById('compCStatusFilter'), vatRegF: compById('compVatRegFilter'), vatPerF: compById('compVatPerFilter'), vatSubF: compById('compVatSubFilter'), cStatus: compById('compCStatus'), itr12: compById('compItr12'),
+    clientSel: compById('compClientSel'), entity: compById('compEntity'), idNo: compById('compIdNo'), taxRef: compById('compTaxRef'), asAt: compById('compAsAt'), asAtClear: compById('compAsAtClear'), cStatusF: compById('compCStatusFilter'), vatRegF: compById('compVatRegFilter'), vatPerF: compById('compVatPerFilter'), vatSubF: compById('compVatSubFilter'), cStatus: compById('compCStatus'), itr12: compById('compItr12'),
     cTbody: compById('compClientTbody'), cEmpty: compById('compClientEmpty'), cBody: compById('compClientBody')
   };
   var comp = {
     year: '', view: 'all', clientId: '', store: {}, details: {}, tok: 0,
+    asAt: '', renderedDay: '',
     filter: { q: '', entity: '', cstatus: '', vatReg: '', vatPer: '', vatSub: '', ob: '', st: '', attention: false },
     timers: {}, detailTimers: {}, failed: {}, inflight: 0, wired: false
   };
 
   function compEsc(s){ return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function compYears(){
-    var now = new Date(), start = now.getMonth() >= 2 ? now.getFullYear() : now.getFullYear() - 1, out = [];
+    var now = compNow(), start = now.getMonth() >= 2 ? now.getFullYear() : now.getFullYear() - 1, out = [];
     for (var y = start; y >= COMP_START_YEAR; y--) out.push({ key: y + '-' + (y + 1), label: y + '/' + (y + 1) });
     return out;
   }
@@ -5433,6 +5443,11 @@
     return comp.store[k];
   }
   function compDetails(clientId){ return comp.details[clientId] || {}; }
+  // "now" for every date-driven status; the As-at date lets you preview any day (blank = the real date)
+  function compNow(){
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(comp.asAt || '');
+    return m ? new Date(+m[1], +m[2] - 1, +m[3], 12) : new Date();
+  }
   function compVatReg(det){ return (det && det.vat_registered) || (det && det.vat_category ? 'Yes' : ''); }
   function compIsVendor(det){ return !!(det && det.vat_category) && compVatReg(det) !== 'No'; }
   var COMP_VAT_PERIOD_TEXT = { A: 'A · odd months', B: 'B · even months', C: 'C · monthly' };
@@ -5441,7 +5456,7 @@
   function compPkLabel(pk){ var m = /^(\d{4})-(\d{2})$/.exec(pk || ''); return m ? COMP_MON[parseInt(m[2], 10) - 1] + ' ' + m[1] : ''; }
   // period-end months from Mar 2020 up to the last month that has ended, newest first; monthly (C) clients get every month
   function compPeriodList(cat){
-    var now = new Date(), y = now.getFullYear(), m = now.getMonth(), out = [];   // m is 0-based = previous month in 1-based terms
+    var now = compNow(), y = now.getFullYear(), m = now.getMonth(), out = [];   // m is 0-based = previous month in 1-based terms
     if (m === 0){ y--; m = 12; }
     for (; y > 2020 || (y === 2020 && m >= 3); ){
       if (!cat || COMP_VAT_CAT_MONTHS[cat].indexOf(m) !== -1) out.push(y + '-' + ('0' + m).slice(-2));
@@ -5668,6 +5683,7 @@
     var f = comp.filter, parts = [];
     if (f.q) parts.push('search “' + f.q + '”');
     if (f.entity) parts.push(f.entity);
+    if (comp.asAt) parts.push('as at ' + vatPrettyDate(comp.asAt));
     if (f.cstatus) parts.push(f.cstatus + ' clients');
     if (f.vatReg) parts.push(f.vatReg === '__none' ? 'VAT registered not set' : 'VAT registered: ' + f.vatReg);
     if (f.vatSub) parts.push(f.vatSub === '__none' ? 'VAT submitted not set' : 'VAT submitted: ' + f.vatSub);
@@ -5776,6 +5792,8 @@
   }
   function compClientName(id){ return clientName(id); }
   function compRender(){
+    comp.renderedDay = vatToday();
+    compEl.asAt.value = comp.asAt || ''; compEl.asAtClear.hidden = !comp.asAt; compEl.asAt.parentNode.parentNode.classList.toggle('is-preview', !!comp.asAt);
     compEl.seg.querySelectorAll('button').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-view') === comp.view); });
     compEl.allView.hidden = comp.view !== 'all';
     compEl.clientView.hidden = comp.view !== 'client';
@@ -5791,6 +5809,8 @@
   function compWire(){
     if (comp.wired) return;
     comp.wired = true;
+    compEl.asAt.addEventListener('change', function(){ comp.asAt = compEl.asAt.value; compRender(); });
+    compEl.asAtClear.addEventListener('click', function(){ comp.asAt = ''; compRender(); });
     compEl.year.addEventListener('change', function(){ comp.year = compEl.year.value; compReload(); });
     compEl.seg.addEventListener('click', function(ev){
       var b = ev.target.closest('button[data-view]');
@@ -6348,7 +6368,7 @@
   function vatCat(k){ return VAT_CATS.filter(function(c){ return c.k === k; })[0] || null; }
   function vatPad(n){ return ('0' + n).slice(-2); }
   function vatIso(dt){ return dt.getUTCFullYear() + '-' + vatPad(dt.getUTCMonth() + 1) + '-' + vatPad(dt.getUTCDate()); }
-  function vatToday(){ var n = new Date(); return n.getFullYear() + '-' + vatPad(n.getMonth() + 1) + '-' + vatPad(n.getDate()); }
+  function vatToday(){ var n = compNow(); return n.getFullYear() + '-' + vatPad(n.getMonth() + 1) + '-' + vatPad(n.getDate()); }
   function vatDueDate(y, m){
     // last business day of the month after period-end month m (1-12) of year y
     var d = new Date(Date.UTC(y, m + 1, 0));
@@ -6437,6 +6457,7 @@
   }
   function vatFilterNote(){
     var f = comp.vat.filter, parts = [];
+    if (comp.asAt) parts.push('as at ' + vatPrettyDate(comp.asAt));
     if (f.q) parts.push('search “' + f.q + '”');
     if (f.cat) parts.push('Category ' + f.cat);
     if (f.st) parts.push('has ' + f.st + ' period');
@@ -6789,6 +6810,21 @@
     try { downloadGeneratedPdf(vatBuildPdf(vatReportRows()), 'VAT Report - ' + comp.year + '.pdf', btn, prev); }
     catch (e) { btn.disabled = false; btn.textContent = 'Could not create PDF'; setTimeout(function(){ btn.textContent = prev; }, 2600); }
   }
+
+  // ---------------- keep the screen live as the date rolls over ----------------
+  // Statuses (Not due / Due / Overdue, VAT submitted) are worked out from the date each time the page is drawn.
+  // If the tab stays open, redraw when the day changes, or when you come back to the tab.
+  function compLiveCheck(){
+    if (!complianceOn || comp.asAt || !comp.renderedDay) return;
+    var today = vatToday();
+    if (today === comp.renderedDay) return;
+    var ae = document.activeElement;
+    if (ae && ae.closest && ae.closest('.compliance-view') && /^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)) return;   // don't pull the page from under someone typing
+    compRender();
+  }
+  setInterval(compLiveCheck, 60000);
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) compLiveCheck(); });
+  window.addEventListener('focus', compLiveCheck);
 
   // ---------------- Add client page ----------------
   var acEl = {
