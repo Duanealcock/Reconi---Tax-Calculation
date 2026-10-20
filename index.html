@@ -136,6 +136,23 @@
   .content{ padding: 28px 32px 60px; min-width: 0; }
   @media (max-width: 640px){ .content{ padding: 20px 16px 48px; } }
 
+  .addclient-view{ display: none; }
+  .content.addclient-mode .addclient-view{ display: block; }
+  .content.addclient-mode > .page-head,
+  .content.addclient-mode > .ribbon,
+  .content.addclient-mode > .tab-panel,
+  .content.addclient-mode > .compliance-view{ display: none !important; }
+  .content.compliance-mode > .addclient-view{ display: none !important; }
+  .ac-grid{ display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .ac-grid .field{ margin: 0; }
+  .ac-grid input[type="date"]{ width: 100%; }
+  .ac-wide{ grid-column: 1 / -1; }
+  .ac-hint{ min-height: 15px; font-size: 11.5px; margin-top: 4px; color: var(--ink-muted); }
+  .ac-hint.warn{ color: var(--gold-ink); font-weight: 600; }
+  .ac-actions{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  .ac-warn{ color: var(--gold-ink); }
+  #acDone h2{ margin: 0 0 6px; }
+  tr.comp-flash td, tr.comp-flash th{ background: #fff0b8 !important; transition: background 0.6s; }
   .compliance-view{ display: none; }
   .content.compliance-mode .compliance-view{ display: block; }
   .content.compliance-mode > .page-head,
@@ -305,7 +322,7 @@
   }
   .client-panel-add input::placeholder{ color: #7c8598; }
   .client-panel-add button{
-    border: 0; background: var(--gold); color: #3a2707; font-size: 12px; font-weight: 700;
+    flex: 1; border: 0; background: var(--gold); color: #3a2707; font-size: 12px; font-weight: 700;
     padding: 7px 10px; border-radius: 7px; cursor: pointer; white-space: nowrap;
   }
   .client-panel-add button:hover{ background: #ecb956; }
@@ -589,8 +606,7 @@
         </div>
         <div class="client-panel-list" id="clientPanelList"></div>
         <div class="client-panel-add">
-          <input type="text" id="panelNewClientName" placeholder="New client name" maxlength="80">
-          <button type="button" id="panelAddClientBtn">+ Add</button>
+          <button type="button" id="panelAddClientBtn">+ Add new client&hellip;</button>
         </div>
       </div>
 
@@ -1360,6 +1376,53 @@
               <p><strong>Not included.</strong> Capital gains (trusts include 80% of gains in taxable income, versus 40% for individuals), donations tax, and distributions to non-resident beneficiaries.</p>
             </div>
           </details>
+        </div>
+      </section>
+
+      <section class="addclient-view" id="addClientView">
+        <div class="page-head">
+          <h1>Add client</h1>
+          <div class="sub">New client details</div>
+          <p class="desc">Capture the client once here &mdash; they&rsquo;ll appear in your client list and on the Compliance page straight away.</p>
+        </div>
+
+        <form id="acForm" autocomplete="off" novalidate>
+          <div class="card">
+            <div class="card-head"><div class="card-head-text"><h2>Client</h2></div></div>
+            <div class="ac-grid">
+              <div class="field ac-wide"><label for="acName">Client name <span aria-hidden="true">*</span></label><input type="text" id="acName" maxlength="80" placeholder="e.g. J Smith or ABC Trading (Pty) Ltd"><div class="ac-hint" id="acNameHint"></div></div>
+              <div class="field"><label for="acType">Client type</label><select id="acType"></select></div>
+              <div class="field"><label for="acIdNo" id="acIdLabel">ID number</label><input type="text" id="acIdNo" maxlength="40"><div class="ac-hint" id="acIdHint"></div></div>
+              <div class="field"><label for="acTaxRef">Tax reference number</label><input type="text" id="acTaxRef" inputmode="numeric" maxlength="20" placeholder="10-digit SARS tax ref"><div class="ac-hint" id="acTaxHint"></div></div>
+              <div class="field"><label for="acStatus">Status</label><select id="acStatus"></select></div>
+              <div class="field"><label for="acItr12">Last ITR12 submitted</label><input type="date" id="acItr12"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-head-text"><h2>VAT</h2><span class="card-sub">Only if the client is a VAT vendor &mdash; this puts them on the VAT view of the Compliance page</span></div></div>
+            <div class="ac-grid">
+              <div class="field ac-wide"><label for="acVatCat">VAT category</label><select id="acVatCat"></select></div>
+            </div>
+            <div class="ac-grid" id="acVatMore" hidden style="margin-top:16px">
+              <div class="field"><label for="acVatNo">VAT number</label><input type="text" id="acVatNo" maxlength="20"></div>
+              <div class="field"><label for="acVatReg">VAT registered from</label><input type="date" id="acVatReg"></div>
+            </div>
+          </div>
+          <div class="ac-actions">
+            <button type="submit" class="card-btn" id="acSave">Save client</button>
+            <button type="button" class="card-btn comp-ghost" id="acCancel">Cancel</button>
+          </div>
+          <p class="import-status err" id="acMsg" hidden style="margin-top:14px"></p>
+        </form>
+
+        <div class="card" id="acDone" hidden>
+          <h2 id="acDoneTitle"></h2>
+          <p class="doc-note" id="acDoneText" style="margin-top:0"></p>
+          <div class="ac-actions">
+            <button type="button" class="card-btn" id="acToComp">View in Compliance</button>
+            <button type="button" class="card-btn comp-ghost" id="acAgain">Add another client</button>
+            <button type="button" class="card-btn comp-ghost" id="acToCalc">Open calculator</button>
+          </div>
         </div>
       </section>
 
@@ -3426,6 +3489,7 @@
   // every other item is a scroll-to within the calculator view.
   var contentEl = document.querySelector('main.content');
   var complianceOn = false;
+  var addClientOn = false;
   function setComplianceView(on){
     complianceOn = on;
     contentEl.classList.toggle('compliance-mode', on);
@@ -3441,10 +3505,12 @@
   navItems.forEach(function(a){
     a.addEventListener('click', function(){
       var role = a.dataset.role;
+      var wasAdd = addClientOn;
+      if (wasAdd) setAddClientView(false);
       if (role === 'compliance'){ setComplianceView(true); return; }
-      var wasCompliance = complianceOn;
+      var wasCompliance = complianceOn || wasAdd;
+      if (complianceOn) setComplianceView(false);
       if (wasCompliance){
-        setComplianceView(false);
         navItems.forEach(function(n){ n.classList.toggle('active', n === a); });
       }
       var go = function(){
@@ -3483,7 +3549,6 @@
   var clientPanel = document.getElementById('clientPanel');
   var clientFilter = document.getElementById('clientFilter');
   var clientPanelList = document.getElementById('clientPanelList');
-  var panelNewClientName = document.getElementById('panelNewClientName');
   var panelAddClientBtn = document.getElementById('panelAddClientBtn');
   var dirty = false;
   var saveTimer = null;
@@ -3585,7 +3650,7 @@
     sidebarClientBtn.classList.add('open');
     sidebarClientBtn.setAttribute('aria-expanded', 'true');
     renderClientPanelList();
-    if (focusAdd){ panelNewClientName.focus(); } else { clientFilter.value = ''; clientFilter.focus(); }
+    clientFilter.value = ''; clientFilter.focus();
   }
   function closeClientPanel(){
     clientPanel.hidden = true;
@@ -3595,7 +3660,6 @@
   function toggleClientPanel(focusAdd){
     if (clientPanel.hidden) openClientPanel(focusAdd); else closeClientPanel();
   }
-  sidebarAddClientBtn.addEventListener('click', function(){ openClientPanel(true); });
   sidebarClientBtn.addEventListener('click', function(){ toggleClientPanel(false); });
   document.addEventListener('click', function(ev){
     if (!clientPanel.hidden && !clientPanel.contains(ev.target) && !sidebarClientBtn.contains(ev.target) && !sidebarAddClientBtn.contains(ev.target)){
@@ -3634,8 +3698,9 @@
   }
   clientFilter.addEventListener('input', renderClientPanelList);
 
-  function selectClient(id){
+  function selectClient(id, stay){
     closeClientPanel();
+    if (addClientOn && !stay) setAddClientView(false);
     flushPendingSave().then(function(){
       currentClientId = id;
       updateSidebarClientLabel();
@@ -3731,21 +3796,6 @@
   saveCalcBtn.addEventListener('click', function(){
     if (saveTimer){ clearTimeout(saveTimer); saveTimer = null; }
     saveCurrentCalc();
-  });
-
-  panelNewClientName.addEventListener('keydown', function(ev){ if (ev.key === 'Enter') panelAddClientBtn.click(); });
-  panelAddClientBtn.addEventListener('click', function(){
-    var name = panelNewClientName.value.trim();
-    if (!name || !dbApi) return;
-    panelAddClientBtn.disabled = true;
-    dbApi.collection('clients').add({ name: name, createdAt: new Date().toISOString() }).then(function(ref){
-      clients.push({ id: ref.id, name: name });
-      clients.sort(function(a, b){ return a.name.localeCompare(b.name); });
-      panelNewClientName.value = '';
-      selectClient(ref.id);
-    }).catch(function(){
-      saveStatus.textContent = 'Could not add client — try again';
-    }).finally(function(){ panelAddClientBtn.disabled = false; });
   });
 
   function onDbUnavailable(){
@@ -6607,6 +6657,144 @@
     try { downloadGeneratedPdf(vatBuildPdf(vatReportRows()), 'VAT Report - ' + comp.year + '.pdf', btn, prev); }
     catch (e) { btn.disabled = false; btn.textContent = 'Could not create PDF'; setTimeout(function(){ btn.textContent = prev; }, 2600); }
   }
+
+  // ---------------- Add client page ----------------
+  var acEl = {
+    view: compById('addClientView'), form: compById('acForm'), done: compById('acDone'), doneTitle: compById('acDoneTitle'), doneText: compById('acDoneText'),
+    name: compById('acName'), type: compById('acType'), idNo: compById('acIdNo'), idLabel: compById('acIdLabel'), idHint: compById('acIdHint'),
+    taxRef: compById('acTaxRef'), taxHint: compById('acTaxHint'), nameHint: compById('acNameHint'), status: compById('acStatus'), itr12: compById('acItr12'),
+    vatCat: compById('acVatCat'), vatNo: compById('acVatNo'), vatReg: compById('acVatReg'), vatMore: compById('acVatMore'),
+    save: compById('acSave'), cancel: compById('acCancel'), msg: compById('acMsg'),
+    again: compById('acAgain'), toComp: compById('acToComp'), toCalc: compById('acToCalc')
+  };
+  var acLastId = '';
+  var AC_ID_HINTS = {
+    'Individual': ['ID number', '13-digit SA ID number'], 'Company (Pty) Ltd': ['Registration number', 'e.g. 2015/123456/07'],
+    'Close Corporation': ['Registration number', 'e.g. 2005/123456/23'], 'Non-Profit Company': ['Registration number', 'e.g. 2015/123456/08'],
+    'Trust': ['Trust (master’s) number', 'e.g. IT1234/2015'], 'Other': ['ID / registration number', '']
+  };
+  function acMsg(ok, text){
+    acEl.msg.hidden = !text;
+    acEl.msg.className = 'import-status ' + (ok ? 'ok' : 'err');
+    acEl.msg.textContent = text || '';
+  }
+  function acHint(el, text, warn){
+    el.textContent = text || ''; el.className = 'ac-hint' + (warn ? ' warn' : '');
+  }
+  function acReset(){
+    acEl.name.value = ''; acEl.type.value = 'Individual'; acEl.idNo.value = ''; acEl.taxRef.value = ''; acEl.status.value = 'Active'; acEl.itr12.value = '';
+    acEl.vatCat.value = ''; acEl.vatNo.value = ''; acEl.vatReg.value = '';
+    [acEl.nameHint, acEl.idHint, acEl.taxHint].forEach(function(h){ acHint(h, ''); });
+    acMsg(true, '');
+    acEl.form.hidden = false; acEl.done.hidden = true;
+    acSyncType(); acSyncVat();
+  }
+  function acSyncType(){
+    var h = AC_ID_HINTS[acEl.type.value] || AC_ID_HINTS.Other;
+    acEl.idLabel.textContent = h[0]; acEl.idNo.placeholder = h[1];
+  }
+  function acSyncVat(){ acEl.vatMore.hidden = !acEl.vatCat.value; }
+  function acNorm(s){ return String(s || '').replace(/\s+/g, '').toLowerCase(); }
+  function acFindDup(field, val){
+    var v = acNorm(val); if (!v) return null;
+    return clients.filter(function(c){ return acNorm((comp.details[c.id] || {})[field]) === v; })[0] || null;
+  }
+  function acCheckFields(){
+    var t = acEl.type.value, idv = acEl.idNo.value.trim(), tx = acEl.taxRef.value.trim();
+    var nm = acEl.name.value.trim().replace(/\s+/g, ' ').toLowerCase();
+    var dupName = nm && clients.filter(function(c){ return c.name.toLowerCase() === nm; })[0];
+    acHint(acEl.nameHint, dupName ? 'A client with this name already exists.' : '', true);
+    var msgs = [];
+    if (idv && t === 'Individual' && !/^\d{13}$/.test(idv.replace(/\s+/g, ''))) msgs.push('An SA ID number has 13 digits.');
+    var d1 = acFindDup('id_number', idv); if (d1) msgs.push('Already used by ' + d1.name + '.');
+    acHint(acEl.idHint, msgs.join(' '), !!msgs.length);
+    var m2 = [];
+    if (tx && !/^\d{10}$/.test(tx.replace(/\s+/g, ''))) m2.push('A SARS tax reference has 10 digits.');
+    var d2 = acFindDup('tax_ref', tx); if (d2) m2.push('Already used by ' + d2.name + '.');
+    acHint(acEl.taxHint, m2.join(' '), !!m2.length);
+    return !dupName;
+  }
+  function setAddClientView(on){
+    addClientOn = on;
+    if (on){
+      if (complianceOn){ complianceOn = false; contentEl.classList.remove('compliance-mode'); }
+      contentEl.classList.add('addclient-mode');
+      if (scrollspyIO) scrollspyIO.disconnect();
+      navItems.forEach(function(a){ a.classList.remove('active'); });
+      closeClientPanel();
+      acReset();
+      if (compReady()) compLoadDetails().then(acCheckFields, function(){});
+      window.scrollTo(0, 0);
+      setTimeout(function(){ acEl.name.focus(); }, 0);
+    } else {
+      contentEl.classList.remove('addclient-mode');
+      setupScrollspy();
+    }
+  }
+  function acSave(){
+    acMsg(true, '');
+    var name = acEl.name.value.trim().replace(/\s+/g, ' ');
+    if (!name){ acMsg(false, 'Please enter the client’s name.'); acEl.name.focus(); return; }
+    if (!acCheckFields()){ acMsg(false, 'A client called “' + name + '” already exists. Use a different name (for example add the town or trading name).'); acEl.name.focus(); return; }
+    if (!dbApi || !compReady()){ acMsg(false, 'You need to be signed in to add a client.'); return; }
+    var det = {
+      entity_type: acEl.type.value, id_number: acEl.idNo.value.trim(), tax_ref: acEl.taxRef.value.trim().replace(/\s+/g, ''),
+      client_status: acEl.status.value, last_itr12: acEl.itr12.value, vat_category: acEl.vatCat.value,
+      vat_number: acEl.vatCat.value ? acEl.vatNo.value.trim() : '', vat_reg_date: acEl.vatCat.value ? acEl.vatReg.value : ''
+    };
+    acEl.save.disabled = true; acEl.save.textContent = 'Saving…';
+    var newId = '', detailsErr = null;
+    dbApi.collection('clients').add({ name: name, createdAt: new Date().toISOString() }).then(function(ref){
+      newId = ref.id;
+      clients.push({ id: newId, name: name });
+      clients.sort(function(a, b){ return a.name.localeCompare(b.name); });
+      comp.details[newId] = det;
+      updateSidebarClientLabel();
+      return Promise.resolve(sb.from('client_details').upsert({
+        client_id: newId, entity_type: det.entity_type || null, id_number: det.id_number || null, tax_ref: det.tax_ref || null,
+        client_status: det.client_status || null, last_itr12: det.last_itr12 || null, vat_category: det.vat_category || null,
+        vat_number: det.vat_number || null, vat_reg_date: det.vat_reg_date || null, updated_at: new Date().toISOString()
+      }, { onConflict: 'client_id' })).then(function(res){ if (res.error) throw res.error; }).catch(function(err){ detailsErr = err || new Error('x'); });
+    }).then(function(){
+      acLastId = newId;
+      acEl.form.hidden = true; acEl.done.hidden = false;
+      acEl.doneTitle.textContent = '✓ ' + name + ' added';
+      if (!detailsErr) acEl.doneText.textContent = 'The client is now in your client list and on the Compliance page' + (det.vat_category ? ' (and in the VAT view as a Category ' + det.vat_category + ' vendor)' : '') + '.';
+      else if (compMissingTable(detailsErr)) acEl.doneText.textContent = 'The client was added, but their details (type, ID, tax ref and so on) could not be saved because the one-time Supabase setup has not been run yet. Open Compliance to see the SQL to run, then enter the details again on the client’s Single client view.';
+      else acEl.doneText.textContent = 'The client was added, but their details could not be saved. Open Compliance, choose Single client and enter them there.';
+      acEl.doneText.className = detailsErr ? 'doc-note ac-warn' : 'doc-note';
+      selectClient(newId, true);
+    }).catch(function(){
+      acMsg(false, 'Could not add the client — check your connection and try again.');
+    }).then(function(){ acEl.save.disabled = false; acEl.save.textContent = 'Save client'; });
+  }
+  function acFlashRow(id, tries){
+    var tr = compEl.tbody.querySelector('tr[data-client="' + id + '"]');
+    if (!tr){ if (tries > 0) setTimeout(function(){ acFlashRow(id, tries - 1); }, 150); return; }
+    tr.scrollIntoView({ block: 'center' });
+    tr.classList.add('comp-flash');
+    setTimeout(function(){ tr.classList.remove('comp-flash'); }, 3200);
+  }
+  (function acWire(){
+    acEl.type.innerHTML = COMP_ENTITY_TYPES.map(function(t){ return '<option>' + compEsc(t) + '</option>'; }).join('');
+    acEl.status.innerHTML = COMP_CLIENT_STATUSES.map(function(t){ return '<option>' + t + '</option>'; }).join('');
+    acEl.vatCat.innerHTML = '<option value="">Not VAT registered</option>' + VAT_CATS.map(function(c){ return '<option value="' + c.k + '">' + compEsc(c.long) + '</option>'; }).join('');
+    acEl.type.addEventListener('change', function(){ acSyncType(); acCheckFields(); });
+    acEl.vatCat.addEventListener('change', acSyncVat);
+    [acEl.name, acEl.idNo, acEl.taxRef].forEach(function(e){ e.addEventListener('input', acCheckFields); });
+    acEl.form.addEventListener('submit', function(ev){ ev.preventDefault(); acSave(); });
+    acEl.cancel.addEventListener('click', function(){ setAddClientView(false); window.scrollTo(0, 0); });
+    acEl.again.addEventListener('click', function(){ acReset(); acEl.name.focus(); });
+    acEl.toCalc.addEventListener('click', function(){ var n = document.querySelector('.navitem[data-role="calculator"]'); if (n) n.click(); else setAddClientView(false); });
+    acEl.toComp.addEventListener('click', function(){
+      comp.view = 'all'; comp.filter = { q: '', entity: '', cstatus: '', ob: '', st: '', attention: false };
+      compEl.search.value = ''; compEl.entityF.value = ''; compEl.cStatusF.value = ''; compEl.obF.value = ''; compEl.stF.value = ''; compEl.attention.checked = false;
+      document.querySelector('.navitem[data-role="compliance"]').click();
+      acFlashRow(acLastId, 25);
+    });
+    sidebarAddClientBtn.addEventListener('click', function(){ setAddClientView(true); });
+    panelAddClientBtn.addEventListener('click', function(){ setAddClientView(true); });
+  })();
 
   refreshDocLetterDefaults();
 
